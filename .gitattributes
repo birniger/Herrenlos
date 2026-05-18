@@ -1,0 +1,9 @@
+# Mark the SQLite DB as binary so git doesn't waste effort attempting line-
+# level diffs or merges (which would corrupt the file anyway).
+*.db        binary -diff -merge
+
+# Generated dashboard data — small JSON/GeoJSON/CSV files. Treat them as
+# normal text but skip them in diff stat output to keep commit diffs readable.
+docs/data/*.json    -diff
+docs/data/*.geojson -diff
+docs/data/*.csv     -diff

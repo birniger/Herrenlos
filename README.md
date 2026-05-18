@@ -108,6 +108,18 @@ open docs/index.html                    # preview dashboard locally
 └── herrenlos.db                  the database (force-added past *.db gitignore)
 ```
 
+## GitHub repo metadata (suggested values to paste in Settings)
+
+Empty by default; quick to fill in at <https://github.com/birniger/Herrenlos/settings>:
+
+- **Description**: `Scanner + live map for parcels with no Grundbuch entry across all 26 Swiss cantons (ZGB Art. 658 herrenlos)`
+- **Website**: `https://birniger.github.io/Herrenlos/docs/`
+- **Topics**: `switzerland`, `grundbuch`, `cadastre`, `swiss-cantons`, `data-scraping`, `leaflet`, `swisstopo`, `legal-research`, `open-data`
+
+## Licence
+
+[MIT](LICENSE) — do whatever you like.
+
 ## Legal basis
 
 - **ZGB Art. 658** — Aneignung of herrenlos parcels (subject to cantonal law)
