@@ -48,12 +48,6 @@ import json
 import time
 import logging
 import pathlib
-import hashlib
-import base64
-import secrets
-import webbrowser
-import urllib.parse
-from http.server import HTTPServer, BaseHTTPRequestHandler
 import requests
 
 import sys

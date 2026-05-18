@@ -66,13 +66,12 @@ import json
 import time
 import logging
 import requests
-from bs4 import BeautifulSoup
 
 import sys
 import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
-from scanners.utils import is_herrenlos_owner_text, claim_possible_for
+from scanners.utils import claim_possible_for
 
 log = logging.getLogger("SO")
 

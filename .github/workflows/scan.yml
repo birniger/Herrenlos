@@ -91,6 +91,11 @@ jobs:
           timeout 5h python main.py "$CANTON" --limit "$LIMIT" || echo "Scan timed out or failed — committing partial progress."
 
       - name: Export dashboard JSON
+        # Don't lose scan results if export glitches (e.g. swisstopo geocoding
+        # blip). The DB has been updated by the scan step — even without fresh
+        # JSON, committing the DB preserves the scan progress; next run will
+        # regenerate the JSON.
+        continue-on-error: true
         run: python scripts/export_for_web.py
 
       - name: Commit results
