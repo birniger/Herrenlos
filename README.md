@@ -1,4 +1,7 @@
-# Herrenlos Scanner — Swiss ownerless-parcel discovery
+# Herrenlos — Switzerland's ownerless parcels
+
+A scanner + live dashboard finding parcels with no Grundbuch entry across the
+26 Swiss cantons.
 
 ## 🗺 Live map + dashboard
 

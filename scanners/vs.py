@@ -71,6 +71,12 @@ CAPWEB_API         = f"{CAPWEB_BASE}/api"
 
 GRUNDSTUECK_EP     = f"{CAPWEB_API}/gb/grundstueck"
 EIGENTUM_EP        = f"{CAPWEB_API}/gb/eigentum/sicht/grundstueck"
+# Speculative: CAPWEB likely mirrors BE's GRUDIS person/master since both are
+# Capitastra-based.  Attempt to resolve owner names via this endpoint; gracefully
+# fall back to the "registered" placeholder if it returns 401/403/404.
+# Probe added 2026-05-18 — when a VS scan runs, log lines will tell us whether
+# this endpoint is reachable for SwissID-only sessions.
+PERSON_EP          = f"{CAPWEB_API}/gb/person/master"
 
 KEYCLOAK_ISSUER    = "https://sso.apps.vs.ch/auth/realms/etatvs"
 KEYCLOAK_CLIENT    = "capitastra-public-client"
@@ -519,13 +525,82 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
 
     has_owner = len(entries) > 0
 
+    # ── Try to resolve actual person names (probe added 2026-05-18). ─────────
+    # If the public CAPWEB API exposes person/master to SwissID sessions (like
+    # BE's GRUDIS does), we'll get real names. If it returns 401/403, we fall
+    # back to the placeholder. The first VS scan with this code will log the
+    # outcome and confirm/refute the "access denied on all person endpoints"
+    # claim in the previous version of this scanner.
+    owner_str = None
+    if has_owner:
+        names = _resolve_person_names(session, entries)
+        if names:
+            owner_str = "; ".join(names)
+            log.info("VS person/master RESOLVED — names exposed by public API!")
+        else:
+            owner_str = "registered"   # API didn't return names (likely 403)
+
     return {
-        "owner":         "registered" if has_owner else None,
+        "owner":         owner_str,
         "owner_address": None,
         "is_herrenlos":  0 if has_owner else 1,
         "raw_response":  None,
         "error":         None,
     }
+
+
+def _resolve_person_names(session: requests.Session, entries: list) -> list[str]:
+    """
+    Probe VS CAPWEB's person/master endpoint to extract actual owner names.
+
+    Mirrors scanners/be.py:_resolve_person_name() since CAPWEB and GRUDIS share
+    a Capitastra backend. Returns a list of full names ("Vorname Name") for
+    every distinct personGbVersionId across all entries; empty list on any
+    failure (HTTP error, missing fields, exception).
+
+    The first VS scan run after this code lands will tell us whether the
+    endpoint is reachable for public SwissID sessions or denies us with 403.
+    """
+    version_ids: list[str] = []
+    seen: set[str] = set()
+    for entry in entries:
+        for bp in entry.get("berechtigtePersonen") or []:
+            vid = (bp.get("personGbVersionId") or {}).get("id")
+            if vid and vid not in seen:
+                seen.add(vid)
+                version_ids.append(vid)
+    if not version_ids:
+        return []
+
+    names: list[str] = []
+    for vid in version_ids:
+        try:
+            r = session.get(
+                PERSON_EP,
+                params={"versionId": vid, "historisiert": "OHNE_HIST"},
+                timeout=10,
+            )
+        except Exception as exc:
+            log.debug("VS person/master fetch failed: %s", exc)
+            return []
+        if r.status_code != 200:
+            log.info("VS person/master returned HTTP %d — public API does NOT "
+                     "expose owner names (confirmed). Falling back to placeholder.",
+                     r.status_code)
+            return []
+        try:
+            data = r.json()
+            versions = data.get("versions") or []
+            if not versions:
+                continue
+            v = versions[0]
+            parts = [str(v[k]) for k in ("vorname", "name") if v.get(k)]
+            if parts:
+                names.append(" ".join(parts).strip())
+        except Exception as exc:
+            log.debug("VS person/master parse error: %s", exc)
+            return []
+    return names
 
 
 # ── Main scanner ─────────────────────────────────────────────────────────────

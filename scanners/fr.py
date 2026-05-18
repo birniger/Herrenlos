@@ -46,6 +46,14 @@ NOT_FOUND_NEEDLE  = "INFORMATION INTROUVABLE"
 NOT_FOUND_MAX_B   = 800    # bytes; valid response is ~8–10 KB
 RATE_LIMIT_NEEDLE = "dépassement de la limite"
 QUERIES_PER_SESSION = 1    # safest: 1 query per session
+# Observed 2026-05-18: FR portal rate-limits session creation (~1 every 12s).
+# Even with QUERIES_PER_SESSION=1, ~27% of queries get session_exhausted on
+# the first attempt. The scanner retries once with a fresh session and
+# usually succeeds, but a steady-state pass rate of ~73% is normal.
+# Parcels that fail both attempts get stored with is_herrenlos=NULL and
+# error='session_exhausted'; the next scan run picks them up automatically
+# (skip_existing only skips rows where is_herrenlos IS NOT NULL).
+# 2-3 scan passes converge to ~100% coverage.
 
 
 # ── Parcel enumeration via swisstopo ─────────────────────────────────────────
