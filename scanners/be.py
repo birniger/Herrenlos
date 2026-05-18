@@ -47,7 +47,7 @@ import requests
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
-from scanners.utils import is_herrenlos_owner_text, annotate_herrenlos
+from scanners.utils import annotate_herrenlos
 
 log = logging.getLogger("BE")
 
