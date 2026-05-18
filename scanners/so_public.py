@@ -98,11 +98,18 @@ SO_GRID_STEP     = 200
 def _init_playwright():
     try:
         from playwright.sync_api import sync_playwright
+        # Support both old (stealth_sync) and new (Stealth class) playwright_stealth APIs.
+        stealth_fn = None
         try:
-            from playwright_stealth import stealth_sync   # type: ignore
+            from playwright_stealth import Stealth   # type: ignore  (>=1.3)
+            stealth_fn = lambda page: Stealth().apply_stealth_sync(page)
         except ImportError:
-            stealth_sync = None
-        return sync_playwright, stealth_sync
+            try:
+                from playwright_stealth import stealth_sync   # type: ignore  (<1.3)
+                stealth_fn = stealth_sync
+            except ImportError:
+                pass
+        return sync_playwright, stealth_fn
     except ImportError as e:
         raise RuntimeError(
             "SO scanner requires:  pip install playwright playwright-stealth"

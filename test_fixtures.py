@@ -114,25 +114,29 @@ CANTON_STATUS: dict[str, dict] = {
            "daily_limit": 100,  "rate_limit": "100 req/day/IP", "max_test_parcels": 11,
            "blocker": None,
            "needs": "paid residential proxies for full scan + port GE's proxy plumbing into scanners/sh.py (reads SH_PROXY_LIST) — currently not wired. Optional: verify scanner uses post-2024-09 endpoints (research agent flagged a new SH portal launch)."},
-    # BS — CORRECTED 2026-05-18 after obtaining a real API key and reading the
-    # live OpenAPI spec at https://api.geo.bs.ch/grundstueckinfo/v1/openapi.yaml:
+    # BS — DUAL-SCANNER ARCHITECTURE (updated 2026-05-19):
     # The BS public REST API exposes ONLY parcel METADATA (area, buildings,
-    # land covers). Owner data is NOT in any JSON endpoint — only behind the
-    # HTML viewer at /eigentum/{section}/{parcel} which is Keycloak +
-    # reCAPTCHA protected (same architecture as SO).
+    # land covers, type). Owner data is NOT in any JSON endpoint — only behind
+    # the HTML viewer at /eigentum/{section}/{parcel} which loads reCAPTCHA
+    # Enterprise then calls /eigentumsauskunftngeo/api/ with the token.
     #
-    # Consequences:
-    # - Type A herrenlos (Art. 664: not in Grundbuch) IS detectable via API
-    #   (parcel missing from RealEstates → herrenlos signal). Rare in practice
-    #   because BS is small and densely registered.
-    # - Type B herrenlos (Art. 964: dereliktion) is NOT detectable via API.
-    #   Would need a reCAPTCHA-solving scanner against the HTML viewer
-    #   (mirror of scanners/so_public.py — not built yet).
-    "BS": {"access": "free_key", "test_group": "rest", "ip_rotation": None,
-           "daily_limit": None, "rate_limit": "API: unlimited with personal key; owner-HTML viewer: reCAPTCHA-gated",
-           "max_test_parcels": 11,
-           "blocker": "BS API exposes parcel metadata only (NOT owner data); owner lookup needs reCAPTCHA-solving HTML scraper (not built)",
-           "needs": "build scanners/bs_public.py mirroring so_public.py — reCAPTCHA v3 against the /eigentum/{section}/{parcel} HTML viewer. The free API key is sufficient for the metadata-only Type A herrenlos check (Art. 664)."},
+    # TWO scanners together cover both herrenlos types:
+    #   scanners/bs.py        — metadata REST + BS_API_KEY. Detects Type A
+    #                           (Art. 664: not in Grundbuch). TIER A test only.
+    #   scanners/bs_public.py — Playwright + reCAPTCHA Enterprise against the
+    #                           HTML viewer. Extracts owner names + addresses.
+    #                           Detects Type A AND Type B (Art. 964: dereliktion).
+    #                           TIER B; used as default in SCANNER_IMPORTS.
+    #
+    # Rate limit on the HTML viewer: 10 queries/day/IP (hard cap displayed by
+    # the portal itself). Full ~7k-parcel BS scan needs paid residential proxies
+    # (same model as GR and SO). BS_PROXY_LIST in .env enables rotation in
+    # bs_public.scan().
+    "BS": {"access": "free_key", "test_group": "captcha_pow", "ip_rotation": "deferred",
+           "daily_limit": 10, "rate_limit": "HTML viewer: 10 req/day/IP (reCAPTCHA Enterprise); metadata API: unlimited with free key",
+           "max_test_parcels": 5,
+           "blocker": "10 req/day/IP hard cap on the BS HTML owner-viewer — full scan needs paid residential proxies",
+           "needs": "paid residential proxies (BS_PROXY_LIST in .env) — proxy rotation already wired in bs_public.scan(); BS_API_KEY required for section lookup"},
 
     # ── OCR-image CAPTCHA ────────────────────────────────────────────────────
     # BL: handwritten cursive image CAPTCHA defeats local OCR.
@@ -631,6 +635,13 @@ SCANNER_IMPORTS = {
     #   scanners.so_public  — NEW (2026-05-18): public reCAPTCHA-v3 path via geo.so.ch
     # The test framework points at the public one because it's testable without auth.
     "SO": "scanners.so_public",
+    # BS has TWO scanners:
+    #   scanners.bs         — metadata REST + BS_API_KEY. Detects Type A only.
+    #                         Used in TIER A (_run_tier_a_bs) for the fast REST check.
+    #   scanners.bs_public  — Playwright + reCAPTCHA Enterprise (2026-05-19).
+    #                         Extracts owner names + detects Type A AND Type B.
+    # TIER B points at the public one (the only one that returns owner names).
+    "BS": "scanners.bs_public",
 }
 
 
