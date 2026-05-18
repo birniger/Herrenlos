@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-18T18:44:40+00:00",
+  "generated_at": "2026-05-18T23:52:40+00:00",
   "count": 188,
   "parcels": [
     {
@@ -153,8 +153,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:24:41",
-      "lat": null,
-      "lng": null
+      "lat": 47.36777877807617,
+      "lng": 7.229925155639648
     },
     {
       "egrid": "CH770678554462",
@@ -167,8 +167,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:11:11",
-      "lat": null,
-      "lng": null
+      "lat": 47.372337341308594,
+      "lng": 7.235567569732666
     },
     {
       "egrid": "CH527854440642",
@@ -181,8 +181,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:11:18",
-      "lat": null,
-      "lng": null
+      "lat": 47.37263870239258,
+      "lng": 7.2361159324646
     },
     {
       "egrid": "CH655244780667",
@@ -195,8 +195,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:11:50",
-      "lat": null,
-      "lng": null
+      "lat": 47.37394332885742,
+      "lng": 7.235347747802734
     },
     {
       "egrid": "CH210610447868",
@@ -209,8 +209,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:09:02",
-      "lat": null,
-      "lng": null
+      "lat": 47.35011672973633,
+      "lng": 7.2176923751831055
     },
     {
       "egrid": "CH994477990679",
@@ -223,8 +223,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:30:42",
-      "lat": null,
-      "lng": null
+      "lat": 47.328643798828125,
+      "lng": 7.343931198120117
     },
     {
       "egrid": "CH170675584490",
@@ -237,8 +237,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:40:41",
-      "lat": null,
-      "lng": null
+      "lat": 47.327537536621094,
+      "lng": 7.343147277832031
     },
     {
       "egrid": "CH170679934446",
@@ -251,8 +251,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:38:05",
-      "lat": null,
-      "lng": null
+      "lat": 47.329254150390625,
+      "lng": 7.343080043792725
     },
     {
       "egrid": "CH207906314433",
@@ -265,8 +265,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:44:09",
-      "lat": null,
-      "lng": null
+      "lat": 47.329952239990234,
+      "lng": 7.343453407287598
     },
     {
       "egrid": "CH434479069930",
@@ -279,8 +279,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:30:33",
-      "lat": null,
-      "lng": null
+      "lat": 47.32661819458008,
+      "lng": 7.342363357543945
     },
     {
       "egrid": "CH858344770638",
@@ -293,8 +293,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:40:30",
-      "lat": null,
-      "lng": null
+      "lat": 47.327545166015625,
+      "lng": 7.342844009399414
     },
     {
       "egrid": "CH682844067933",
@@ -307,8 +307,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:55:50",
-      "lat": null,
-      "lng": null
+      "lat": 47.349605560302734,
+      "lng": 7.459692478179932
     },
     {
       "egrid": "CH994478650675",
@@ -321,8 +321,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:01:24",
-      "lat": null,
-      "lng": null
+      "lat": 47.34894943237305,
+      "lng": 7.450363636016846
     },
     {
       "egrid": "CH215894697765",
@@ -335,8 +335,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:54:22",
-      "lat": null,
-      "lng": null
+      "lat": 47.35004425048828,
+      "lng": 7.450074195861816
     },
     {
       "egrid": "CH153344780671",
@@ -349,8 +349,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:59:15",
-      "lat": null,
-      "lng": null
+      "lat": 47.34825134277344,
+      "lng": 7.448974132537842
     },
     {
       "egrid": "CH110656447876",
@@ -363,8 +363,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:12:17",
-      "lat": null,
-      "lng": null
+      "lat": 47.34099197387695,
+      "lng": 7.3795647621154785
     },
     {
       "egrid": "CH634477067801",
@@ -377,8 +377,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:00:32",
-      "lat": null,
-      "lng": null
+      "lat": 47.33599853515625,
+      "lng": 7.370872497558594
     },
     {
       "egrid": "CH836977589159",
@@ -391,8 +391,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:44:59",
-      "lat": null,
-      "lng": null
+      "lat": 47.337562561035156,
+      "lng": 7.378866672515869
     },
     {
       "egrid": "CH859169775830",
@@ -405,8 +405,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:59:31",
-      "lat": null,
-      "lng": null
+      "lat": 47.33759689331055,
+      "lng": 7.37845516204834
     },
     {
       "egrid": "CH334478066114",
@@ -419,8 +419,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:19:01",
-      "lat": null,
-      "lng": null
+      "lat": 47.36164855957031,
+      "lng": 7.390618801116943
     },
     {
       "egrid": "CH294478490670",
@@ -433,8 +433,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:26:32",
-      "lat": null,
-      "lng": null
+      "lat": 47.36252212524414,
+      "lng": 7.372135162353516
     },
     {
       "egrid": "CH810674447963",
@@ -447,8 +447,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:27:04",
-      "lat": null,
-      "lng": null
+      "lat": 47.362064361572266,
+      "lng": 7.3743062019348145
     },
     {
       "egrid": "CH194477620674",
@@ -461,8 +461,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:27:53",
-      "lat": null,
-      "lng": null
+      "lat": 47.36369323730469,
+      "lng": 7.374713897705078
     },
     {
       "egrid": "CH227729440608",
@@ -475,8 +475,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:23:15",
-      "lat": null,
-      "lng": null
+      "lat": 47.360504150390625,
+      "lng": 7.393580913543701
     },
     {
       "egrid": "CH357944780622",
@@ -489,8 +489,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:28:05",
-      "lat": null,
-      "lng": null
+      "lat": 47.362796783447266,
+      "lng": 7.375062465667725
     },
     {
       "egrid": "CH407706154467",
@@ -503,8 +503,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:28:15",
-      "lat": null,
-      "lng": null
+      "lat": 47.3626708984375,
+      "lng": 7.374574661254883
     },
     {
       "egrid": "CH470678504482",
@@ -517,8 +517,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:28:27",
-      "lat": null,
-      "lng": null
+      "lat": 47.36201095581055,
+      "lng": 7.375619411468506
     },
     {
       "egrid": "CH210613447742",
@@ -531,8 +531,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:29:12",
-      "lat": null,
-      "lng": null
+      "lat": 47.36143493652344,
+      "lng": 7.374956130981445
     },
     {
       "egrid": "CH827752440682",
@@ -545,8 +545,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:29:15",
-      "lat": null,
-      "lng": null
+      "lat": 47.361114501953125,
+      "lng": 7.374902725219727
     },
     {
       "egrid": "CH234477061605",
@@ -559,8 +559,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:29:31",
-      "lat": null,
-      "lng": null
+      "lat": 47.35986328125,
+      "lng": 7.375025749206543
     },
     {
       "egrid": "CH870677924423",
@@ -573,8 +573,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:29:45",
-      "lat": null,
-      "lng": null
+      "lat": 47.35960388183594,
+      "lng": 7.375529766082764
     },
     {
       "egrid": "CH934477065321",
@@ -587,8 +587,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:29:50",
-      "lat": null,
-      "lng": null
+      "lat": 47.358924865722656,
+      "lng": 7.37566614151001
     },
     {
       "egrid": "CH294479770674",
@@ -601,8 +601,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:33:41",
-      "lat": null,
-      "lng": null
+      "lat": 47.357051849365234,
+      "lng": 7.377316474914551
     },
     {
       "egrid": "CH857444790681",
@@ -615,8 +615,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:30:35",
-      "lat": null,
-      "lng": null
+      "lat": 47.36164093017578,
+      "lng": 7.37360143661499
     },
     {
       "egrid": "CH934477065915",
@@ -629,8 +629,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:30:40",
-      "lat": null,
-      "lng": null
+      "lat": 47.362030029296875,
+      "lng": 7.372560501098633
     },
     {
       "egrid": "CH383344067801",
@@ -643,8 +643,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:30:42",
-      "lat": null,
-      "lng": null
+      "lat": 47.36053466796875,
+      "lng": 7.372587203979492
     },
     {
       "egrid": "CH327919440610",
@@ -657,8 +657,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:37:04",
-      "lat": null,
-      "lng": null
+      "lat": 47.35991668701172,
+      "lng": 7.372714042663574
     },
     {
       "egrid": "CH253244770667",
@@ -671,8 +671,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:37:41",
-      "lat": null,
-      "lng": null
+      "lat": 47.363487243652344,
+      "lng": 7.376867771148682
     },
     {
       "egrid": "CH494479170689",
@@ -685,8 +685,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:40:00",
-      "lat": null,
-      "lng": null
+      "lat": 47.363250732421875,
+      "lng": 7.375201225280762
     },
     {
       "egrid": "CH210630447882",
@@ -699,8 +699,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:40:37",
-      "lat": null,
-      "lng": null
+      "lat": 47.36187744140625,
+      "lng": 7.381123065948486
     },
     {
       "egrid": "CH407806694472",
@@ -713,8 +713,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:40:42",
-      "lat": null,
-      "lng": null
+      "lat": 47.362178802490234,
+      "lng": 7.377068519592285
     },
     {
       "egrid": "CH656644780677",
@@ -727,8 +727,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:18:38",
-      "lat": null,
-      "lng": null
+      "lat": 47.35485076904297,
+      "lng": 7.379703998565674
     },
     {
       "egrid": "CH934478067587",
@@ -741,8 +741,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:31:01",
-      "lat": null,
-      "lng": null
+      "lat": 47.3618049621582,
+      "lng": 7.36896276473999
     },
     {
       "egrid": "CH734478067162",
@@ -755,8 +755,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:41:28",
-      "lat": null,
-      "lng": null
+      "lat": 47.36152648925781,
+      "lng": 7.371293544769287
     },
     {
       "egrid": "CH510628447994",
@@ -769,8 +769,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:41:42",
-      "lat": null,
-      "lng": null
+      "lat": 47.3616828918457,
+      "lng": 7.370846748352051
     },
     {
       "egrid": "CH894478880640",
@@ -783,8 +783,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:41:45",
-      "lat": null,
-      "lng": null
+      "lat": 47.36130905151367,
+      "lng": 7.37053108215332
     },
     {
       "egrid": "CH910680447972",
@@ -797,8 +797,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:41:49",
-      "lat": null,
-      "lng": null
+      "lat": 47.36091232299805,
+      "lng": 7.370462417602539
     },
     {
       "egrid": "CH267844067057",
@@ -811,8 +811,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:41:53",
-      "lat": null,
-      "lng": null
+      "lat": 47.3604736328125,
+      "lng": 7.370520114898682
     },
     {
       "egrid": "CH527718440605",
@@ -825,8 +825,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:41:55",
-      "lat": null,
-      "lng": null
+      "lat": 47.3601188659668,
+      "lng": 7.370584011077881
     },
     {
       "egrid": "CH234477064078",
@@ -839,8 +839,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:29:10",
-      "lat": null,
-      "lng": null
+      "lat": 47.36142349243164,
+      "lng": 7.36759090423584
     },
     {
       "egrid": "CH470679054414",
@@ -853,8 +853,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:14:00",
-      "lat": null,
-      "lng": null
+      "lat": 47.36259460449219,
+      "lng": 7.391186714172363
     },
     {
       "egrid": "CH794477190696",
@@ -867,8 +867,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:15:26",
-      "lat": null,
-      "lng": null
+      "lat": 47.361061096191406,
+      "lng": 7.389484882354736
     },
     {
       "egrid": "CH767744063447",
@@ -881,8 +881,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:45:37",
-      "lat": null,
-      "lng": null
+      "lat": 47.3628044128418,
+      "lng": 7.377137660980225
     },
     {
       "egrid": "CH883444067796",
@@ -895,8 +895,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:45:42",
-      "lat": null,
-      "lng": null
+      "lat": 47.363059997558594,
+      "lng": 7.376580715179443
     },
     {
       "egrid": "CH551544770636",
@@ -909,8 +909,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:45:50",
-      "lat": null,
-      "lng": null
+      "lat": 47.36267852783203,
+      "lng": 7.373050212860107
     },
     {
       "egrid": "CH434479067059",
@@ -923,8 +923,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:46:40",
-      "lat": null,
-      "lng": null
+      "lat": 47.36155700683594,
+      "lng": 7.372178554534912
     },
     {
       "egrid": "CH427763440622",
@@ -937,8 +937,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:16:44",
-      "lat": null,
-      "lng": null
+      "lat": 47.3626708984375,
+      "lng": 7.390496253967285
     },
     {
       "egrid": "CH153944790603",
@@ -951,8 +951,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:47:46",
-      "lat": null,
-      "lng": null
+      "lat": 47.36317825317383,
+      "lng": 7.371991157531738
     },
     {
       "egrid": "CH870675394406",
@@ -965,8 +965,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:48:20",
-      "lat": null,
-      "lng": null
+      "lat": 47.36201477050781,
+      "lng": 7.380572319030762
     },
     {
       "egrid": "CH170677204489",
@@ -979,8 +979,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:24:31",
-      "lat": null,
-      "lng": null
+      "lat": 47.36534118652344,
+      "lng": 7.3712334632873535
     },
     {
       "egrid": "CH467844066987",
@@ -993,8 +993,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:31:30",
-      "lat": null,
-      "lng": null
+      "lat": 47.35920715332031,
+      "lng": 7.371683120727539
     },
     {
       "egrid": "CH440644786937",
@@ -1007,8 +1007,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:31:33",
-      "lat": null,
-      "lng": null
+      "lat": 47.35934829711914,
+      "lng": 7.371850967407227
     },
     {
       "egrid": "CH394478300693",
@@ -1021,8 +1021,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:32:27",
-      "lat": null,
-      "lng": null
+      "lat": 47.3620491027832,
+      "lng": 7.37994384765625
     },
     {
       "egrid": "CH294478580643",
@@ -1035,8 +1035,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:24:41",
-      "lat": null,
-      "lng": null
+      "lat": 47.365421295166016,
+      "lng": 7.369809150695801
     },
     {
       "egrid": "CH670675254419",
@@ -1049,8 +1049,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:57:42",
-      "lat": null,
-      "lng": null
+      "lat": 47.333919525146484,
+      "lng": 7.320017337799072
     },
     {
       "egrid": "CH436977580686",
@@ -1063,8 +1063,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:48:47",
-      "lat": null,
-      "lng": null
+      "lat": 47.34335708618164,
+      "lng": 7.320132255554199
     },
     {
       "egrid": "CH450669775836",
@@ -1077,8 +1077,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:48:52",
-      "lat": null,
-      "lng": null
+      "lat": 47.34322738647461,
+      "lng": 7.320106029510498
     },
     {
       "egrid": "CH467769580687",
@@ -1091,8 +1091,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:49:04",
-      "lat": null,
-      "lng": null
+      "lat": 47.343177795410156,
+      "lng": 7.320127487182617
     },
     {
       "egrid": "CH550669775802",
@@ -1105,8 +1105,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:47:41",
-      "lat": null,
-      "lng": null
+      "lat": 47.34315872192383,
+      "lng": 7.320232391357422
     },
     {
       "egrid": "CH894478200650",
@@ -1119,8 +1119,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:54:36",
-      "lat": null,
-      "lng": null
+      "lat": 47.34213638305664,
+      "lng": 7.319467544555664
     },
     {
       "egrid": "CH740644773569",
@@ -1133,8 +1133,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:09:21",
-      "lat": null,
-      "lng": null
+      "lat": 47.368629455566406,
+      "lng": 7.33716344833374
     },
     {
       "egrid": "CH334477066717",
@@ -1147,8 +1147,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:23:23",
-      "lat": null,
-      "lng": null
+      "lat": 47.36397933959961,
+      "lng": 7.3449625968933105
     },
     {
       "egrid": "CH434477069552",
@@ -1161,8 +1161,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:19:48",
-      "lat": null,
-      "lng": null
+      "lat": 47.36833190917969,
+      "lng": 7.343255996704102
     },
     {
       "egrid": "CH940644788248",
@@ -1175,8 +1175,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:20:56",
-      "lat": null,
-      "lng": null
+      "lat": 47.356197357177734,
+      "lng": 7.350161552429199
     },
     {
       "egrid": "CH727894440602",
@@ -1189,8 +1189,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:15:48",
-      "lat": null,
-      "lng": null
+      "lat": 47.36556625366211,
+      "lng": 7.336974143981934
     },
     {
       "egrid": "CH840644788084",
@@ -1203,8 +1203,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:59:10",
-      "lat": null,
-      "lng": null
+      "lat": 47.37138748168945,
+      "lng": 7.340156078338623
     },
     {
       "egrid": "CH610605447874",
@@ -1217,8 +1217,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:07:23",
-      "lat": null,
-      "lng": null
+      "lat": 47.37519073486328,
+      "lng": 7.353545188903809
     },
     {
       "egrid": "CH789444067861",
@@ -1231,8 +1231,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:30:02",
-      "lat": null,
-      "lng": null
+      "lat": 47.370574951171875,
+      "lng": 7.340762138366699
     },
     {
       "egrid": "CH850944780693",
@@ -1245,8 +1245,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:25:02",
-      "lat": null,
-      "lng": null
+      "lat": 47.37070083618164,
+      "lng": 7.349906921386719
     },
     {
       "egrid": "CH907806234440",
@@ -1259,8 +1259,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:38:04",
-      "lat": null,
-      "lng": null
+      "lat": 47.37103271484375,
+      "lng": 7.34927225112915
     },
     {
       "egrid": "CH940644782310",
@@ -1273,8 +1273,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:42:17",
-      "lat": null,
-      "lng": null
+      "lat": 47.37106704711914,
+      "lng": 7.349618911743164
     },
     {
       "egrid": "CH910618447750",
@@ -1287,8 +1287,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:21:54",
-      "lat": null,
-      "lng": null
+      "lat": 47.363563537597656,
+      "lng": 7.341180324554443
     },
     {
       "egrid": "CH640644772615",
@@ -1301,8 +1301,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:31:08",
-      "lat": null,
-      "lng": null
+      "lat": 47.358192443847656,
+      "lng": 7.343019485473633
     },
     {
       "egrid": "CH194478730632",
@@ -1315,8 +1315,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:21:49",
-      "lat": null,
-      "lng": null
+      "lat": 47.37051773071289,
+      "lng": 7.354343414306641
     },
     {
       "egrid": "CH882344067705",
@@ -1329,8 +1329,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:02:57",
-      "lat": null,
-      "lng": null
+      "lat": 47.363731384277344,
+      "lng": 7.3513078689575195
     },
     {
       "egrid": "CH294477200669",
@@ -1343,8 +1343,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:07:58",
-      "lat": null,
-      "lng": null
+      "lat": 47.364986419677734,
+      "lng": 7.3524250984191895
     },
     {
       "egrid": "CH307806234450",
@@ -1357,8 +1357,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:13:50",
-      "lat": null,
-      "lng": null
+      "lat": 47.3661003112793,
+      "lng": 7.335219383239746
     },
     {
       "egrid": "CH170678364432",
@@ -1371,8 +1371,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:11:19",
-      "lat": null,
-      "lng": null
+      "lat": 47.36969757080078,
+      "lng": 7.350070476531982
     },
     {
       "egrid": "CH358944780643",
@@ -1385,8 +1385,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:37:42",
-      "lat": null,
-      "lng": null
+      "lat": 47.36500549316406,
+      "lng": 7.35753870010376
     },
     {
       "egrid": "CH334477061173",
@@ -1399,8 +1399,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:03:30",
-      "lat": null,
-      "lng": null
+      "lat": 47.3743896484375,
+      "lng": 7.351930141448975
     },
     {
       "egrid": "CH267844060921",
@@ -1413,8 +1413,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:34:24",
-      "lat": null,
-      "lng": null
+      "lat": 47.3585205078125,
+      "lng": 7.342787742614746
     },
     {
       "egrid": "CH970678014459",
@@ -1427,8 +1427,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:30:26",
-      "lat": null,
-      "lng": null
+      "lat": 47.36040115356445,
+      "lng": 7.348151683807373
     },
     {
       "egrid": "CH127724440687",
@@ -1441,8 +1441,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:21:42",
-      "lat": null,
-      "lng": null
+      "lat": 47.36912536621094,
+      "lng": 7.352853775024414
     },
     {
       "egrid": "CH670678664463",
@@ -1455,8 +1455,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:41:00",
-      "lat": null,
-      "lng": null
+      "lat": 47.374359130859375,
+      "lng": 7.358526706695557
     },
     {
       "egrid": "CH194478820605",
@@ -1469,8 +1469,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 13:47:25",
-      "lat": null,
-      "lng": null
+      "lat": 47.35306930541992,
+      "lng": 7.339962005615234
     },
     {
       "egrid": "CH586444067767",
@@ -1483,8 +1483,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:32:30",
-      "lat": null,
-      "lng": null
+      "lat": 47.368892669677734,
+      "lng": 7.352274417877197
     },
     {
       "egrid": "CH410663447709",
@@ -1497,8 +1497,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:05:59",
-      "lat": null,
-      "lng": null
+      "lat": 47.370906829833984,
+      "lng": 7.351583480834961
     },
     {
       "egrid": "CH850344780661",
@@ -1511,8 +1511,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:08:26",
-      "lat": null,
-      "lng": null
+      "lat": 47.36029815673828,
+      "lng": 7.349443435668945
     },
     {
       "egrid": "CH180744067892",
@@ -1525,8 +1525,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:39:35",
-      "lat": null,
-      "lng": null
+      "lat": 47.361724853515625,
+      "lng": 7.3617634773254395
     },
     {
       "egrid": "CH767844069358",
@@ -1539,8 +1539,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:40:15",
-      "lat": null,
-      "lng": null
+      "lat": 47.360435485839844,
+      "lng": 7.361696720123291
     },
     {
       "egrid": "CH585644067789",
@@ -1553,8 +1553,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:05:56",
-      "lat": null,
-      "lng": null
+      "lat": 47.37110137939453,
+      "lng": 7.352095127105713
     },
     {
       "egrid": "CH589744067947",
@@ -1567,8 +1567,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:03:57",
-      "lat": null,
-      "lng": null
+      "lat": 47.35718536376953,
+      "lng": 7.347492218017578
     },
     {
       "egrid": "CH110663447714",
@@ -1581,8 +1581,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:21:34",
-      "lat": null,
-      "lng": null
+      "lat": 47.368934631347656,
+      "lng": 7.3560590744018555
     },
     {
       "egrid": "CH140644772292",
@@ -1595,8 +1595,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:32:49",
-      "lat": null,
-      "lng": null
+      "lat": 47.36723709106445,
+      "lng": 7.335544109344482
     },
     {
       "egrid": "CH467744061175",
@@ -1609,8 +1609,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:32:40",
-      "lat": null,
-      "lng": null
+      "lat": 47.36733627319336,
+      "lng": 7.334981918334961
     },
     {
       "egrid": "CH694478040669",
@@ -1623,8 +1623,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:19:31",
-      "lat": null,
-      "lng": null
+      "lat": 47.36976623535156,
+      "lng": 7.357794761657715
     },
     {
       "egrid": "CH294478950629",
@@ -1637,8 +1637,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:39:44",
-      "lat": null,
-      "lng": null
+      "lat": 47.375152587890625,
+      "lng": 7.3593244552612305
     },
     {
       "egrid": "CH134478060442",
@@ -1651,8 +1651,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:40:02",
-      "lat": null,
-      "lng": null
+      "lat": 47.374698638916016,
+      "lng": 7.358544826507568
     },
     {
       "egrid": "CH494478040640",
@@ -1665,8 +1665,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:33:31",
-      "lat": null,
-      "lng": null
+      "lat": 47.37483215332031,
+      "lng": 7.359167098999023
     },
     {
       "egrid": "CH734479066856",
@@ -1679,8 +1679,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:03:42",
-      "lat": null,
-      "lng": null
+      "lat": 47.36941146850586,
+      "lng": 7.342192649841309
     },
     {
       "egrid": "CH694475380691",
@@ -1693,8 +1693,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:26:48",
-      "lat": null,
-      "lng": null
+      "lat": 47.370384216308594,
+      "lng": 7.340004920959473
     },
     {
       "egrid": "CH694471820692",
@@ -1707,8 +1707,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:28:57",
-      "lat": null,
-      "lng": null
+      "lat": 47.37010955810547,
+      "lng": 7.340585708618164
     },
     {
       "egrid": "CH967844069486",
@@ -1721,8 +1721,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:37:32",
-      "lat": null,
-      "lng": null
+      "lat": 47.37074661254883,
+      "lng": 7.353091716766357
     },
     {
       "egrid": "CH967544063730",
@@ -1735,8 +1735,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:33:01",
-      "lat": null,
-      "lng": null
+      "lat": 47.3567008972168,
+      "lng": 7.345704555511475
     },
     {
       "egrid": "CH170675374456",
@@ -1749,8 +1749,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:24:47",
-      "lat": null,
-      "lng": null
+      "lat": 47.35641098022461,
+      "lng": 7.345877170562744
     },
     {
       "egrid": "CH767544061028",
@@ -1763,8 +1763,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:04:03",
-      "lat": null,
-      "lng": null
+      "lat": 47.373924255371094,
+      "lng": 7.349371910095215
     },
     {
       "egrid": "CH870675104493",
@@ -1777,8 +1777,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:03:50",
-      "lat": null,
-      "lng": null
+      "lat": 47.37406921386719,
+      "lng": 7.349617004394531
     },
     {
       "egrid": "CH694475350603",
@@ -1791,8 +1791,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:02:15",
-      "lat": null,
-      "lng": null
+      "lat": 47.37443161010742,
+      "lng": 7.351390838623047
     },
     {
       "egrid": "CH610635447501",
@@ -1805,8 +1805,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:02:21",
-      "lat": null,
-      "lng": null
+      "lat": 47.374881744384766,
+      "lng": 7.352685928344727
     },
     {
       "egrid": "CH354544790664",
@@ -1819,8 +1819,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:35:37",
-      "lat": null,
-      "lng": null
+      "lat": 47.35708236694336,
+      "lng": 7.342235565185547
     },
     {
       "egrid": "CH134479061225",
@@ -1833,8 +1833,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:01:06",
-      "lat": null,
-      "lng": null
+      "lat": 47.36556625366211,
+      "lng": 7.338038921356201
     },
     {
       "egrid": "CH887744067702",
@@ -1847,8 +1847,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:18:08",
-      "lat": null,
-      "lng": null
+      "lat": 47.35884094238281,
+      "lng": 7.344252109527588
     },
     {
       "egrid": "CH607806964420",
@@ -1861,8 +1861,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:38:48",
-      "lat": null,
-      "lng": null
+      "lat": 47.36461639404297,
+      "lng": 7.355998516082764
     },
     {
       "egrid": "CH694478940690",
@@ -1875,8 +1875,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:38:58",
-      "lat": null,
-      "lng": null
+      "lat": 47.363582611083984,
+      "lng": 7.35623836517334
     },
     {
       "egrid": "CH327767440620",
@@ -1889,8 +1889,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:00:17",
-      "lat": null,
-      "lng": null
+      "lat": 47.357303619384766,
+      "lng": 7.349755764007568
     },
     {
       "egrid": "CH494477070640",
@@ -1903,8 +1903,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:31:52",
-      "lat": null,
-      "lng": null
+      "lat": 47.36773681640625,
+      "lng": 7.354656219482422
     },
     {
       "egrid": "CH151744700642",
@@ -1917,8 +1917,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:03:25",
-      "lat": null,
-      "lng": null
+      "lat": 47.37430953979492,
+      "lng": 7.3514275550842285
     },
     {
       "egrid": "CH770670324409",
@@ -1931,8 +1931,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:07:12",
-      "lat": null,
-      "lng": null
+      "lat": 47.37495422363281,
+      "lng": 7.3523125648498535
     },
     {
       "egrid": "CH707006324406",
@@ -1945,8 +1945,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:07:16",
-      "lat": null,
-      "lng": null
+      "lat": 47.37501907348633,
+      "lng": 7.352838516235352
     },
     {
       "egrid": "CH770678934445",
@@ -1959,8 +1959,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:38:39",
-      "lat": null,
-      "lng": null
+      "lat": 47.36381912231445,
+      "lng": 7.355660915374756
     },
     {
       "egrid": "CH667044063179",
@@ -1973,8 +1973,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:04:53",
-      "lat": null,
-      "lng": null
+      "lat": 47.37518310546875,
+      "lng": 7.353151321411133
     },
     {
       "egrid": "CH910641447737",
@@ -1987,8 +1987,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:29:44",
-      "lat": null,
-      "lng": null
+      "lat": 47.36717987060547,
+      "lng": 7.334198951721191
     },
     {
       "egrid": "CH144536777132",
@@ -2001,8 +2001,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:17:32",
-      "lat": null,
-      "lng": null
+      "lat": 47.356868743896484,
+      "lng": 7.348452568054199
     },
     {
       "egrid": "CH157136774551",
@@ -2015,8 +2015,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:17:35",
-      "lat": null,
-      "lng": null
+      "lat": 47.35691452026367,
+      "lng": 7.348623275756836
     },
     {
       "egrid": "CH274577713621",
@@ -2029,8 +2029,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 13:48:57",
-      "lat": null,
-      "lng": null
+      "lat": 47.37563705444336,
+      "lng": 7.3571343421936035
     },
     {
       "egrid": "CH293677714593",
@@ -2043,8 +2043,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 13:48:54",
-      "lat": null,
-      "lng": null
+      "lat": 47.376068115234375,
+      "lng": 7.359297752380371
     },
     {
       "egrid": "CH207745713612",
@@ -2057,8 +2057,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:09:06",
-      "lat": null,
-      "lng": null
+      "lat": 47.36883544921875,
+      "lng": 7.344122886657715
     },
     {
       "egrid": "CH227774364573",
@@ -2071,8 +2071,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:30:53",
-      "lat": null,
-      "lng": null
+      "lat": 47.36582565307617,
+      "lng": 7.339466571807861
     },
     {
       "egrid": "CH444536777424",
@@ -2085,8 +2085,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:17:20",
-      "lat": null,
-      "lng": null
+      "lat": 47.36053466796875,
+      "lng": 7.347354888916016
     },
     {
       "egrid": "CH457436774562",
@@ -2099,8 +2099,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:30:36",
-      "lat": null,
-      "lng": null
+      "lat": 47.360321044921875,
+      "lng": 7.3473615646362305
     },
     {
       "egrid": "CH593677744579",
@@ -2113,8 +2113,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:26:13",
-      "lat": null,
-      "lng": null
+      "lat": 47.3687858581543,
+      "lng": 7.358959197998047
     },
     {
       "egrid": "CH557436774528",
@@ -2127,8 +2127,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:32:07",
-      "lat": null,
-      "lng": null
+      "lat": 47.36865997314453,
+      "lng": 7.357219696044922
     },
     {
       "egrid": "CH567736457430",
@@ -2141,8 +2141,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:31:33",
-      "lat": null,
-      "lng": null
+      "lat": 47.3680419921875,
+      "lng": 7.356245040893555
     },
     {
       "egrid": "CH607745743661",
@@ -2155,8 +2155,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:18:42",
-      "lat": null,
-      "lng": null
+      "lat": 47.36813735961914,
+      "lng": 7.356773853302002
     },
     {
       "egrid": "CH644536777453",
@@ -2169,8 +2169,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:18:39",
-      "lat": null,
-      "lng": null
+      "lat": 47.366661071777344,
+      "lng": 7.352365970611572
     },
     {
       "egrid": "CH657436774591",
@@ -2183,8 +2183,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:19:35",
-      "lat": null,
-      "lng": null
+      "lat": 47.36981964111328,
+      "lng": 7.358565330505371
     },
     {
       "egrid": "CH393677754547",
@@ -2197,8 +2197,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:12:13",
-      "lat": null,
-      "lng": null
+      "lat": 47.363487243652344,
+      "lng": 7.3410325050354
     },
     {
       "egrid": "CH333677457511",
@@ -2211,8 +2211,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:22:43",
-      "lat": null,
-      "lng": null
+      "lat": 47.367984771728516,
+      "lng": 7.344876766204834
     },
     {
       "egrid": "CH767736457657",
@@ -2225,8 +2225,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:22:18",
-      "lat": null,
-      "lng": null
+      "lat": 47.36655807495117,
+      "lng": 7.3358588218688965
     },
     {
       "egrid": "CH544536777685",
@@ -2239,8 +2239,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:24:34",
-      "lat": null,
-      "lng": null
+      "lat": 47.368202209472656,
+      "lng": 7.358298301696777
     },
     {
       "egrid": "CH488736457717",
@@ -2253,8 +2253,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:31:58",
-      "lat": null,
-      "lng": null
+      "lat": 47.36855697631836,
+      "lng": 7.356595039367676
     },
     {
       "egrid": "CH493677874574",
@@ -2267,8 +2267,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:31:55",
-      "lat": null,
-      "lng": null
+      "lat": 47.36848068237305,
+      "lng": 7.356048583984375
     },
     {
       "egrid": "CH444536778711",
@@ -2281,8 +2281,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:26:17",
-      "lat": null,
-      "lng": null
+      "lat": 47.36832046508789,
+      "lng": 7.358846664428711
     },
     {
       "egrid": "CH244536778878",
@@ -2295,8 +2295,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:32:21",
-      "lat": null,
-      "lng": null
+      "lat": 47.35837173461914,
+      "lng": 7.3433427810668945
     },
     {
       "egrid": "CH314588367750",
@@ -2309,8 +2309,8 @@
       "herrenlos_type": "not_in_grundbuch",
       "claim_possible": 0,
       "scanned_at": "2026-05-18 13:50:01",
-      "lat": null,
-      "lng": null
+      "lat": 47.350181579589844,
+      "lng": 7.338551998138428
     },
     {
       "egrid": "CH407745883687",
@@ -2323,8 +2323,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 13:49:46",
-      "lat": null,
-      "lng": null
+      "lat": 47.35407257080078,
+      "lng": 7.342065334320068
     },
     {
       "egrid": "CH827893440674",
@@ -2337,8 +2337,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 15:59:45",
-      "lat": null,
-      "lng": null
+      "lat": 47.36320114135742,
+      "lng": 7.353336811065674
     },
     {
       "egrid": "CH494477290671",
@@ -2351,8 +2351,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:04:08",
-      "lat": null,
-      "lng": null
+      "lat": 47.36320114135742,
+      "lng": 7.349031448364258
     },
     {
       "egrid": "CH210609447778",
@@ -2365,8 +2365,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:09:03",
-      "lat": null,
-      "lng": null
+      "lat": 47.368770599365234,
+      "lng": 7.3436079025268555
     },
     {
       "egrid": "CH527766440658",
@@ -2379,8 +2379,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 16:22:51",
-      "lat": null,
-      "lng": null
+      "lat": 47.366249084472656,
+      "lng": 7.347480773925781
     },
     {
       "egrid": "CH594470100660",
@@ -2393,8 +2393,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:07:11",
-      "lat": null,
-      "lng": null
+      "lat": 47.359764099121094,
+      "lng": 6.915290832519531
     },
     {
       "egrid": "CH181569587778",
@@ -2407,8 +2407,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:03:58",
-      "lat": null,
-      "lng": null
+      "lat": 47.33607482910156,
+      "lng": 7.206201553344727
     },
     {
       "egrid": "CH910656447402",
@@ -2421,8 +2421,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 17:59:55",
-      "lat": null,
-      "lng": null
+      "lat": 47.266178131103516,
+      "lng": 7.109139919281006
     },
     {
       "egrid": "CH270674024439",
@@ -2435,8 +2435,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 18:06:22",
-      "lat": null,
-      "lng": null
+      "lat": 47.2790641784668,
+      "lng": 7.151647090911865
     },
     {
       "egrid": "CH910606447464",
@@ -2449,8 +2449,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 17:52:08",
-      "lat": null,
-      "lng": null
+      "lat": 47.27915954589844,
+      "lng": 7.159605979919434
     },
     {
       "egrid": "CH307406474486",
@@ -2463,8 +2463,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 18:03:26",
-      "lat": null,
-      "lng": null
+      "lat": 47.278892517089844,
+      "lng": 7.133513450622559
     },
     {
       "egrid": "CH851044740678",
@@ -2477,8 +2477,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 17:52:18",
-      "lat": null,
-      "lng": null
+      "lat": 47.28871154785156,
+      "lng": 7.11513614654541
     },
     {
       "egrid": "CH180444067579",
@@ -2491,8 +2491,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 18:06:06",
-      "lat": null,
-      "lng": null
+      "lat": 47.2791748046875,
+      "lng": 7.150797367095947
     },
     {
       "egrid": "CH144913771491",
@@ -2505,8 +2505,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 18:09:10",
-      "lat": null,
-      "lng": null
+      "lat": 47.27585220336914,
+      "lng": 7.129421234130859
     },
     {
       "egrid": "CH340644798255",
@@ -2519,8 +2519,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 13:52:31",
-      "lat": null,
-      "lng": null
+      "lat": 47.210514068603516,
+      "lng": 7.016618728637695
     },
     {
       "egrid": "CH140644746063",
@@ -2533,8 +2533,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 17:39:53",
-      "lat": null,
-      "lng": null
+      "lat": 47.26642608642578,
+      "lng": 7.1324849128723145
     },
     {
       "egrid": "CH173502504683",
@@ -2547,8 +2547,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:02:11",
-      "lat": null,
-      "lng": null
+      "lat": 47.27857208251953,
+      "lng": 7.359278202056885
     },
     {
       "egrid": "CH907906404459",
@@ -2561,8 +2561,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 17:14:06",
-      "lat": null,
-      "lng": null
+      "lat": 47.407249450683594,
+      "lng": 7.292138576507568
     },
     {
       "egrid": "CH194471270639",
@@ -2575,8 +2575,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 13:59:31",
-      "lat": null,
-      "lng": null
+      "lat": 47.41032028198242,
+      "lng": 7.067907810211182
     },
     {
       "egrid": "CH907796928972",
@@ -2589,8 +2589,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:01:11",
-      "lat": null,
-      "lng": null
+      "lat": 47.418521881103516,
+      "lng": 7.089273929595947
     },
     {
       "egrid": "CH384044067509",
@@ -2603,8 +2603,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 17:19:07",
-      "lat": null,
-      "lng": null
+      "lat": 47.339481353759766,
+      "lng": 7.336828231811523
     },
     {
       "egrid": "CH294474640661",
@@ -2617,8 +2617,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 13:54:17",
-      "lat": null,
-      "lng": null
+      "lat": 47.250789642333984,
+      "lng": 7.000667572021484
     },
     {
       "egrid": "CH867944067020",
@@ -2631,8 +2631,8 @@
       "herrenlos_type": "dereliktion",
       "claim_possible": null,
       "scanned_at": "2026-05-18 14:04:59",
-      "lat": null,
-      "lng": null
+      "lat": 47.350685119628906,
+      "lng": 7.418818473815918
     }
   ]
 }

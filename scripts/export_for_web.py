@@ -209,16 +209,14 @@ def build_herrenlos(coords_cache: dict) -> dict:
             if egrid in coords_cache:
                 coords = coords_cache[egrid]
             else:
-                # Be polite — at most 10 fresh lookups per export run
-                if new_lookups < 10:
-                    looked = _lookup_wgs84(egrid)
-                    if looked:
-                        coords = list(looked)
-                        coords_cache[egrid] = coords
-                    else:
-                        coords_cache[egrid] = None
-                    new_lookups += 1
-                    time.sleep(0.2)
+                looked = _lookup_wgs84(egrid)
+                if looked:
+                    coords = list(looked)
+                    coords_cache[egrid] = coords
+                else:
+                    coords_cache[egrid] = None
+                new_lookups += 1
+                time.sleep(0.2)   # polite to swisstopo (~5 req/s)
 
         parcels.append({
             "egrid":           egrid,

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-18T18:44:35+00:00",
+  "generated_at": "2026-05-18T23:51:30+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -37,8 +37,8 @@
       "estimated_total": 7000,
       "last_scan_at": null,
       "access": "free_key",
-      "test_group": "rest",
-      "rate_limit": "Unlimited with personal API key"
+      "test_group": "captcha_pow",
+      "rate_limit": "HTML viewer: 10 req/day/IP (reCAPTCHA Enterprise); metadata API: unlimited with free key"
     },
     {
       "canton": "FR",
