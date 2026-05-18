@@ -29,6 +29,8 @@ from test_fixtures import CANTON_STATUS                              # noqa: E40
 DATA_DIR        = PROJECT_ROOT / "docs" / "data"
 PROGRESS_JSON   = DATA_DIR / "progress.json"
 HERRENLOS_JSON  = DATA_DIR / "herrenlos.json"
+HERRENLOS_GEOJSON = DATA_DIR / "herrenlos.geojson"   # opens in QGIS / Mapbox / any GIS tool
+HERRENLOS_CSV   = DATA_DIR / "herrenlos.csv"          # opens in Excel / Numbers / pandas
 COORDS_CACHE    = DATA_DIR / "coords_cache.json"
 
 # Federal swisstopo cadastral parcel identify endpoint — returns geometry.
@@ -259,6 +261,39 @@ def main():
     geocoded = sum(1 for p in herrenlos["parcels"] if p["lat"])
     print(f"Wrote {HERRENLOS_JSON.relative_to(PROJECT_ROOT)}  "
           f"({herrenlos['count']} herrenlos parcels, {geocoded} geocoded)")
+
+    # GeoJSON — drop into QGIS / Mapbox / any GIS tool
+    features = []
+    for p in herrenlos["parcels"]:
+        if p["lat"] is None or p["lng"] is None:
+            continue
+        features.append({
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [p["lng"], p["lat"]]},
+            "properties": {k: p[k] for k in p if k not in ("lat", "lng")},
+        })
+    geojson = {
+        "type": "FeatureCollection",
+        "generated_at": herrenlos["generated_at"],
+        "features": features,
+    }
+    HERRENLOS_GEOJSON.write_text(json.dumps(geojson, indent=2))
+    print(f"Wrote {HERRENLOS_GEOJSON.relative_to(PROJECT_ROOT)}  "
+          f"({len(features)} features)")
+
+    # CSV — Excel / Numbers / pandas / anything that reads tabular
+    import csv as _csv
+    csv_cols = ["canton", "commune", "bfs_nr", "parcel_nr", "egrid",
+                "owner", "owner_address", "herrenlos_type", "claim_possible",
+                "lat", "lng", "scanned_at"]
+    with HERRENLOS_CSV.open("w", newline="", encoding="utf-8") as f:
+        w = _csv.DictWriter(f, fieldnames=csv_cols, extrasaction="ignore")
+        w.writeheader()
+        for p in herrenlos["parcels"]:
+            w.writerow(p)
+    print(f"Wrote {HERRENLOS_CSV.relative_to(PROJECT_ROOT)}  "
+          f"({herrenlos['count']} rows)")
+
     print(f"Wrote {COORDS_CACHE.relative_to(PROJECT_ROOT)}  "
           f"({len(coords_cache)} cached lookups)")
 
