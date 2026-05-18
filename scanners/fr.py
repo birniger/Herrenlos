@@ -275,14 +275,19 @@ def scan(communes: list[str] | None = None,
     else:
         wanted_bfs = None
 
-    # Enumerate real cadaster parcels — use DB cache if available (2.5h one-time cost)
+    # Enumerate real cadaster parcels — use DB cache if available (2.5h one-time cost).
+    # Threshold of 100: test-seeded entries (5–11) are not a real enumeration.
+    # FR has ~80k parcels; any genuine cache will be >> 100.
     with get_conn() as conn:
         cached = enum_cached(conn, "FR")
-    if cached:
+    if cached and len(cached) >= 100:
         log.info("Using cached FR parcel list (%d parcels)", len(cached))
         raw_parcels = cached
     else:
-        log.info("No cache found — enumerating real FR parcels via swisstopo grid (~2.5h) …")
+        if cached:
+            log.info("FR cache has only %d entries (test seeds) — re-enumerating …", len(cached))
+        else:
+            log.info("No cache found — enumerating real FR parcels via swisstopo grid (~2.5h) …")
         raw_parcels = enumerate_parcels_swisstopo()
         with get_conn() as conn:
             store_enum(conn, "FR", raw_parcels)

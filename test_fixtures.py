@@ -585,7 +585,9 @@ def _run_tier_a_bs() -> list[dict]:
     api_key = os.environ.get("BS_API_KEY", "").strip()
     if not api_key or api_key == "YOUR_FREE_KEY_HERE":
         return [{"label": "BS REST smoke", "tier": "A", "canton": "BS", "group": "rest",
-                 "pass": None, "reason": status["blocker"], "needs": status["needs"]}]
+                 "pass": None,
+                 "reason": "BS_API_KEY not set — export BS_API_KEY=<key> or add to .env",
+                 "needs": "free key from https://api.geo.bs.ch/"}]
 
     with get_conn() as conn:
         cached = enum_cached(conn, "BS")

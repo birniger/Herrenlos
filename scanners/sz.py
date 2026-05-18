@@ -422,11 +422,16 @@ def scan(limit: int | None = None,
 
     with get_conn() as conn:
         cached = enum_cached(conn, "SZ")
-    if cached:
+    # Threshold of 50: test-seeded entries (5) are not a real enumeration.
+    # SZ has ~18k parcels; any genuine cache will be >> 50.
+    if cached and len(cached) >= 50:
         log.info("Using cached SZ parcel list (%d parcels)", len(cached))
         parcels = cached
     else:
-        log.info("No cache — running swisstopo grid scan …")
+        if cached:
+            log.info("SZ cache has only %d entries (test seeds) — re-enumerating …", len(cached))
+        else:
+            log.info("No cache — running swisstopo grid scan …")
         parcels = enumerate_parcels_swisstopo()
         with get_conn() as conn:
             store_enum(conn, "SZ", parcels)

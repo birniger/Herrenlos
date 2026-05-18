@@ -111,7 +111,20 @@ def cmd_so(args):
 
 
 def cmd_bs(args):
+    # scanners.bs — metadata REST only (no Playwright). Detects Type A herrenlos
+    # (not in Grundbuch). Works from any IP including GitHub Actions.
+    # For owner names + Type B, use:  python main.py bs-public
     from scanners.bs import scan
+    scan(limit=args.limit, skip_existing=not args.rescan)
+
+
+def cmd_bs_public(args):
+    # scanners.bs_public — Playwright + reCAPTCHA Enterprise. Extracts owner names
+    # and detects both Type A and Type B herrenlos. Requires:
+    #   pip install playwright playwright-stealth && playwright install chromium
+    #   BS_API_KEY in .env (for section lookup)
+    # Rate limit: 10/day/IP — set BS_PROXY_LIST for residential proxy rotation.
+    from scanners.bs_public import scan
     scan(limit=args.limit, skip_existing=not args.rescan)
 
 
@@ -392,7 +405,7 @@ def main():
     p_test.add_argument("--seed", action="store_true",
                         help="Seed parcel_enum with one fixture parcel per canton, then exit")
 
-    for canton in ("ur", "fr", "so", "bs", "gr", "bl", "be", "sh", "ju", "vs", "ne", "sz", "ar", "ai",
+    for canton in ("ur", "fr", "so", "bs", "bs-public", "gr", "bl", "be", "sh", "ju", "vs", "ne", "sz", "ar", "ai",
                    "ag", "tg", "sg", "zg", "gl", "nw", "ow", "ti", "vd", "ge", "lu"):
         p = sub.add_parser(canton, help=f"Scan canton {canton.upper()}")
         p.add_argument("--limit",  type=int, default=None,
@@ -413,6 +426,7 @@ def main():
         "fr":        cmd_fr,
         "so":        cmd_so,
         "bs":        cmd_bs,
+        "bs-public": cmd_bs_public,
         "gr":        cmd_gr,
         "bl":        cmd_bl,
         "be":        cmd_be,
