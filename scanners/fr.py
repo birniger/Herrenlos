@@ -336,8 +336,11 @@ def scan(communes: list[str] | None = None,
                 result = check_owner(session, xv1, selcom, pnr)
                 queries_this_session += 1
 
+            # Carry the EGRID through from the enum row (FR scanner doesn't
+            # rediscover it from the portal response — but the cantonal WFS
+            # has it; we have it cached in parcel_enum).
             upsert_parcel(conn, {
-                "egrid":       None,
+                "egrid":       p.get("egrid"),
                 "canton":      "FR",
                 "commune":     commune_label,
                 "bfs_nr":      bfs,
