@@ -47,7 +47,7 @@ import requests
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
-from scanners.utils import annotate_herrenlos
+from scanners.utils import is_herrenlos_owner_text, annotate_herrenlos
 
 log = logging.getLogger("BE")
 
@@ -586,7 +586,15 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
             }
 
         # ── Step 3: resolve owner name via person/master ──────────────────────
+        # Three outcomes possible per person:
+        #   real name     → "Burgergemeinde Bern", "Zoratti Stefano", …  → has owner
+        #   sentinel name → "herrenlos", "vakant", "sans propriétaire"   → herrenlos signal
+        #   None          → person/master HTTP error or empty record     → unknown
+        # We treat the parcel as herrenlos ONLY if EVERY resolved entry was
+        # a sentinel AND no resolution failed (network errors aren't a herrenlos signal).
         owner_names: list[str] = []
+        sentinel_seen = False
+        resolution_failed = False
         for entry in entries[:3]:   # usually 1 entry (Alleineigentum/Miteigentum)
             for person in (entry.get("berechtigtePersonen") or [])[:5]:
                 # personGbVersionId may be a plain string or {"id": "..."}
@@ -598,19 +606,51 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                 if not vid:
                     continue
                 name = _resolve_person_name(session, vid)
+                if name is None:
+                    resolution_failed = True
+                    continue
+                if is_herrenlos_owner_text(name):
+                    sentinel_seen = True
+                    continue
                 if name and name not in owner_names:
                     owner_names.append(name)
 
-        owner_str = "; ".join(owner_names) if owner_names else "registered"
+        if owner_names:
+            # At least one real name — parcel has an owner
+            return {
+                "owner":          "; ".join(owner_names),
+                "owner_address":  None,
+                "is_herrenlos":   0,
+                "herrenlos_type": None,
+                "claim_possible": None,
+                "raw_response":   None,
+                "error":          None,
+            }
 
+        if sentinel_seen and not resolution_failed:
+            # Every resolved name was a sentinel string ("herrenlos" etc.) and
+            # no transport errors clouded the picture — genuine herrenlos.
+            return {
+                "owner":          None,
+                "owner_address":  None,
+                "is_herrenlos":   1,
+                "herrenlos_type": "dereliktion",
+                "claim_possible": None,   # BE EG ZGB consultation 2026 — see project memory
+                "raw_response":   None,
+                "error":          None,
+            }
+
+        # Got entries from API but couldn't extract any usable name — keep the
+        # pre-existing "registered" placeholder behaviour. is_herrenlos=0 because
+        # the API DID return ownership entries; we just couldn't read the names.
         return {
-            "owner":          owner_str,
+            "owner":          "registered",
             "owner_address":  None,
             "is_herrenlos":   0,
             "herrenlos_type": None,
             "claim_possible": None,
             "raw_response":   None,
-            "error":          None,
+            "error":          "name_resolution_failed" if resolution_failed else None,
         }
 
     except Exception as exc:
