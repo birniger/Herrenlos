@@ -48,11 +48,24 @@
   }
   header .meta {
     font-size: 12px; color: var(--muted); display: flex; align-items: center;
-    gap: 12px;
+    gap: 12px; flex-wrap: wrap;
   }
   header .meta .dot {
     width: 8px; height: 8px; border-radius: 50%; background: var(--ok);
     box-shadow: 0 0 0 3px rgba(22,163,74,.15);
+  }
+  header .meta .dot.scanning {
+    background: var(--accent); animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,.5); }
+    50%      { box-shadow: 0 0 0 6px rgba(37,99,235,0); }
+  }
+  .scan-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--accent); color: white; padding: 2px 8px;
+    border-radius: 999px; font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
   }
 
   /* ── Main layout ───────────────────────────────────────────────────────── */
@@ -215,7 +228,8 @@
     <div class="sub">Switzerland's ownerless parcels — live scan + map</div>
   </div>
   <div class="meta">
-    <span class="dot" title="data is live"></span>
+    <span id="scan-status"></span>
+    <span class="dot" id="status-dot" title="data is live"></span>
     <span id="last-update">loading…</span>
   </div>
 </header>
@@ -492,6 +506,86 @@
   cantonSel.addEventListener("change", applyFilters);
   document.getElementById("filter-type").addEventListener("change", applyFilters);
   applyFilters();
+
+  /* ── Live scan status from GitHub Actions API ─────────────────────────── */
+  /*                                                                         */
+  /* Polls the public GitHub Actions API every 90s — 40 req/hour, comfortably */
+  /* under the 60/hour anonymous limit (shared with all viewers on same IP).   */
+  /* Shows a pulsing "Scanning <canton>" badge while                            */
+  /* a scan run is in progress, and auto-refetches the local JSON the       */
+  /* moment a scan transitions in_progress → completed (so you see new data */
+  /* land without manually reloading).                                       */
+  const GH_API = "https://api.github.com/repos/birniger/Herrenlos/actions/workflows/scan.yml/runs?per_page=3";
+  let lastScanRunId = null;
+
+  async function pollScanStatus() {
+    let runs;
+    try {
+      const r = await fetch(GH_API, { cache: "no-store" });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const d = await r.json();
+      runs = d.workflow_runs || [];
+    } catch (e) {
+      // Silent — rate-limit or network blip
+      return;
+    }
+
+    const active = runs.find(r => r.status === "in_progress" || r.status === "queued");
+    const badgeEl = document.getElementById("scan-status");
+    const dotEl   = document.getElementById("status-dot");
+
+    if (active) {
+      // Compute elapsed since the run actually started executing
+      const start = new Date(active.run_started_at || active.created_at);
+      const sec = Math.floor((Date.now() - start.getTime()) / 1000);
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const elapsed = h > 0 ? `${h}h ${m}m` : `${m}m`;
+      const canton = (active.display_title || "").match(/scan: (\w+)/)?.[1]?.toUpperCase()
+                   || active.name || "canton";
+      const label = active.status === "queued"
+                     ? `⏳ Scan queued`
+                     : `🔄 Scanning ${canton} · ${elapsed}`;
+      badgeEl.innerHTML = `<a href="${active.html_url}" target="_blank" rel="noopener" style="text-decoration:none">
+                            <span class="scan-badge">${label}</span>
+                          </a>`;
+      dotEl.classList.add("scanning");
+      dotEl.title = "Scan running on GitHub Actions";
+      lastScanRunId = active.id;
+    } else {
+      // No active run. If we previously saw one running and it's now done,
+      // refetch the JSON so the dashboard shows the fresh data.
+      if (lastScanRunId !== null) {
+        const completed = runs.find(r => r.id === lastScanRunId && r.status === "completed");
+        if (completed) {
+          flashRefresh(completed.conclusion);
+          lastScanRunId = null;
+          // Re-load the page logic with fresh data
+          location.reload();
+          return;
+        }
+      }
+      badgeEl.innerHTML = "";
+      dotEl.classList.remove("scanning");
+      dotEl.title = "Data is live";
+    }
+  }
+
+  function flashRefresh(conclusion) {
+    const c = conclusion === "success" ? "var(--ok)" : "var(--warn)";
+    const msg = conclusion === "success" ? "Scan completed — refreshing data…"
+                                          : `Scan ${conclusion} — refreshing data…`;
+    const overlay = document.createElement("div");
+    overlay.style.cssText = `position:fixed;top:60px;left:50%;transform:translateX(-50%);
+      z-index:10000;background:${c};color:white;padding:10px 18px;border-radius:8px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.2);font:600 13px var(--font)`;
+    overlay.textContent = msg;
+    document.body.appendChild(overlay);
+  }
+
+  // Initial poll + every 90s (40/hour, well under unauth limit).
+  pollScanStatus();
+  setInterval(pollScanStatus, 90_000);
 })();
 </script>
 </body>
