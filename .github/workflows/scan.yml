@@ -1,0 +1,109 @@
+# GitHub Actions cloud scanner.
+#
+# Runs every 6 hours: picks the canton with the largest enumerated-vs-scanned
+# gap, scans up to ~5h45m worth of parcels (under the 6h hard job limit),
+# commits the updated herrenlos.db + JSON exports back to the repo.
+#
+# Public repo: unlimited minutes. The repo IS the synced database.
+#
+# Only includes cantons that work from a GitHub Actions datacenter IP:
+#   BS, UR, JU, SZ, FR  (no rate limit gates / no Imperva / no Google reCAPTCHA)
+# GE, SO, GR, SH, NE all fail from datacenter IPs — run those on residential
+# proxies or your laptop instead.
+# BE, VS need interactive logins — phase 2.
+
+name: scan
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"      # every 6 hours
+  workflow_dispatch:
+    inputs:
+      canton:
+        description: "Canton to scan (lower-case). Leave empty for auto-pick."
+        required: false
+        default: ""
+
+# Don't run two scans in parallel — they would both want to commit the DB.
+concurrency:
+  group: scanner
+  cancel-in-progress: false
+
+permissions:
+  contents: write    # we git push commits back
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350      # 5h50m — fits inside GitHub Actions' 6h hard limit
+    env:
+      # Cantons that work from a datacenter IP. Order is the round-robin tie-break.
+      ELIGIBLE_CANTONS: "bs ur ju sz fr"
+      # Optional: BS needs a free API key (one-time registration at api.geo.bs.ch).
+      # Add it as a repo secret named BS_API_KEY; the workflow forwards it.
+      BS_API_KEY: ${{ secrets.BS_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: "pip" }
+
+      - name: Install scanner deps (no Playwright needed for eligible cantons)
+        run: |
+          pip install --upgrade pip
+          pip install requests beautifulsoup4 lxml ddddocr pillow numpy
+
+      - name: Initialise database (if not committed yet)
+        run: python -c "from db import init_db; init_db()"
+
+      - name: Pick the canton needing work most
+        id: pick
+        run: |
+          set -e
+          INPUT="${{ github.event.inputs.canton }}"
+          if [ -n "$INPUT" ]; then
+            CANTON="$INPUT"
+            echo "Picked manually: $CANTON"
+          else
+            CANTON=$(python scripts/pick_canton.py)
+            echo "Picked automatically: $CANTON"
+          fi
+          echo "canton=$CANTON" >> "$GITHUB_OUTPUT"
+
+      - name: Run scan
+        env:
+          CANTON: ${{ steps.pick.outputs.canton }}
+        run: |
+          set -e
+          echo "Scanning $CANTON …"
+          # --limit caps parcels per run.  Aim for ~5h of compute.
+          # delay default is 1-2s, so 5h ≈ ~9000-18000 parcels per run.
+          case "$CANTON" in
+            bs) LIMIT=12000 ;;      # BS is small (~7k); ~2h
+            ur) LIMIT=20000 ;;      # UR is medium (~20k); ~5h
+            ju) LIMIT=11000 ;;      # ~6.7h full → cap at 5h
+            sz) LIMIT=12000 ;;      # ~7.5h full → cap at 5h
+            fr) LIMIT=18000 ;;      # FR is large (~80k) → many runs needed
+            *)  LIMIT=10000 ;;
+          esac
+          timeout 5h python main.py "$CANTON" --limit "$LIMIT" || echo "Scan timed out or failed — committing partial progress."
+
+      - name: Export dashboard JSON
+        run: python scripts/export_for_web.py
+
+      - name: Commit results
+        run: |
+          git config user.name  "herrenlos-scanner[bot]"
+          git config user.email "herrenlos-scanner@users.noreply.github.com"
+          # Force-add herrenlos.db (gitignored locally so dev DBs don't clutter,
+          # but the cloud-managed DB IS committed here).
+          git add -f herrenlos.db
+          git add docs/data/*.json
+          if git diff --staged --quiet; then
+            echo "Nothing to commit."
+          else
+            git commit -m "scan: ${{ steps.pick.outputs.canton }} (auto)"
+            git push
+          fi

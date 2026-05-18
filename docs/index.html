@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Herrenlos Scanner — Swiss ownerless-parcel map</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+<style>
+  :root {
+    --bg:        #f6f7f9;
+    --panel:     #ffffff;
+    --border:    #e5e7eb;
+    --ink:       #111827;
+    --ink-soft:  #4b5563;
+    --muted:     #9ca3af;
+    --accent:    #2563eb;
+    --herrenlos: #dc2626;
+    --not-in-gb: #f59e0b;
+    --ok:        #16a34a;
+    --warn:      #f59e0b;
+    --skip:      #9ca3af;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 1px 3px rgba(0,0,0,.05);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: var(--font); color: var(--ink); background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Header ────────────────────────────────────────────────────────────── */
+  header {
+    background: var(--panel); border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+  }
+  header .brand h1 {
+    margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em;
+  }
+  header .brand .sub {
+    font-size: 12px; color: var(--muted); margin-top: 2px;
+  }
+  header .meta {
+    font-size: 12px; color: var(--muted); display: flex; align-items: center;
+    gap: 12px;
+  }
+  header .meta .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--ok);
+    box-shadow: 0 0 0 3px rgba(22,163,74,.15);
+  }
+
+  /* ── Main layout ───────────────────────────────────────────────────────── */
+  main {
+    display: grid; grid-template-columns: 380px 1fr;
+    height: calc(100vh - 60px);
+  }
+  #sidebar {
+    overflow-y: auto; padding: 18px;
+    border-right: 1px solid var(--border); background: var(--panel);
+  }
+  #map { height: 100%; background: #d6e4ee; }
+
+  /* ── Stat cards ───────────────────────────────────────────────────────── */
+  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+           margin-bottom: 18px; }
+  .stat {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; text-align: center;
+    transition: transform .12s, box-shadow .12s;
+  }
+  .stat:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+  .stat .v { font-size: 24px; font-weight: 700; letter-spacing: -0.02em;
+             font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 10px; color: var(--muted); text-transform: uppercase;
+             letter-spacing: 0.06em; margin-top: 4px; font-weight: 500; }
+  .stat.h .v { color: var(--herrenlos); }
+  .stat.h .l { color: var(--herrenlos); }
+
+  /* ── Section headers ──────────────────────────────────────────────────── */
+  .section-h {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin: 18px 0 8px;
+  }
+  .section-h h2 {
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.07em; margin: 0;
+  }
+  .section-h .hint { font-size: 10px; color: var(--muted); }
+
+  /* ── Filter row ───────────────────────────────────────────────────────── */
+  .filters {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
+  }
+  .filters select {
+    width: 100%; padding: 6px 8px; border: 1px solid var(--border);
+    border-radius: 6px; background: var(--panel); font: inherit;
+    font-size: 12px; color: var(--ink); cursor: pointer;
+  }
+  .filters select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+  /* ── Canton table ─────────────────────────────────────────────────────── */
+  #progress-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  #progress-table thead th {
+    text-align: left; padding: 6px 4px; color: var(--muted);
+    font-weight: 500; border-bottom: 1px solid var(--border);
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  #progress-table tbody td {
+    padding: 8px 4px; border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+  }
+  #progress-table tbody tr {
+    cursor: pointer; transition: background .12s;
+  }
+  #progress-table tbody tr:hover { background: rgba(37,99,235,.04); }
+  #progress-table tbody tr.active { background: rgba(37,99,235,.08); }
+  #progress-table tbody tr.active td:first-child {
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+  td.r { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ── Progress bar ─────────────────────────────────────────────────────── */
+  .bar {
+    width: 100%; height: 4px; background: #eef0f3; border-radius: 4px;
+    overflow: hidden; position: relative;
+  }
+  .bar > div {
+    height: 100%; background: var(--ok); border-radius: 4px;
+    transition: width .4s ease-out;
+  }
+  .bar.captcha_ocr > div { background: #8b5cf6; }
+  .bar.captcha_pow > div { background: #f97316; }
+  .bar.own_login > div   { background: #0d9488; }
+
+  /* ── Pills ────────────────────────────────────────────────────────────── */
+  .pill {
+    font-size: 9px; padding: 2px 7px; border-radius: 999px; color: white;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+    display: inline-block;
+  }
+  .pill.rest        { background: #2563eb; }
+  .pill.captcha_ocr { background: #8b5cf6; }
+  .pill.captcha_pow { background: #f97316; }
+  .pill.own_login   { background: #0d9488; }
+  .pill.blocked     { background: var(--skip); }
+  .pill.unbuilt     { background: #ec4899; }
+
+  /* ── Herrenlos list ───────────────────────────────────────────────────── */
+  #herrenlos-list { font-size: 12px; }
+  #herrenlos-list .item {
+    padding: 8px; border: 1px solid var(--border); border-radius: 6px;
+    margin-bottom: 6px; cursor: pointer; transition: all .12s;
+    background: var(--panel);
+  }
+  #herrenlos-list .item:hover {
+    border-color: var(--herrenlos); transform: translateX(2px);
+  }
+  #herrenlos-list .item .title { font-weight: 600; }
+  #herrenlos-list .item .meta { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .empty {
+    color: var(--muted); text-align: center; padding: 24px 12px;
+    font-size: 12px; line-height: 1.6; border: 1px dashed var(--border);
+    border-radius: 8px; background: var(--bg);
+  }
+
+  /* ── Map legend ───────────────────────────────────────────────────────── */
+  .map-legend {
+    background: var(--panel); padding: 8px 12px; border-radius: 6px;
+    box-shadow: var(--shadow); font-size: 11px;
+    border: 1px solid var(--border);
+  }
+  .map-legend .row {
+    display: flex; align-items: center; gap: 6px; padding: 2px 0;
+  }
+  .map-legend .swatch {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    border: 2px solid white; box-shadow: 0 0 0 1px rgba(0,0,0,.2);
+  }
+  .map-legend .swatch.herrenlos { background: var(--herrenlos); }
+  .map-legend .swatch.not-in-gb { background: var(--not-in-gb); }
+
+  /* ── Popup ────────────────────────────────────────────────────────────── */
+  .leaflet-popup-content { font-family: var(--font); font-size: 12px; margin: 12px; }
+  .leaflet-popup-content h3 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+  .popup .row { display: flex; gap: 8px; padding: 2px 0; }
+  .popup .row .k { color: var(--muted); min-width: 90px; font-size: 11px; }
+  .popup .row .v { font-weight: 500; }
+  .popup .badge {
+    display: inline-block; padding: 1px 6px; border-radius: 3px;
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .popup .badge.dereliktion      { background: #fef2f2; color: var(--herrenlos); }
+  .popup .badge.not_in_grundbuch { background: #fffbeb; color: var(--not-in-gb); }
+
+  /* ── Mobile ───────────────────────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    main { grid-template-columns: 1fr; height: auto; }
+    #sidebar { max-height: 50vh; }
+    #map { height: 50vh; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>🇨🇭 Herrenlos Scanner</h1>
+    <div class="sub">Live progress + discovered ownerless parcels on the Swiss map</div>
+  </div>
+  <div class="meta">
+    <span class="dot" title="data is live"></span>
+    <span id="last-update">loading…</span>
+  </div>
+</header>
+
+<main>
+  <div id="sidebar">
+    <!-- Stat cards -->
+    <div class="stats">
+      <div class="stat"><div class="v" id="stat-scanned">—</div><div class="l">Scanned</div></div>
+      <div class="stat h"><div class="v" id="stat-herrenlos">—</div><div class="l">Herrenlos</div></div>
+      <div class="stat"><div class="v" id="stat-errors">—</div><div class="l">Errors</div></div>
+    </div>
+
+    <!-- Filters -->
+    <div class="section-h">
+      <h2>Filters</h2>
+      <span class="hint" id="filter-count"></span>
+    </div>
+    <div class="filters">
+      <select id="filter-canton"><option value="">All cantons</option></select>
+      <select id="filter-type">
+        <option value="">All types</option>
+        <option value="dereliktion">Dereliktion (Art. 964)</option>
+        <option value="not_in_grundbuch">Not in Grundbuch (Art. 664)</option>
+      </select>
+    </div>
+
+    <!-- Canton progress -->
+    <div class="section-h">
+      <h2>Per-canton progress</h2>
+      <span class="hint">click row to zoom</span>
+    </div>
+    <table id="progress-table">
+      <thead><tr>
+        <th>Canton</th><th>Group</th><th class="r">Scanned</th><th class="r">H</th><th>%</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <!-- Herrenlos list -->
+    <div class="section-h">
+      <h2>Discovered herrenlos</h2>
+      <span class="hint" id="herrenlos-count">—</span>
+    </div>
+    <div id="herrenlos-list"></div>
+  </div>
+
+  <div id="map"></div>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+(async () => {
+  "use strict";
+
+  /* ── Canton bounding boxes (LV95 → WGS84 corners). Used for "click row to zoom". */
+  /* Approximate — generated from swisstopo cantonal extents.                     */
+  const CANTON_BBOX = {
+    AG:[[47.137,7.715],[47.621,8.464]], AI:[[47.245,9.357],[47.394,9.561]],
+    AR:[[47.255,9.227],[47.546,9.690]], BE:[[46.327,6.866],[47.345,8.460]],
+    BL:[[47.350,7.342],[47.624,7.999]], BS:[[47.514,7.553],[47.591,7.685]],
+    FR:[[46.451,6.728],[47.094,7.336]], GE:[[46.130,5.957],[46.378,6.310]],
+    GL:[[46.794,8.842],[47.158,9.255]], GR:[[46.171,8.700],[47.066,10.491]],
+    JU:[[47.137,6.835],[47.503,7.539]], LU:[[46.778,7.701],[47.298,8.522]],
+    NE:[[46.834,6.421],[47.146,7.064]], NW:[[46.832,8.246],[46.970,8.620]],
+    OW:[[46.694,8.038],[46.964,8.473]], SG:[[46.864,8.793],[47.554,9.681]],
+    SH:[[47.580,8.385],[47.808,8.926]], SO:[[47.139,7.342],[47.512,8.139]],
+    SZ:[[46.866,8.502],[47.231,9.083]], TG:[[47.404,8.692],[47.764,9.475]],
+    TI:[[45.819,8.380],[46.625,9.181]], UR:[[46.516,8.300],[46.945,8.972]],
+    VD:[[46.187,6.073],[46.927,7.252]], VS:[[45.858,6.766],[46.660,8.484]],
+    ZG:[[47.080,8.371],[47.247,8.726]], ZH:[[47.159,8.358],[47.696,8.985]],
+  };
+
+  /* ── Map setup ────────────────────────────────────────────────────────── */
+  const map = L.map("map", { preferCanvas: true, zoomControl: false })
+              .setView([46.8, 8.3], 8);
+  L.control.zoom({ position: "topright" }).addTo(map);
+  L.tileLayer(
+    "https://wmts10.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg",
+    {
+      attribution: "© <a href='https://www.swisstopo.ch'>swisstopo</a>",
+      maxZoom: 18, minZoom: 7,
+    }
+  ).addTo(map);
+
+  /* Map legend (only added when we have parcels — see below) */
+  const legend = L.control({ position: "bottomleft" });
+  legend.onAdd = () => {
+    const div = L.DomUtil.create("div", "map-legend");
+    div.innerHTML = `
+      <div class="row"><div class="swatch herrenlos"></div>Dereliktion (Art. 964)</div>
+      <div class="row"><div class="swatch not-in-gb"></div>Not in Grundbuch (Art. 664)</div>
+    `;
+    return div;
+  };
+
+  /* ── Fetch data ──────────────────────────────────────────────────────── */
+  const t = Date.now();
+  const [progress, herrenlos] = await Promise.all([
+    fetch(`data/progress.json?t=${t}`).then(r => r.json()).catch(() => null),
+    fetch(`data/herrenlos.json?t=${t}`).then(r => r.json()).catch(() => null),
+  ]);
+
+  if (!progress) {
+    document.getElementById("last-update").textContent =
+      "data/progress.json missing — run scripts/export_for_web.py first.";
+    document.querySelector("header .meta .dot").style.background = "var(--warn)";
+    return;
+  }
+
+  /* ── Stat cards ──────────────────────────────────────────────────────── */
+  document.getElementById("stat-scanned").textContent =
+    progress.totals.scanned.toLocaleString();
+  document.getElementById("stat-herrenlos").textContent =
+    progress.totals.herrenlos.toLocaleString();
+  document.getElementById("stat-errors").textContent =
+    progress.totals.errors.toLocaleString();
+
+  /* ── Time-since-update indicator ─────────────────────────────────────── */
+  const gen = new Date(progress.generated_at);
+  const tsEl = document.getElementById("last-update");
+  function renderAgo() {
+    const sec = Math.floor((Date.now() - gen.getTime()) / 1000);
+    if (sec < 60)        tsEl.textContent = `updated ${sec}s ago`;
+    else if (sec < 3600) tsEl.textContent = `updated ${Math.floor(sec/60)}m ago`;
+    else if (sec < 86400)tsEl.textContent = `updated ${Math.floor(sec/3600)}h ago`;
+    else                 tsEl.textContent = `updated ${Math.floor(sec/86400)}d ago`;
+  }
+  renderAgo();  setInterval(renderAgo, 30_000);
+
+  /* ── Canton filter dropdown ──────────────────────────────────────────── */
+  const cantonSel = document.getElementById("filter-canton");
+  for (const c of progress.cantons) {
+    const o = document.createElement("option");
+    o.value = c.canton; o.textContent = c.canton;
+    cantonSel.appendChild(o);
+  }
+
+  /* ── Progress table ──────────────────────────────────────────────────── */
+  const tbody = document.querySelector("#progress-table tbody");
+  for (const c of progress.cantons) {
+    const denom = c.estimated_total || c.enumerated || 0;
+    const denomStr = denom >= 1000 ? `${(denom/1000).toFixed(0)}k` : denom;
+    const tg = c.test_group || "?";
+    const tr = document.createElement("tr");
+    tr.dataset.canton = c.canton;
+    tr.innerHTML = `
+      <td><strong>${c.canton}</strong></td>
+      <td><span class="pill ${tg}">${tg}</span></td>
+      <td class="r" title="scanned / estimated canton size">${c.scanned.toLocaleString()} / ${denomStr}</td>
+      <td class="r" style="color:${c.herrenlos > 0 ? 'var(--herrenlos)' : 'var(--muted)'};font-weight:${c.herrenlos > 0 ? 600 : 400}">${c.herrenlos}</td>
+      <td><div class="bar ${tg}"><div style="width:${Math.min(c.percent, 100)}%"></div></div></td>
+    `;
+    tr.addEventListener("click", () => {
+      // Toggle "active" row + zoom map
+      document.querySelectorAll("#progress-table tr.active")
+        .forEach(r => r.classList.remove("active"));
+      tr.classList.add("active");
+      const bbox = CANTON_BBOX[c.canton];
+      if (bbox) map.fitBounds(bbox, { padding: [40, 40], maxZoom: 11 });
+      cantonSel.value = c.canton;
+      cantonSel.dispatchEvent(new Event("change"));
+    });
+    tbody.appendChild(tr);
+  }
+
+  /* ── Herrenlos markers + cluster ─────────────────────────────────────── */
+  const cluster = L.markerClusterGroup({
+    showCoverageOnHover: false, maxClusterRadius: 50,
+  });
+  map.addLayer(cluster);
+
+  const markersByEgrid = new Map();   // egrid → leaflet marker (for sidebar→map link)
+
+  function renderMarkers(filter = {}) {
+    cluster.clearLayers();
+    let n = 0;
+    if (!herrenlos || herrenlos.count === 0) return 0;
+    for (const p of herrenlos.parcels) {
+      if (filter.canton && p.canton !== filter.canton) continue;
+      if (filter.type && p.herrenlos_type !== filter.type) continue;
+      if (p.lat == null || p.lng == null) continue;
+      const colour = p.herrenlos_type === "not_in_grundbuch"
+                     ? "#f59e0b" : "#dc2626";
+      const m = L.circleMarker([p.lat, p.lng], {
+        radius: 9, color: colour, fillColor: colour,
+        fillOpacity: 0.65, weight: 2,
+      });
+      const claim = p.claim_possible === 1 ? "✓ yes"
+                  : p.claim_possible === 0 ? "✗ no" : "—";
+      m.bindPopup(`
+        <div class="popup">
+          <h3>${p.canton} — ${p.commune || ''} <span style="color:var(--muted)">Nr.</span> ${p.parcel_nr}</h3>
+          <div class="row"><span class="k">EGRID</span> <span class="v" style="font-family:var(--mono);font-size:11px">${p.egrid || '—'}</span></div>
+          <div class="row"><span class="k">Type</span> <span class="v"><span class="badge ${p.herrenlos_type || ''}">${p.herrenlos_type || 'unknown'}</span></span></div>
+          <div class="row"><span class="k">Claim possible</span> <span class="v">${claim}</span></div>
+          <div class="row"><span class="k">Owner field</span> <span class="v">${p.owner || '<em style="color:var(--muted)">(none)</em>'}</span></div>
+          <div class="row"><span class="k">Scanned</span> <span class="v">${(p.scanned_at || '—').slice(0,19)}</span></div>
+        </div>
+      `);
+      cluster.addLayer(m);
+      markersByEgrid.set(p.egrid, m);
+      n++;
+    }
+    if (n > 0 && !legend._map) legend.addTo(map);
+    if (n === 0 && legend._map) map.removeControl(legend);
+    return n;
+  }
+
+  function renderList(filter = {}) {
+    const list = document.getElementById("herrenlos-list");
+    const countEl = document.getElementById("herrenlos-count");
+    if (!herrenlos || herrenlos.count === 0) {
+      list.innerHTML = `
+        <div class="empty">
+          <strong>No herrenlos parcels discovered yet.</strong><br>
+          <span>Scans are still running. Herrenlos parcels are ~0.01% of all Swiss parcels — expect 0–5 nationwide across the cloud-scannable cantons.</span>
+        </div>`;
+      countEl.textContent = "0";
+      return;
+    }
+    const items = herrenlos.parcels.filter(p => {
+      if (filter.canton && p.canton !== filter.canton) return false;
+      if (filter.type && p.herrenlos_type !== filter.type) return false;
+      return true;
+    });
+    countEl.textContent = items.length;
+    if (items.length === 0) {
+      list.innerHTML = `<div class="empty">No matches with current filters.</div>`;
+      return;
+    }
+    list.innerHTML = items.slice(0, 100).map(p => `
+      <div class="item" data-egrid="${p.egrid}">
+        <div class="title">${p.canton} ${p.commune || ''} <span style="color:var(--muted)">Nr.</span> ${p.parcel_nr}</div>
+        <div class="meta"><span class="badge ${p.herrenlos_type || ''}">${p.herrenlos_type || '?'}</span> · ${(p.scanned_at || '').slice(0,10)}</div>
+      </div>
+    `).join("");
+    // Wire up clicks: sidebar item → fly to marker + open popup
+    list.querySelectorAll(".item").forEach(el => {
+      el.addEventListener("click", () => {
+        const m = markersByEgrid.get(el.dataset.egrid);
+        if (m) {
+          cluster.zoomToShowLayer(m, () => {
+            m.openPopup();
+          });
+        }
+      });
+    });
+  }
+
+  function updateFilterCount(n) {
+    const total = (herrenlos && herrenlos.count) || 0;
+    document.getElementById("filter-count").textContent =
+      total === 0 ? "" : `${n} / ${total}`;
+  }
+
+  function applyFilters() {
+    const filter = {
+      canton: cantonSel.value,
+      type:   document.getElementById("filter-type").value,
+    };
+    const n = renderMarkers(filter);
+    renderList(filter);
+    updateFilterCount(n);
+    // If a canton is selected, zoom to its bbox
+    if (filter.canton && CANTON_BBOX[filter.canton]) {
+      map.fitBounds(CANTON_BBOX[filter.canton], { padding: [40, 40], maxZoom: 11 });
+    } else if (!filter.canton) {
+      map.setView([46.8, 8.3], 8);   // back to overview
+    }
+  }
+
+  cantonSel.addEventListener("change", applyFilters);
+  document.getElementById("filter-type").addEventListener("change", applyFilters);
+  applyFilters();
+})();
+</script>
+</body>
+</html>
