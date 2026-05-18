@@ -1,5 +1,226 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-05-18T12:55:07+00:00",
-  "features": []
+  "generated_at": "2026-05-18T18:44:40+00:00",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.016201496124268,
+          47.49431228637695
+        ]
+      },
+      "properties": {
+        "egrid": "CH652944720627",
+        "canton": "JU",
+        "commune": "Boncourt",
+        "bfs_nr": "6774",
+        "parcel_nr": "110",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": null,
+        "scanned_at": "2026-05-18 18:26:38"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.017895221710205,
+          47.491050720214844
+        ]
+      },
+      "properties": {
+        "egrid": "CH934471068642",
+        "canton": "JU",
+        "commune": "Boncourt",
+        "bfs_nr": "6774",
+        "parcel_nr": "2397",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": null,
+        "scanned_at": "2026-05-18 18:28:52"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.004585266113281,
+          47.5007438659668
+        ]
+      },
+      "properties": {
+        "egrid": "CH280244067007",
+        "canton": "JU",
+        "commune": "Boncourt",
+        "bfs_nr": "6774",
+        "parcel_nr": "2399",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": null,
+        "scanned_at": "2026-05-18 18:31:04"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.014064788818359,
+          47.49635696411133
+        ]
+      },
+      "properties": {
+        "egrid": "CH967044062184",
+        "canton": "JU",
+        "commune": "Boncourt",
+        "bfs_nr": "6774",
+        "parcel_nr": "2429",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": null,
+        "scanned_at": "2026-05-18 18:32:34"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.007857322692871,
+          47.49585723876953
+        ]
+      },
+      "properties": {
+        "egrid": "CH610601447318",
+        "canton": "JU",
+        "commune": "Boncourt",
+        "bfs_nr": "6774",
+        "parcel_nr": "2451",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": null,
+        "scanned_at": "2026-05-18 18:18:30"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.985324382781982,
+          47.49290466308594
+        ]
+      },
+      "properties": {
+        "egrid": "CH449689777710",
+        "canton": "JU",
+        "commune": "Boncourt",
+        "bfs_nr": "6774",
+        "parcel_nr": "3275",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": null,
+        "scanned_at": "2026-05-18 13:56:43"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.012972831726074,
+          47.495765686035156
+        ]
+      },
+      "properties": {
+        "egrid": "CH953544710657",
+        "canton": "JU",
+        "commune": "Boncourt",
+        "bfs_nr": "6774",
+        "parcel_nr": "53",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": null,
+        "scanned_at": "2026-05-18 18:31:24"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.018425464630127,
+          47.491554260253906
+        ]
+      },
+      "properties": {
+        "egrid": "CH567044066381",
+        "canton": "JU",
+        "commune": "Boncourt",
+        "bfs_nr": "6774",
+        "parcel_nr": "658",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": null,
+        "scanned_at": "2026-05-18 18:28:15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.006650924682617,
+          47.49203872680664
+        ]
+      },
+      "properties": {
+        "egrid": "CH334472060824",
+        "canton": "JU",
+        "commune": "Boncourt",
+        "bfs_nr": "6774",
+        "parcel_nr": "943",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": null,
+        "scanned_at": "2026-05-18 18:14:26"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.215120792388916,
+          47.34831619262695
+        ]
+      },
+      "properties": {
+        "egrid": "CH334478063936",
+        "canton": "JU",
+        "commune": "Bo\u00e9court",
+        "bfs_nr": "6702",
+        "parcel_nr": "29",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": null,
+        "scanned_at": "2026-05-18 14:17:35"
+      }
+    }
+  ]
 }
