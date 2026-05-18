@@ -114,11 +114,25 @@ CANTON_STATUS: dict[str, dict] = {
            "daily_limit": 100,  "rate_limit": "100 req/day/IP", "max_test_parcels": 11,
            "blocker": None,
            "needs": "paid residential proxies for full scan + port GE's proxy plumbing into scanners/sh.py (reads SH_PROXY_LIST) — currently not wired. Optional: verify scanner uses post-2024-09 endpoints (research agent flagged a new SH portal launch)."},
+    # BS — CORRECTED 2026-05-18 after obtaining a real API key and reading the
+    # live OpenAPI spec at https://api.geo.bs.ch/grundstueckinfo/v1/openapi.yaml:
+    # The BS public REST API exposes ONLY parcel METADATA (area, buildings,
+    # land covers). Owner data is NOT in any JSON endpoint — only behind the
+    # HTML viewer at /eigentum/{section}/{parcel} which is Keycloak +
+    # reCAPTCHA protected (same architecture as SO).
+    #
+    # Consequences:
+    # - Type A herrenlos (Art. 664: not in Grundbuch) IS detectable via API
+    #   (parcel missing from RealEstates → herrenlos signal). Rare in practice
+    #   because BS is small and densely registered.
+    # - Type B herrenlos (Art. 964: dereliktion) is NOT detectable via API.
+    #   Would need a reCAPTCHA-solving scanner against the HTML viewer
+    #   (mirror of scanners/so_public.py — not built yet).
     "BS": {"access": "free_key", "test_group": "rest", "ip_rotation": None,
-           "daily_limit": None, "rate_limit": "Unlimited with personal API key",
+           "daily_limit": None, "rate_limit": "API: unlimited with personal key; owner-HTML viewer: reCAPTCHA-gated",
            "max_test_parcels": 11,
-           "blocker": "BS_API_KEY not set in .env",
-           "needs": "free registration at api.geo.bs.ch → BS_API_KEY in .env"},
+           "blocker": "BS API exposes parcel metadata only (NOT owner data); owner lookup needs reCAPTCHA-solving HTML scraper (not built)",
+           "needs": "build scanners/bs_public.py mirroring so_public.py — reCAPTCHA v3 against the /eigentum/{section}/{parcel} HTML viewer. The free API key is sufficient for the metadata-only Type A herrenlos check (Art. 664)."},
 
     # ── OCR-image CAPTCHA ────────────────────────────────────────────────────
     # BL: handwritten cursive image CAPTCHA defeats local OCR.

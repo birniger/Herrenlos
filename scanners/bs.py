@@ -28,7 +28,7 @@ import requests
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel
-from scanners.utils import annotate_herrenlos
+from scanners.utils import annotate_herrenlos, claim_possible_for
 
 log = logging.getLogger("BS")
 
@@ -110,78 +110,68 @@ def enumerate_egrids(emin=BS_EMIN, emax=BS_EMAX,
 
 def check_owner_bs(egrid: str, api_key: str = BS_API_KEY) -> dict:
     """
-    Two-step owner lookup for BS:
-      1. realestatesinformation  → get section/parcel number + OwnershipInformation URL
-      2. /eigentum/{section}/{parcel} → get owner name/address
+    BS public-API parcel check.
+
+    IMPORTANT (verified 2026-05-18 against the live OpenAPI spec at
+    https://api.geo.bs.ch/grundstueckinfo/v1/openapi.yaml):
+
+      The BS REST API exposes ONLY parcel metadata (area, buildings, land covers,
+      type). It does NOT expose owner names. The `OwnershipInformation` field in
+      the response is a URL to the HTML viewer at /eigentum/{section}/{parcel},
+      which is Keycloak + reCAPTCHA protected — same architecture as SO.
+
+      Consequence: this scanner can only detect Type A herrenlos
+      (parcel NOT present in BS Grundbuch → Art. 664 ZGB). It CANNOT detect
+      Type B herrenlos (dereliktion) because owner data isn't in the API.
+
+      For full BS owner coverage, a reCAPTCHA-solving scanner (mirror of
+      scanners/so_public.py) would need to be built against the HTML viewer.
+      Until then, BS scans return is_herrenlos=None for parcels that DO exist
+      in BS, with error='owner_lookup_needs_html_path'.
     """
     try:
-        # Step 1: get parcel metadata + owner URL
-        r1 = requests.get(BS_INFO_URL, params={"ids": egrid, "apikey": api_key}, timeout=15)
-        if r1.status_code == 401:
+        r = requests.get(BS_INFO_URL, params={"ids": egrid, "apikey": api_key}, timeout=15)
+        if r.status_code == 401:
             return {"error": "invalid_api_key", "is_herrenlos": None,
+                    "herrenlos_type": None, "claim_possible": None,
                     "owner": None, "owner_address": None, "raw_response": None}
-        if r1.status_code != 200:
-            return {"error": f"http_{r1.status_code}", "is_herrenlos": None,
-                    "owner": None, "owner_address": None, "raw_response": None}
-
-        data1 = r1.json()
-        # data1 may be a list or dict; normalise
-        items = data1 if isinstance(data1, list) else data1.get("realEstates", [data1])
-        if not items:
-            # EGRID not in the realestates API → no Grundbuch entry (Art. 664 ZGB)
-            return {"owner": None, "owner_address": None,
-                    "is_herrenlos": 1,
-                    "herrenlos_type": "not_in_grundbuch",
-                    "claim_possible": 0,
-                    "raw_response": None, "error": None}
-
-        item = items[0]
-        owner_url = item.get("OwnershipInformation") or item.get("ownershipInformation")
-
-        if not owner_url:
-            # Parcel in realestates API but no ownership section → dereliktion
-            return {"owner": None, "owner_address": None,
-                    "is_herrenlos": 1,
-                    "herrenlos_type": "dereliktion",
-                    "claim_possible": None,  # annotate_herrenlos fills (BS → 0)
-                    "raw_response": str(item)[:300], "error": None}
-
-        # Step 2: fetch owner data
-        r2 = requests.get(owner_url, timeout=15)
-        if r2.status_code == 404:
-            # Ownership URL exists but owner record absent → not_in_grundbuch
-            return {"owner": None, "owner_address": None,
-                    "is_herrenlos": 1,
-                    "herrenlos_type": "not_in_grundbuch",
-                    "claim_possible": 0,
-                    "raw_response": None, "error": None}
-        if r2.status_code != 200:
-            return {"error": f"owner_http_{r2.status_code}", "is_herrenlos": None,
+        if r.status_code != 200:
+            return {"error": f"http_{r.status_code}", "is_herrenlos": None,
                     "herrenlos_type": None, "claim_possible": None,
                     "owner": None, "owner_address": None, "raw_response": None}
 
-        data2 = r2.json()
-        owners = data2 if isinstance(data2, list) else data2.get("owners", [])
-        if not owners:
-            # Owner record present but empty → dereliktion
+        data = r.json()
+        # Schema (case-sensitive, verified against OpenAPI):
+        #   {"Date": ..., "Service": {...}, "RealEstates": [{"Egrid": ...}, ...]}
+        real_estates = data.get("RealEstates", []) if isinstance(data, dict) else []
+        # Filter to the EGRID we asked for — API may include linked parcels
+        match = next((re for re in real_estates if re.get("Egrid") == egrid), None)
+
+        if match is None:
+            # EGRID not in BS Grundbuch at all → Type A herrenlos (Art. 664 ZGB).
+            # The federal swisstopo identify says this parcel is in BS canton,
+            # but BS's own Grundbuch doesn't know about it. Real herrenlos signal.
             return {"owner": None, "owner_address": None,
                     "is_herrenlos": 1,
-                    "herrenlos_type": "dereliktion",
-                    "claim_possible": None,  # annotate_herrenlos fills (BS → 0)
-                    "raw_response": str(data2)[:300], "error": None}
+                    "herrenlos_type": "not_in_grundbuch",
+                    "claim_possible": claim_possible_for("BS", "not_in_grundbuch"),
+                    "raw_response": None, "error": None}
 
-        names = "; ".join(
-            " ".join(filter(None, [o.get("lastname"), o.get("firstname"),
-                                   o.get("name"), o.get("companyName")]))
-            for o in owners
-        )
-        addrs = "; ".join(o.get("address", "") for o in owners if o.get("address"))
-        return {"owner": names or None, "owner_address": addrs or None,
-                "is_herrenlos": 0, "raw_response": None, "error": None}
+        # Parcel exists in BS Grundbuch. Owner data is not accessible via this
+        # API; we'd need a reCAPTCHA-solving scanner against the HTML viewer.
+        # Honestly report this as unknown rather than guess herrenlos.
+        return {"owner": None, "owner_address": None,
+                "is_herrenlos": None,
+                "herrenlos_type": None,
+                "claim_possible": None,
+                "raw_response": None,
+                "error": "owner_lookup_needs_html_path"}
 
     except Exception as exc:
         return {"owner": None, "owner_address": None,
-                "is_herrenlos": None, "raw_response": None, "error": str(exc)}
+                "is_herrenlos": None,
+                "herrenlos_type": None, "claim_possible": None,
+                "raw_response": None, "error": str(exc)}
 
 
 # ── Main scanner ─────────────────────────────────────────────────────────────
