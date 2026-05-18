@@ -1,10 +1,19 @@
 """
 AR scanner — Appenzell Ausserrhoden
 =====================================
-STATUS: REQUIRES PROFESSIONAL ACCOUNT (not obtainable by private persons).
-  geoportal.ch restricts the ktar.owner.search permission to notaries,
-  surveyors, banks, and public authorities. Registration for private
-  individuals is denied. This scanner is only usable with institutional access.
+STATUS (re-verified 2026-05-18): CANT_GET for private persons.
+
+AR connected to Terravis in 2019; that's the only electronic channel and
+it's restricted to banks/insurance/notaries/authorities. Per the official
+AR announcement: "Der Ausserrhoder Bevölkerung stehen auch künftig nur diese
+Wege [postal/written]" — private persons must still order extracts in writing
+with postal return.
+
+No reclassification path identified — same policy gate as AI.
+
+LEGACY professional path (the code in this file): geoportal.ch ktar.owner.search
+permission for notaries/surveyors/banks/authorities. Set AR_USERNAME/AR_PASSWORD
+if you hold an institutional account. Not used by the test framework.
 
 Platform : geoportal.ch (shared SPA platform by GEOINFO Applications AG)
 Canton   : ktar

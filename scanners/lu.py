@@ -1,24 +1,28 @@
 """
 LU scanner — Luzern
 ====================
-STATUS (2026-05-18): SKELETON. Module structure + EGRID enumeration are complete;
-  the actual owner-lookup HTTP request needs ONE remaining piece of information
-  that requires browser-level inspection of the LU portal. See `check_owner()`
-  below — clearly marked `# TODO_LU_API`.
+STATUS (re-verified 2026-05-18 via direct portal inspection): BLOCKED.
+
+The LU Eigentümerabfrage at grundbuch.lu.ch/onlinedienste/eigentuemerabfrage
+requires a Swiss mobile number + SMS PIN per query (4 form fields: Grundbuch,
+Grundstück-Nr, Mobile-Nummer, PIN-from-SMS). This is the same operational
+dead-end as ZH / ZG / TG — cannot be solved by IP rotation or proxies,
+because each query requires a human SMS action.
+
+The earlier "5/day public" research underweighted the SMS requirement.
+
+This file remains as a SKELETON (with TODO_LU_API markers) only because the
+module structure was already done before the SMS gate was discovered. It is
+NOT used by the test framework (CANTON_STATUS["LU"]["access"] == "blocked").
+Kept for documentation of the failure mode.
+
+NO RECLASSIFICATION PATH known unless LU launches an SMS-free public path.
 
 PLATFORM — grundbuch.lu.ch:
-  Public Eigentümerabfrage at https://grundbuch.lu.ch/onlinedienste/eigentuemerabfrage
-  Confirmed 2026-05 via Luzerner Zeitung + grundbuch.lu.ch.
+  Public form at https://grundbuch.lu.ch/onlinedienste/eigentuemerabfrage
+  Confirmed 2026-05-18 via Chrome DevTools direct inspection.
 
-AUTH:
-  Free email registration. After registering, the user receives login credentials
-  (or an API key). Canton logs every query and retains 2 years; flags suspicious
-  patterns (a French email address making 5 daily queries for weeks triggered a
-  fraud investigation per Luzerner Zeitung).
-
-RATE LIMIT:
-  5 requests per day per registered user.  This is hard.  Paid residential
-  proxies needed for a full canton scan (~$30 — similar profile to GR).
+RATE LIMIT: 5/day per Mobile-Nummer (SMS PIN per query).
 
 EGRID enumeration:
   swisstopo identify API grid scan (same pattern as BL/SZ/UR/SH).

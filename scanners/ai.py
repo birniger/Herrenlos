@@ -1,10 +1,21 @@
 """
 AI scanner — Appenzell Innerrhoden
 =====================================
-STATUS: REQUIRES PROFESSIONAL ACCOUNT (not obtainable by private persons).
-  geoportal.ch restricts the ktai.owner.search permission to notaries,
-  surveyors, banks, and public authorities. Registration for private
-  individuals is denied. This scanner is only usable with institutional access.
+STATUS (re-verified 2026-05-18): CANT_GET for private persons.
+
+AI has only one electronic owner-inquiry channel — Terravis — and it is
+restricted to banks, insurance companies, notaries, and public authorities.
+For private persons, owner extracts must be ordered via the Grundbuch- und
+Erbschaftsamt by phone or online form, then delivered by post (~CHF 40,
+~1 working week). Confirmed via ai.ch and Terravis-active-cantons listing.
+
+No reclassification path identified. Federal e-ID launch (1 Dec 2026) does
+not change AI's policy — the gate is "wer hat ein berechtigtes Interesse",
+not authentication level.
+
+LEGACY professional path (the code in this file): geoportal.ch ktai.owner.search
+permission for notaries/surveyors/banks/authorities. Set AI_USERNAME/AI_PASSWORD
+if you hold an institutional account. Not used by the test framework.
 
 Platform : geoportal.ch (shared SPA platform by GEOINFO Applications AG)
 Canton   : ktai
