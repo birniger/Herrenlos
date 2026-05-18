@@ -100,10 +100,31 @@ jobs:
           # Force-add herrenlos.db (gitignored locally so dev DBs don't clutter,
           # but the cloud-managed DB IS committed here).
           git add -f herrenlos.db
-          git add docs/data/*.json
+          # All dashboard data formats. Use 2>/dev/null||true so missing files
+          # don't fail the step on a first-run-with-no-results-yet.
+          git add docs/data/*.json docs/data/*.geojson docs/data/*.csv 2>/dev/null || true
           if git diff --staged --quiet; then
-            echo "Nothing to commit."
-          else
-            git commit -m "scan: ${{ steps.pick.outputs.canton }} (auto)"
-            git push
+            echo "Nothing to commit."; exit 0
           fi
+          git commit -m "scan: ${{ steps.pick.outputs.canton }} (auto)"
+          # Push with retries. If a local commit raced us, rebase preferring
+          # OUR scan results for the DB (because we just generated fresh data;
+          # any concurrent local commits to the DB would be a manual cleanup
+          # that the scanner can re-derive on the next run).
+          for attempt in 1 2 3; do
+            if git push; then exit 0; fi
+            echo "Push rejected (attempt $attempt) — rebasing on origin/main..."
+            git fetch origin main
+            git rebase origin/main -X ours || git rebase --abort
+            sleep 5
+          done
+          echo "Push failed after 3 attempts — uploading DB as artifact for manual recovery."
+          exit 1
+
+      - name: Backup DB as artifact (only if commit step failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: herrenlos-db-after-${{ steps.pick.outputs.canton }}
+          path: herrenlos.db
+          retention-days: 14

@@ -123,6 +123,21 @@ cantons when you fund them).
 
 ---
 
+## Avoiding push conflicts with cloud scans
+
+The `herrenlos.db` file is a **binary** SQLite database, so concurrent commits
+from your laptop AND from GitHub Actions can collide. The workflow now
+auto-retries with rebase, but the **safe pattern** is:
+
+- **The cloud owns `herrenlos.db`.** Only the Actions workflow should commit it.
+- Locally, edit code / docs / `docs/data/*.json` freely — those merge fine.
+- If you must touch the DB locally (cleanup, migration), check that no scan
+  is running first: <https://github.com/birniger/Herrenlos/actions>
+- After a local DB edit + push, the next cloud scan will rebase its work
+  on top with `rebase -X ours` for the DB — meaning the cloud's fresh scan
+  data wins on conflict. Your manual edit may be overwritten; redo it after
+  the scan completes.
+
 ## Troubleshooting
 
 **Action fails immediately with `Permission denied`**: GitHub blocked the
