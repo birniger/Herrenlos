@@ -11,6 +11,26 @@ Strategy:
 
 Prints the chosen canton's lower-case code on stdout. The workflow YAML
 captures it via $(python scripts/pick_canton.py).
+
+Eligibility criteria (all must be true):
+  - Accessible from a GitHub Actions datacenter IP (no residential proxy)
+  - No interactive login (OAuth / password / reCAPTCHA Enterprise)
+  - Scanner can run headless in CI (no Playwright requirement)
+
+Current eligible cantons:
+  ur  — swisstopo REST + cantonal WFS, no CAPTCHA, no login
+  fr  — keycloak public session, no CAPTCHA, no residential IP
+  ju  — public + OCR-solvable CAPTCHA (ddddocr), no login
+  sz  — public + OCR-solvable CAPTCHA (ddddocr), no login
+
+NOT eligible (excluded reasons):
+  bs  — cmd_bs only collects metadata (Type A only, no owner names).
+         Full detection needs bs_public (Playwright + reCAPTCHA Enterprise,
+         10 req/day/IP). Add bs back once bs_public can run in CI.
+  ne  — reCAPTCHA Enterprise + ip_rotation deferred
+  ge  — reCAPTCHA Enterprise + ip_rotation deferred
+  so  — Playwright + reCAPTCHA, ip_rotation deferred
+  bl  — handwritten cursive CAPTCHA, OCR 0% accuracy
 """
 
 from __future__ import annotations
@@ -23,9 +43,10 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from db import init_db, get_conn   # noqa: E402
 
-# Datacenter-IP-friendly cantons. Ordered by preference (small → big so quick
-# wins land in the dashboard first).
-ELIGIBLE_DEFAULT = ["bs", "ur", "ju", "sz", "fr"]
+# Cantons that work cleanly from a GitHub Actions datacenter IP.
+# Order matters only for the strategy-3 fallback (all-zeros case).
+# Strategy 1 (biggest gap) dominates in practice.
+ELIGIBLE_DEFAULT = ["ur", "fr", "ju", "sz"]
 
 
 def pick() -> str:
