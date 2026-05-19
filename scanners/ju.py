@@ -415,6 +415,19 @@ def _parse_owner_html(html: str, egrid: str, nocompar: str) -> dict:
             "raw_response": text[:200].replace("\n", " "), "error": None,
         }
 
+    # ── PPE base parcel: ownership lives in sub-units, no owner table rendered ──
+    # sitrf.jura.ch renders a div list (not a <table>) for PPE (Propriété par
+    # étages) base parcels. Ownership belongs to the individual PPE units
+    # (e.g. 19-1, 19-2…), so the base parcel correctly has no owner in the
+    # table. The page text contains "PPE <commune> <bfs>/<nr>-<unit>" entries
+    # instead of a table row. This is NOT herrenlos — return owned immediately.
+    if re.search(r"\bPPE\b", text):
+        log.debug("PPE base parcel (no direct owner) — skipping  EGRID=%s", egrid)
+        return {"owner": None, "owner_address": None,
+                "is_herrenlos": 0,
+                "herrenlos_type": None, "claim_possible": None,
+                "raw_response": None, "error": None}
+
     # ── Parse owner table ────────────────────────────────────────────────────
     table = soup.find("table")
     owners:  list[str] = []
