@@ -40,7 +40,7 @@ from urllib.parse import urlencode
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
-from scanners.utils import is_herrenlos_owner_text, claim_possible_for
+from scanners.utils import is_herrenlos_owner_text, claim_possible_for, load_proxies
 
 log = logging.getLogger("NE")
 
@@ -324,9 +324,10 @@ class NEBrowser:
     submits the form without user interaction (typically 3–30 s CPU time).
     """
 
-    def __init__(self):
-        self._pw      = None
-        self._browser = None
+    def __init__(self, proxy_url: str | None = None):
+        self._pw        = None
+        self._browser   = None
+        self._proxy_url = proxy_url
 
     def start(self):
         try:
@@ -336,6 +337,7 @@ class NEBrowser:
                 "playwright not installed.\n"
                 "Run: pip install playwright && playwright install chromium"
             )
+        proxy_cfg = {"server": self._proxy_url} if self._proxy_url else None
         self._pw      = sync_playwright().start()
         self._browser = self._pw.chromium.launch(
             headless=True,
@@ -348,8 +350,10 @@ class NEBrowser:
                 "--disable-renderer-backgrounding",
                 "--disable-backgrounding-occluded-windows",
             ],
+            proxy=proxy_cfg,
         )
-        log.info("NE headless browser started")
+        log.info("NE headless browser started%s",
+                 f" via {self._proxy_url.split('@')[-1]}" if self._proxy_url else "")
 
     def query(self, uuid: str, egrid: str, timeout_s: int = 60) -> dict:
         """
@@ -648,9 +652,22 @@ def scan(limit: int | None = None,
     if limit:
         parcels = parcels[:limit]
 
-    browser = NEBrowser()
+    proxies = load_proxies("NE_PROXY_LIST")
+    proxy_idx = 0
+    queries_on_proxy = 0
+    ROTATE_EVERY = 45  # stay under ~50/day limit per IP
+
+    if proxies:
+        log.info("NE proxy rotation: %d proxies, rotate every %d queries", len(proxies), ROTATE_EVERY)
+
+    def _start_browser(idx: int) -> "NEBrowser":
+        proxy_url = proxies[idx % len(proxies)] if proxies else None
+        b = NEBrowser(proxy_url=proxy_url)
+        b.start()
+        return b
+
     try:
-        browser.start()
+        browser = _start_browser(0)
     except RuntimeError as exc:
         log.error("%s", exc)
         return
@@ -681,7 +698,15 @@ def scan(limit: int | None = None,
                 if skip_existing and already_scanned(conn, "NE", bfs, nr):
                     continue
 
-                # Rate limit guard
+                # Proactive proxy rotation (before hitting the hard limit)
+                if proxies and queries_on_proxy >= ROTATE_EVERY:
+                    proxy_idx = (proxy_idx + 1) % len(proxies)
+                    browser.close()
+                    browser = _start_browser(proxy_idx)
+                    queries_on_proxy = 0
+                    log.info("NE proactive proxy rotate → proxy #%d", proxy_idx)
+
+                # Rate limit guard (no-proxy fallback)
                 now = time.time()
                 if now < rate_wait_until:
                     wait = rate_wait_until - now
@@ -689,13 +714,23 @@ def scan(limit: int | None = None,
                     time.sleep(wait + 5)
 
                 result = check_owner(browser, egrid, uuid)
+                queries_on_proxy += 1
 
                 if result.get("error") == "rate_limited":
-                    # NE resets daily — pause and retry once
-                    rate_wait_until = time.time() + 86_400
-                    log.warning("NE rate limit hit — sleeping 24h")
-                    time.sleep(5)
-                    result = check_owner(browser, egrid, uuid)
+                    if proxies:
+                        proxy_idx = (proxy_idx + 1) % len(proxies)
+                        browser.close()
+                        browser = _start_browser(proxy_idx)
+                        queries_on_proxy = 0
+                        log.warning("NE rate limit — rotated to proxy #%d", proxy_idx)
+                        time.sleep(2)
+                        result = check_owner(browser, egrid, uuid)
+                        queries_on_proxy += 1
+                    else:
+                        rate_wait_until = time.time() + 86_400
+                        log.warning("NE rate limit hit — sleeping 24h (set NE_PROXY_LIST to rotate instead)")
+                        time.sleep(5)
+                        result = check_owner(browser, egrid, uuid)
 
                 upsert_parcel(conn, {
                     "egrid":       egrid,

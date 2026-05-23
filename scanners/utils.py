@@ -18,7 +18,64 @@ Known herrenlos cases (validation reference for tests):
     after Jonas Lauwiner Aneignungsverfahren; ~19,000 m² total
 """
 
+import os
+import pathlib
 import re
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PROXY UTILITIES
+# ─────────────────────────────────────────────────────────────────────────────
+
+def load_proxies(env_key: str) -> list[str]:
+    """
+    Load a proxy list from an env var or .env file.
+
+    env_key: e.g. "SH_PROXY_LIST", "GR_PROXY_LIST", "NE_PROXY_LIST"
+
+    Accepts two formats (mixed is fine):
+      • Webshare download format (one per line):  host:port:username:password
+      • URL format (comma or newline separated):  http://username:password@host:port
+
+    Returns a list of "http://username:password@host:port" strings.
+    Returns [] if the env var is unset / .env has no matching key.
+    """
+    raw = os.environ.get(env_key, "").strip()
+    if not raw:
+        proj_root = pathlib.Path(__file__).parent.parent
+        for env_file in [proj_root / ".env", pathlib.Path.home() / ".env"]:
+            if env_file.exists():
+                try:
+                    for line in env_file.read_text().splitlines():
+                        line = line.strip()
+                        if line.startswith("#") or "=" not in line:
+                            continue
+                        k, _, v = line.partition("=")
+                        k = k.strip().lstrip("export").strip()
+                        if k == env_key:
+                            raw = v.strip().strip('"').strip("'")
+                            break
+                except Exception:
+                    pass
+            if raw:
+                break
+
+    proxies: list[str] = []
+    for entry in re.split(r"[,\n]", raw):
+        entry = entry.strip()
+        if not entry:
+            continue
+        if entry.startswith("http"):
+            proxies.append(entry)
+        else:
+            # Webshare host:port:username:password format
+            parts = entry.split(":")
+            if len(parts) == 4:
+                host, port, user, passwd = parts
+                proxies.append(f"http://{user}:{passwd}@{host}:{port}")
+            else:
+                pass  # unrecognised format — skip silently
+    return proxies
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -22,7 +22,7 @@ import requests
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
-from scanners.utils import is_herrenlos_owner_text, claim_possible_for
+from scanners.utils import is_herrenlos_owner_text, claim_possible_for, load_proxies
 
 log = logging.getLogger("GR")
 
@@ -303,6 +303,14 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
 
 # ── Main scanner ─────────────────────────────────────────────────────────────
 
+def _gr_session(proxy_url: str | None = None) -> requests.Session:
+    s = requests.Session()
+    s.headers["User-Agent"] = UA
+    if proxy_url:
+        s.proxies.update({"http": proxy_url, "https": proxy_url})
+    return s
+
+
 def scan(limit: int | None = None,
          skip_existing: bool = True,
          delay: float = 2.0):
@@ -312,10 +320,11 @@ def scan(limit: int | None = None,
     First run: ~2h swisstopo grid scan to enumerate parcels (cached to DB).
     Subsequent runs: use cached list directly.
 
-    Rate limit: 10 queries/day per IP.  At delay=2s that's 5/min → hits the
-    limit in ~2 min.  For a full ~85k scan use VPN/Tor IP rotation:
-      - Tor (free): rotate circuit every 9 queries via stem library
-      - Residential proxies (~CHF 1–7 one-time for 85k parcels)
+    Rate limit: 10 queries/day per IP.
+    Set GR_PROXY_LIST in .env (comma/newline-separated proxy URLs or
+    Webshare host:port:user:pass format) to rotate IPs automatically.
+    With 10 proxies: 100 queries/day → full 85k scan in ~850 days.
+    With 100 proxies: ~28 days. For faster coverage add more proxies.
 
     limit         : stop after N queries (None = all)
     skip_existing : skip parcels already in DB
@@ -338,8 +347,15 @@ def scan(limit: int | None = None,
     if limit:
         parcels = parcels[:limit]
 
-    session = requests.Session()
-    session.headers["User-Agent"] = UA
+    proxies = load_proxies("GR_PROXY_LIST")
+    proxy_idx = 0
+    queries_on_proxy = 0
+    ROTATE_EVERY = 9  # stay under 10/day hard limit per IP
+
+    if proxies:
+        log.info("GR proxy rotation: %d proxies, rotate every %d queries", len(proxies), ROTATE_EVERY)
+
+    session = _gr_session(proxies[0] if proxies else None)
 
     scanned = errors = herrenlos = 0
     rate_wait_until = 0.0
@@ -354,7 +370,14 @@ def scan(limit: int | None = None,
             if skip_existing and already_scanned(conn, "GR", bfs, nr):
                 continue
 
-            # Respect rate limit
+            # Proactive proxy rotation (before hitting the hard limit)
+            if proxies and queries_on_proxy >= ROTATE_EVERY:
+                proxy_idx = (proxy_idx + 1) % len(proxies)
+                session = _gr_session(proxies[proxy_idx])
+                queries_on_proxy = 0
+                log.info("GR proactive proxy rotate → proxy #%d", proxy_idx)
+
+            # Respect rate limit sleep (no-proxy fallback)
             now = time.time()
             if now < rate_wait_until:
                 wait = rate_wait_until - now
@@ -362,13 +385,23 @@ def scan(limit: int | None = None,
                 time.sleep(wait + 5)
 
             result = check_owner(session, egrid)
+            queries_on_proxy += 1
 
             if result.get("error") == "rate_limited":
-                # GR resets at midnight — sleep until then + buffer
-                rate_wait_until = time.time() + 86_400
-                log.warning("GR rate limit hit — sleeping 24h or use VPN rotation")
-                time.sleep(5)
-                result = check_owner(session, egrid)
+                if proxies:
+                    proxy_idx = (proxy_idx + 1) % len(proxies)
+                    session = _gr_session(proxies[proxy_idx])
+                    queries_on_proxy = 0
+                    log.warning("GR rate limit — rotated to proxy #%d", proxy_idx)
+                    time.sleep(2)
+                    result = check_owner(session, egrid)
+                    queries_on_proxy += 1
+                else:
+                    # GR resets at midnight — sleep until then + buffer
+                    rate_wait_until = time.time() + 86_400
+                    log.warning("GR rate limit hit — sleeping 24h (set GR_PROXY_LIST to rotate instead)")
+                    time.sleep(5)
+                    result = check_owner(session, egrid)
 
             upsert_parcel(conn, {
                 "egrid":       egrid,

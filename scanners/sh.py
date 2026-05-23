@@ -48,7 +48,7 @@ import sys
 import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
-from scanners.utils import is_herrenlos_owner_text, claim_possible_for
+from scanners.utils import is_herrenlos_owner_text, claim_possible_for, load_proxies
 
 log = logging.getLogger("SH")
 
@@ -345,6 +345,14 @@ def _err(msg: str) -> dict:
 
 # ── Main scanner ─────────────────────────────────────────────────────────────
 
+def _sh_session(proxy_url: str | None = None) -> requests.Session:
+    s = requests.Session()
+    s.headers["User-Agent"] = UA
+    if proxy_url:
+        s.proxies.update({"http": proxy_url, "https": proxy_url})
+    return s
+
+
 def scan(limit: int | None = None,
          skip_existing: bool = True,
          delay: float = 1.5):
@@ -355,8 +363,9 @@ def scan(limit: int | None = None,
     Subsequent runs: use cached list directly.
 
     Rate limit: 100 step-1 queries/day per IP (server-enforced 429).
-    At delay=1.5s → ~40/min → exhausted in ~2.5min.
-    For full scan use VPN/Tor rotation between batches of 90 queries.
+    Set SH_PROXY_LIST in .env (comma/newline-separated proxy URLs or
+    Webshare host:port:user:pass format) to rotate IPs automatically.
+    With 10 proxies: full 9k scan completes in a single day.
 
     limit         : stop after N parcels (None = all)
     skip_existing : skip parcels already in DB
@@ -379,8 +388,15 @@ def scan(limit: int | None = None,
     if limit:
         parcels = parcels[:limit]
 
-    session = requests.Session()
-    session.headers["User-Agent"] = UA
+    proxies = load_proxies("SH_PROXY_LIST")
+    proxy_idx = 0
+    queries_on_proxy = 0
+    ROTATE_EVERY = 90  # stay under 100/day hard limit per IP
+
+    if proxies:
+        log.info("SH proxy rotation: %d proxies, rotate every %d queries", len(proxies), ROTATE_EVERY)
+
+    session = _sh_session(proxies[0] if proxies else None)
 
     # Obtain initial token
     token = fetch_token(session)
@@ -411,7 +427,15 @@ def scan(limit: int | None = None,
             if skip_existing and already_scanned(conn, "SH", bfs, nr):
                 continue
 
-            # Respect rate limit sleep
+            # Proactive proxy rotation (before hitting the hard limit)
+            if proxies and queries_on_proxy >= ROTATE_EVERY:
+                proxy_idx = (proxy_idx + 1) % len(proxies)
+                session = _sh_session(proxies[proxy_idx])
+                token = fetch_token(session) or token
+                queries_on_proxy = 0
+                log.info("SH proactive proxy rotate → proxy #%d", proxy_idx)
+
+            # Respect rate limit sleep (no-proxy fallback)
             now = time.time()
             if now < rate_wait_until:
                 wait = rate_wait_until - now
@@ -419,6 +443,7 @@ def scan(limit: int | None = None,
                 time.sleep(wait + 5)
 
             result = check_owner(session, east, north, token, egrid)
+            queries_on_proxy += 1
 
             # Token expired → refresh and retry once
             if result.get("error") == "token_expired":
@@ -429,13 +454,22 @@ def scan(limit: int | None = None,
                 else:
                     result = _err("token_refresh_failed")
 
-            # Rate limited → wait until midnight + buffer
+            # Rate limited → rotate proxy if available, else sleep 24h
             if result.get("error") == "rate_limited":
-                rate_wait_until = time.time() + 86_400
-                log.warning("SH rate limit hit (100/day) — sleeping 24h or rotate IP")
-                time.sleep(5)
-                # Retry once after brief sleep (in case of transient 429)
-                result = check_owner(session, east, north, token, egrid)
+                if proxies:
+                    proxy_idx = (proxy_idx + 1) % len(proxies)
+                    session = _sh_session(proxies[proxy_idx])
+                    token = fetch_token(session) or token
+                    queries_on_proxy = 0
+                    log.warning("SH rate limit — rotated to proxy #%d", proxy_idx)
+                    time.sleep(2)
+                    result = check_owner(session, east, north, token, egrid)
+                    queries_on_proxy += 1
+                else:
+                    rate_wait_until = time.time() + 86_400
+                    log.warning("SH rate limit hit (100/day) — sleeping 24h (set SH_PROXY_LIST to rotate instead)")
+                    time.sleep(5)
+                    result = check_owner(session, east, north, token, egrid)
 
             upsert_parcel(conn, {
                 "egrid":       egrid,

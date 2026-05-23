@@ -6,14 +6,16 @@
 #
 # Public repo: unlimited minutes. The repo IS the synced database.
 #
-# CI-eligible cantons (no login, no proxy, no geo-block from datacenter IPs):
+# CI-eligible cantons:
 #   JU  — OCR-solvable image CAPTCHA (ddddocr), no login    (~13k parcels)
 #   SZ  — OCR-solvable image CAPTCHA (ddddocr), no login    (~18k parcels)
+#   SH  — 100 req/day per IP; rotated via WEBSHARE_PROXY_LIST (~9k parcels)
+#         10 proxies → 900 parcels/day → completes in ~10 CI runs
 #
 # Run locally instead (see main.py for details):
 #   FR          — keycloak.fr.ch geo-blocks datacenter IPs; works from Swiss IP
 #   UR          — geo.ur.ch geo-blocks datacenter IPs; works from Swiss IP
-#   SH, NE, GR  — daily quotas fine for testing; rotation only needed for bulk
+#   NE, GR      — Playwright (NE) / 10/day quota (GR) — run locally with proxies
 #   SO          — reCAPTCHA v3 score passes from residential IP, not datacenter
 #   BE, VS      — one-time interactive login; token cached; macOS/laptop only
 #   BL          — needs ANTHROPIC_API_KEY for handwritten CAPTCHA
@@ -44,13 +46,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 350      # 5h50m — fits inside GitHub Actions' 6h hard limit
     env:
-      # Cantons that work from a GitHub Actions datacenter IP (no proxy needed).
+      # Cantons eligible for CI scanning.
       # ur — geo.ur.ch blocks datacenter IPs ("access denied for your country")
       # bs — cmd_bs is metadata-only (no owner names, no Type B); use bs-public locally
-      ELIGIBLE_CANTONS: "ju sz"
+      # sh — rotated via WEBSHARE_PROXY_LIST (10 proxies × 90 q = 900/day)
+      ELIGIBLE_CANTONS: "ju sz sh"
       # Optional: BS needs a free API key (one-time registration at api.geo.bs.ch).
-      # Add it as a repo secret named BS_API_KEY; the workflow forwards it.
       BS_API_KEY: ${{ secrets.BS_API_KEY }}
+      # Webshare datacenter proxy list for SH quota rotation.
+      # Add comma-separated host:port:user:pass lines as repo secret WEBSHARE_PROXY_LIST.
+      SH_PROXY_LIST: ${{ secrets.WEBSHARE_PROXY_LIST }}
 
     steps:
       - uses: actions/checkout@v4
@@ -98,13 +103,15 @@ jobs:
           set -e
           echo "Scanning $CANTON …"
           # --limit caps parcels per run.  Aim for ~5h of compute.
-          # delay default is 1-2s, so 5h ≈ ~9000-18000 parcels per run.
+          # SH: 900 parcels/day with 10 proxies at delay=1.5s → ~22min per run,
+          # scanner stops naturally when all proxies exhausted for the day.
           case "$CANTON" in
             bs) LIMIT=12000 ;;      # BS is small (~7k); ~2h
             ur) LIMIT=20000 ;;      # UR is medium (~20k); ~5h
             ju) LIMIT=11000 ;;      # ~6.7h full → cap at 5h
             sz) LIMIT=12000 ;;      # ~7.5h full → cap at 5h
             fr) LIMIT=18000 ;;      # FR is large (~80k) → many runs needed
+            sh) LIMIT=9000  ;;      # SH is small (~9k); proxy rotation caps actual queries
             *)  LIMIT=10000 ;;
           esac
           timeout 5h python main.py "$CANTON" --limit "$LIMIT" || echo "Scan timed out or failed — committing partial progress."
