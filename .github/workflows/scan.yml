@@ -122,14 +122,14 @@ jobs:
           fi
           git commit -m "scan: ${{ steps.pick.outputs.canton }} (auto)"
           # Push with retries. If a local commit raced us, rebase preferring
-          # OUR scan results for the DB (because we just generated fresh data;
-          # any concurrent local commits to the DB would be a manual cleanup
-          # that the scanner can re-derive on the next run).
+          # CI's fresh scan results for the DB (binary conflict resolution).
+          # NOTE: in `git rebase`, -X theirs = prefer the commits being replayed
+          # (CI's data), -X ours = prefer the branch being rebased onto (origin).
           for attempt in 1 2 3; do
             if git push; then exit 0; fi
             echo "Push rejected (attempt $attempt) — rebasing on origin/main..."
             git fetch origin main
-            git rebase origin/main -X ours || git rebase --abort
+            git rebase origin/main -X theirs || git rebase --abort
             sleep 5
           done
           echo "Push failed after 3 attempts — uploading DB as artifact for manual recovery."
