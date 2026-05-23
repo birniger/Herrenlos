@@ -109,6 +109,9 @@ python main.py ne --limit 50     # ~50/day quota
 ## Slow-background cantons (daily quota — run in a separate terminal)
 
 ```bash
+# In the new terminal: cd + activate first, then pick one canton
+cd "/Users/basilirniger/Local Docs/herrenlos_scanner"
+source .venv/bin/activate
 python main.py ur   # exits when daily math-CAPTCHA quota (~14-30) is hit
 python main.py sh   # 100 req/day
 python main.py ne   # ~50 Altcha PoW/day
