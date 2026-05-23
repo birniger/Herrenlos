@@ -59,6 +59,7 @@ For auto-restart across crashes / network outages, use the bash wrapper:
 from __future__ import annotations
 
 import datetime
+import json
 import logging
 import os
 import pathlib
@@ -67,6 +68,8 @@ import signal
 import subprocess
 import sys
 import time
+import urllib.parse
+import urllib.request
 import zoneinfo
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -407,6 +410,59 @@ def main() -> int:
         return datetime.datetime(tomorrow.year, tomorrow.month, tomorrow.day,
                                  tzinfo=tz).timestamp()
 
+    # canton → (token_file, token_endpoint, client_id)
+    _TOKEN_META: dict[str, tuple[pathlib.Path, str, str]] = {
+        "be": (
+            pathlib.Path.home() / ".herrenlos_scanner" / "be_token.json",
+            "https://sso.be.ch/auth/realms/a51-grudis-public-agov"
+            "/protocol/openid-connect/token",
+            "intercapi-public-client",
+        ),
+        "vs": (
+            pathlib.Path.home() / ".herrenlos_scanner" / "vs_token.json",
+            "https://sso.apps.vs.ch/auth/realms/etatvs"
+            "/protocol/openid-connect/token",
+            "capitastra-public-client",
+        ),
+    }
+
+    def _keepalive_token(canton: str) -> None:
+        """Silently refresh the stored token so the session doesn't idle-expire."""
+        meta = _TOKEN_META.get(canton)
+        if not meta:
+            return
+        token_file, token_ep, client_id = meta
+        if not token_file.exists():
+            return
+        try:
+            cached = json.loads(token_file.read_text())
+            refresh_token = cached.get("refresh_token")
+            if not refresh_token:
+                return
+            body = urllib.parse.urlencode({
+                "grant_type":    "refresh_token",
+                "client_id":     client_id,
+                "refresh_token": refresh_token,
+            }).encode()
+            req = urllib.request.Request(token_ep, data=body,
+                                         method="POST")
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read())
+            if "access_token" not in data:
+                log.warning("%s keepalive: refresh failed — %s",
+                            canton.upper(), data.get("error", "unknown"))
+                return
+            cached["access_token"] = data["access_token"]
+            cached["expires_at"]   = time.time() + data.get("expires_in", 300)
+            if "refresh_token" in data:
+                cached["refresh_token"] = data["refresh_token"]
+            token_file.write_text(json.dumps(cached))
+            log.debug("%s keepalive: token refreshed OK", canton.upper())
+        except Exception as exc:
+            log.warning("%s keepalive: %s", canton.upper(), exc)
+
+    KEEPALIVE_INTERVAL = 900  # 15 min — well within any Keycloak idle timeout
+
     while True:
         try:
             now = time.time()
@@ -414,8 +470,18 @@ def main() -> int:
             if not available:
                 next_up = min(cooldown.values())
                 wait = int(next_up - now) + 1
-                log.info("All cantons in cooldown — sleeping %ds.", wait)
-                time.sleep(wait)
+                resume = datetime.datetime.fromtimestamp(next_up).strftime("%H:%M")
+                log.info("All cantons in cooldown — sleeping until %s "
+                         "(keepalive every %ds).", resume, KEEPALIVE_INTERVAL)
+                # Sleep in short chunks, refreshing tokens so sessions don't
+                # idle-expire during the overnight cooldown.
+                deadline = next_up + 1
+                while time.time() < deadline:
+                    chunk = min(KEEPALIVE_INTERVAL, deadline - time.time())
+                    if chunk > 0:
+                        time.sleep(chunk)
+                    for c in cooldown:
+                        _keepalive_token(c)
                 continue
 
             canton = pick_canton(available)
