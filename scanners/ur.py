@@ -96,6 +96,18 @@ def check_owner(session: requests.Session, bfs_nr: str, parcel_nr: str) -> dict:
         raw   = r.text
         size  = len(raw.encode())
 
+        # ── Geo-IP block detection ───────────────────────────────────────────
+        # geo.ur.ch denies access from non-Swiss IPs (e.g. GitHub Actions).
+        # Do NOT classify these as herrenlos — store as retriable error.
+        if "access to this page is denied for your country" in raw \
+                or "security reasons" in raw.lower() and "denied" in raw.lower():
+            log.warning("Geo-IP block from geo.ur.ch — bfs=%s nr=%s. "
+                        "Run from a Swiss IP or add UR to proxy pool.", bfs_nr, parcel_nr)
+            return {"owner": None, "owner_address": None,
+                    "is_herrenlos": None, "herrenlos_type": None,
+                    "claim_possible": None,
+                    "raw_response": raw[:200], "error": "geo_blocked"}
+
         # ── Herrenlos detection ──────────────────────────────────────────────
         if HERRENLOS_NEEDLE in raw or size < HERRENLOS_MAX_B:
             # "existiert nicht" = parcel not in Grundbuch at all (Art. 664 Type B)

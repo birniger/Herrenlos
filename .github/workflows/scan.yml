@@ -37,8 +37,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 350      # 5h50m — fits inside GitHub Actions' 6h hard limit
     env:
-      # Cantons that work from a datacenter IP. Order is the round-robin tie-break.
-      ELIGIBLE_CANTONS: "bs ur ju sz fr"
+      # Cantons that work from a GitHub Actions datacenter IP (no proxy needed).
+      # ur — geo.ur.ch blocks datacenter IPs ("access denied for your country")
+      # bs — cmd_bs is metadata-only (no owner names, no Type B); use bs-public locally
+      ELIGIBLE_CANTONS: "ju sz fr"
       # Optional: BS needs a free API key (one-time registration at api.geo.bs.ch).
       # Add it as a repo secret named BS_API_KEY; the workflow forwards it.
       BS_API_KEY: ${{ secrets.BS_API_KEY }}
