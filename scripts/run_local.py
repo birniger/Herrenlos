@@ -9,11 +9,13 @@ Eligible for bulk scanning from the laptop:
           NOTE: GRUDIS enforces a per-account daily quota (account-level, not IP).
           When the quota is exhausted the loop cools BE down until midnight Bern time.
     VS  — one-time SwissID 2FA (Playwright window); ~210k parcels
+    FR  — no login, no CAPTCHA; needs residential IP (keycloak.fr.ch geo-blocks
+          GitHub Actions datacenter IPs). ~80k parcels; ~600-800/hr.
     BL  — needs ANTHROPIC_API_KEY (Claude vision for handwritten CAPTCHA); ~70k parcels
 
 NOT included by design:
-  - FR, JU, SZ      : already scheduled on GitHub Actions every 6h. Duplicating
-                      from your laptop would race the CI commits.
+  - JU, SZ          : handled by GitHub Actions (no login, datacenter IP OK).
+                      Duplicating from laptop would race CI commits.
   - UR, SH, NE, GR  : daily quotas (10–100 req/day) make true bulk infeasible
                       without rotation. Use `python main.py <canton>` directly
                       for slow-background runs.
@@ -101,7 +103,7 @@ if _env_file.exists():
 # run produced 2 results + 497 errors (96% failure rate). SO needs proxies after
 # all — keep so_public.py for when proxies/CAPTCHA service is added, but don't
 # include SO in the laptop bulk loop.
-LOCAL_ELIGIBLE_DEFAULT = ["be", "vs", "bl"]
+LOCAL_ELIGIBLE_DEFAULT = ["be", "vs", "fr", "bl"]
 
 # enum_count below this = "not yet enumerated" (test seeds / empty). Strategy 0
 # picks these first so every canton gets bootstrapped before gap comparison.
@@ -158,6 +160,12 @@ def _check_bl() -> tuple[bool, str]:
     return False, "ANTHROPIC_API_KEY not set in env/.env (needed for handwritten CAPTCHA)"
 
 
+def _check_fr() -> tuple[bool, str]:
+    # FR needs no token — just a residential IP. keycloak.fr.ch is geo-blocked
+    # from GitHub Actions datacentres; from a Swiss home IP it works fine.
+    return True, "FR needs no token (residential IP only — no setup required)"
+
+
 def _check_so() -> tuple[bool, str]:
     # SO needs only a Swiss residential IP — we can't reliably introspect that
     # without making a real request, so we just optimistically pass and let the
@@ -193,6 +201,11 @@ PREFLIGHT_CHECKS = {
             "then add to .env:    ANTHROPIC_API_KEY=sk-ant-...\n"
             "Then rerun this script."
         ),
+    },
+    "fr": {
+        "check":   _check_fr,
+        "setup_cmd": None,
+        "setup_note": "FR needs no setup — just run from a Swiss residential IP.",
     },
     "so": {
         "check":   _check_so,

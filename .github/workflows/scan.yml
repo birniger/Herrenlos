@@ -7,11 +7,11 @@
 # Public repo: unlimited minutes. The repo IS the synced database.
 #
 # CI-eligible cantons (no login, no proxy, no geo-block from datacenter IPs):
-#   FR  — keycloak public session, no CAPTCHA               (~80k parcels)
 #   JU  — OCR-solvable image CAPTCHA (ddddocr), no login    (~13k parcels)
 #   SZ  — OCR-solvable image CAPTCHA (ddddocr), no login    (~18k parcels)
 #
 # Run locally instead (see main.py for details):
+#   FR          — keycloak.fr.ch geo-blocks datacenter IPs; works from Swiss IP
 #   UR          — geo.ur.ch geo-blocks datacenter IPs; works from Swiss IP
 #   SH, NE, GR  — daily quotas fine for testing; rotation only needed for bulk
 #   SO          — reCAPTCHA v3 score passes from residential IP, not datacenter
@@ -47,7 +47,7 @@ jobs:
       # Cantons that work from a GitHub Actions datacenter IP (no proxy needed).
       # ur — geo.ur.ch blocks datacenter IPs ("access denied for your country")
       # bs — cmd_bs is metadata-only (no owner names, no Type B); use bs-public locally
-      ELIGIBLE_CANTONS: "fr ju sz"
+      ELIGIBLE_CANTONS: "ju sz"
       # Optional: BS needs a free API key (one-time registration at api.geo.bs.ch).
       # Add it as a repo secret named BS_API_KEY; the workflow forwards it.
       BS_API_KEY: ${{ secrets.BS_API_KEY }}

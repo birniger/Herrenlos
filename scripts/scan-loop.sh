@@ -40,6 +40,16 @@ fi
 # Forward SIGINT/SIGTERM to the child cleanly
 trap 'echo; echo "[scan-loop] interrupted, exiting."; exit 0' INT TERM
 
+# Clean up any stale SQLite WAL/shm files before starting. A leftover .db-shm
+# from a previous session that was killed mid-write can corrupt the DB when a
+# new writer starts, because the old shm doesn't match the new WAL state.
+for f in herrenlos.db-wal herrenlos.db-shm; do
+    if [ -f "$f" ]; then
+        echo "[scan-loop] removing stale $f before startup"
+        rm -f "$f"
+    fi
+done
+
 RESTART_DELAY=60
 attempt=1
 

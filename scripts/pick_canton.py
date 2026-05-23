@@ -25,11 +25,11 @@ Eligibility criteria (all must be true):
   - Scanner can run headless in CI (no Playwright requirement)
 
 Current eligible cantons:
-  fr  — keycloak public session, no CAPTCHA, no residential IP  (~80k parcels)
   ju  — public + OCR-solvable CAPTCHA (ddddocr), no login       (~13k parcels)
   sz  — public + OCR-solvable CAPTCHA (ddddocr), no login       (~18k parcels)
 
 NOT eligible (excluded reasons):
+  fr  — keycloak.fr.ch geo-blocks datacenter IPs; moved to laptop scan loop
   ur  — geo.ur.ch blocks datacenter IPs ("access denied for your country")
   bs  — cmd_bs is metadata-only (no owner names, no Type B detection)
   ne  — reCAPTCHA Enterprise + ip_rotation deferred
@@ -50,7 +50,7 @@ from db import init_db, get_conn   # noqa: E402
 
 # Cantons that work cleanly from a GitHub Actions datacenter IP.
 # Order is the priority for strategy 0 (enumeration) and strategy 2 (fallback).
-ELIGIBLE_DEFAULT = ["fr", "ju", "sz"]
+ELIGIBLE_DEFAULT = ["ju", "sz"]
 
 # A real enumeration produces at least this many parcel_enum rows.
 # Below this threshold the canton is treated as "not yet enumerated".

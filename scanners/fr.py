@@ -10,7 +10,7 @@ FR scanner — Fribourg
     Type 1 (dereliktion):      valid full response, table.proprio exists but
                                 no owner name found
 - Rate limit        : 1 query per JSESSIONID → rotate session every query
-- Throughput        : ~300 queries/hr single-threaded
+- Throughput        : ~600-800 queries/hr (QUERIES_PER_SESSION=3)
 
 FR commune codes (selcom) format:  "{bfs_nr} FR{sector_code}"
 Full commune list fetched live from selectCommune.jsp on each session init.
@@ -45,14 +45,14 @@ SWISSTOPO_IDENTIFY = "https://api3.geo.admin.ch/rest/services/api/MapServer/iden
 NOT_FOUND_NEEDLE  = "INFORMATION INTROUVABLE"
 NOT_FOUND_MAX_B   = 800    # bytes; valid response is ~8–10 KB
 RATE_LIMIT_NEEDLE = "dépassement de la limite"
-QUERIES_PER_SESSION = 1    # safest: 1 query per session
+QUERIES_PER_SESSION = 3    # 3 queries per JSESSIONID → ~2-3x throughput vs 1
 # Observed 2026-05-18: FR portal rate-limits session creation (~1 every 12s).
-# Even with QUERIES_PER_SESSION=1, ~27% of queries get session_exhausted on
-# the first attempt. The scanner retries once with a fresh session and
-# usually succeeds, but a steady-state pass rate of ~73% is normal.
-# Parcels that fail both attempts get stored with is_herrenlos=NULL and
-# error='session_exhausted'; the next scan run picks them up automatically
-# (skip_existing only skips rows where is_herrenlos IS NOT NULL).
+# QUERIES_PER_SESSION=1 gave ~300/hr because new_session() overhead (~4 s of
+# HTTP round-trips) was paid for every single parcel. At QPS=3 the overhead
+# is amortised across 3 parcels. ~27% of 2nd/3rd queries get session_exhausted;
+# the scanner retries once with a fresh session. Even with retries this yields
+# ~600-800/hr. Parcels that fail both attempts are stored with is_herrenlos=NULL
+# and error='session_exhausted'; the next run picks them up automatically.
 # 2-3 scan passes converge to ~100% coverage.
 
 
@@ -334,7 +334,7 @@ def scan(communes: list[str] | None = None,
             # Rotate session every QUERIES_PER_SESSION queries
             if queries_this_session >= QUERIES_PER_SESSION:
                 log.debug("Rotating FR session after %d queries", queries_this_session)
-                time.sleep(2)
+                time.sleep(1)
                 session, xv1, _ = new_session()
                 queries_this_session = 0
 
