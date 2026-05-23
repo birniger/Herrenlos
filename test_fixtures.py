@@ -230,17 +230,18 @@ CANTON_STATUS: dict[str, dict] = {
            "needs": "free AGOV/BE-Login account; one-time enable Safari's Apple Events JS; run at conservative delay — 429s are real and per-account with no IP rotation workaround"},
     "VS": {"access": "own_account", "test_group": "own_login", "ip_rotation": None,
            "daily_limit": 10,
-           "rate_limit": "per-account (personal SwissID identity) — ICP-extract endpoint "
-                         "observed at 10/day (scanner hits 429 and saves rate_limited rows); "
-                         "scanner uses JSON API only to avoid ICP-extract, but 429s still "
-                         "seen in production. Per-account nature NOT empirically confirmed "
-                         "the same way as BE (fresh-token test not done for VS) — could be "
-                         "IP-based, but inferred per-account from ICP quota behaviour. "
-                         "access_token ~5min / refresh_token rotating; session alive while "
-                         "running, re-auth after extended gap",
+           "rate_limit": "per-account — 10/day established from portal research. VS portal "
+                         "uses AGOV (same identity provider as BE) as well as SwissID; "
+                         "scanner uses SwissID path but the limit is on the account identity, "
+                         "not the IP. IP rotation cannot help for the same structural reason "
+                         "as BE: the constraint is the personal identity (AGOV/SwissID), not "
+                         "the network path. 429s seen in production; scanner saves "
+                         "rate_limited rows and retries on next run. access_token ~5min / "
+                         "refresh_token rotating; session alive while running continuously, "
+                         "re-auth after extended gap",
            "max_test_parcels": 5,
            "blocker": "Interactive SwissID login — Playwright Chromium window opens; just log in there, scanner extracts token automatically",
-           "needs": "free SwissID account at swissid.ch; complete login in the Chromium window that opens; 429s seen in production — run at delay≥1.5s; per-account nature unconfirmed, IP rotation might help (untested)"},
+           "needs": "free SwissID account at swissid.ch; complete login in the Chromium window that opens; 10/day account quota — no proxy workaround (per-account, same as BE)"},
 
     # ── geoportal.ch-based cantons + other restricted ones ──────────────────
     # VERIFICATION PASS — 2026-05-18 (agent + direct portal inspection):

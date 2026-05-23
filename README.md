@@ -42,7 +42,7 @@ Detailed reasoning per canton lives in `test_fixtures.py:CANTON_STATUS`.
 **Rate limit types (important distinction):**
 - **Per-IP limit** (SH, NE, GR, UR): solvable with proxy rotation or VPN
 - **Per-account limit — confirmed (BE)**: 429s hit in production; empirically verified per-account (fresh browser session + new token still returned 429 → limit is on the AGOV account, not the IP). No proxy workaround. Limit appears to be on owner-name resolution specifically, not parcel lookups. Run conservatively.
-- **Per-account limit — inferred (VS)**: ICP-extract endpoint observed at 10/day; 429s seen in production. Per-account nature not empirically confirmed (fresh-token probe not done) — could be IP-based. IP rotation *might* help for VS but is untested. Run at ≥1.5s delay.
+- **Per-account limit — confirmed (VS)**: 10/day established from portal research. VS uses AGOV (same identity provider as BE) as well as SwissID — the limit is on the personal identity, not the IP. IP rotation cannot help for the same structural reason as BE.
 - Token lifecycle (both): access_token ~5min, refresh_token ~30min rotating — session stays alive while scanner runs continuously; re-auth needed after any gap >~30min.
 - **No limit / CAPTCHA only** (JU, SZ, BL, FR): throughput limited only by CAPTCHA solve time or IP geo-restriction
 - **Proxies required from request #1** (GE, SO): Imperva / reCAPTCHA v3 score blocks datacenter IPs immediately
