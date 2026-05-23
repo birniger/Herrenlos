@@ -217,24 +217,30 @@ CANTON_STATUS: dict[str, dict] = {
     #   → manual re-auth required on next run.
     "BE": {"access": "own_account", "test_group": "own_login", "ip_rotation": None,
            "daily_limit": None,
-           "rate_limit": "per-account (personal AGOV identity) — no explicit per-query "
-                         "limit observed (no 429 in production runs at delay=1.0s); "
-                         "access_token 5min / refresh_token 30min rotating; session "
-                         "alive while running, re-auth after >~30min gap; IP rotation "
-                         "not applicable — account is the constraint",
+           "rate_limit": "per-account (personal AGOV identity) — CONFIRMED per-account "
+                         "(empirically verified: fresh browser session + new token still "
+                         "returned 429, proving the limit is on the account, not the IP). "
+                         "Limit appears to be on the person/owner-name resolution step "
+                         "(GET /api/gb/person/master), not on parcel lookups. Threshold "
+                         "count unknown. access_token 5min / refresh_token 30min rotating; "
+                         "session alive while running, re-auth after >~30min gap; IP "
+                         "rotation cannot help — account is the hard constraint",
            "max_test_parcels": 5,
            "blocker": "Interactive BE-Login (AGOV) — Safari opens; on macOS the scanner pulls the token automatically via AppleScript (one-time setup: enable 'Show Develop menu' + 'Allow JavaScript from Apple Events' in Safari); paste-in-console fallback otherwise",
-           "needs": "free AGOV/BE-Login account; one-time enable Safari's Apple Events JS; run at delay≥1.0s to avoid triggering undocumented account-level abuse detection"},
+           "needs": "free AGOV/BE-Login account; one-time enable Safari's Apple Events JS; run at conservative delay — 429s are real and per-account with no IP rotation workaround"},
     "VS": {"access": "own_account", "test_group": "own_login", "ip_rotation": None,
-           "daily_limit": None,
-           "rate_limit": "per-account (personal SwissID identity) — server returns HTTP 429 "
-                         "(threshold unknown, not hit at delay=1.5s); ICP-extract endpoint "
-                         "is 10/day but scanner uses JSON API only; access_token ~5min / "
-                         "refresh_token rotating; session alive while running, re-auth after "
-                         "extended gap; IP rotation not applicable — account is the constraint",
+           "daily_limit": 10,
+           "rate_limit": "per-account (personal SwissID identity) — ICP-extract endpoint "
+                         "observed at 10/day (scanner hits 429 and saves rate_limited rows); "
+                         "scanner uses JSON API only to avoid ICP-extract, but 429s still "
+                         "seen in production. Per-account nature NOT empirically confirmed "
+                         "the same way as BE (fresh-token test not done for VS) — could be "
+                         "IP-based, but inferred per-account from ICP quota behaviour. "
+                         "access_token ~5min / refresh_token rotating; session alive while "
+                         "running, re-auth after extended gap",
            "max_test_parcels": 5,
            "blocker": "Interactive SwissID login — Playwright Chromium window opens; just log in there, scanner extracts token automatically",
-           "needs": "free SwissID account at swissid.ch; complete login in the Chromium window that opens; run at delay≥1.5s — 429 handling present in scanner but threshold unknown"},
+           "needs": "free SwissID account at swissid.ch; complete login in the Chromium window that opens; 429s seen in production — run at delay≥1.5s; per-account nature unconfirmed, IP rotation might help (untested)"},
 
     # ── geoportal.ch-based cantons + other restricted ones ──────────────────
     # VERIFICATION PASS — 2026-05-18 (agent + direct portal inspection):
