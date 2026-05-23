@@ -683,6 +683,8 @@ def scan(
 
     scanned = errors = herrenlos = 0
 
+    consecutive_429 = 0
+
     with get_conn() as conn:
         for p in parcels:
             egrid   = p["egrid"]
@@ -706,11 +708,19 @@ def scan(
                     break
                 result = check_owner(session, egrid)
 
-            # Rate-limit back-off
+            # Rate-limit back-off; circuit breaker after 3 consecutive hits
             if result.get("error") == "rate_limited":
                 log.warning("Rate-limited — waiting 60 s …")
                 time.sleep(60)
                 result = check_owner(session, egrid)
+            if result.get("error") == "rate_limited":
+                consecutive_429 += 1
+                if consecutive_429 >= 3:
+                    log.warning("VS: 3 consecutive rate-limits — daily quota exhausted. "
+                                "Aborting this rotation; will retry next cycle.")
+                    break
+            else:
+                consecutive_429 = 0
 
             annotate_herrenlos(result, "VS")
 

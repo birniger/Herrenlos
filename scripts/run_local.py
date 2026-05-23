@@ -427,7 +427,7 @@ def main() -> int:
             if rc == 0:
                 # Detect 429 circuit-breaker exit — impose cooldown so the
                 # loop doesn't immediately re-pick the same blocked canton.
-                if "rate-limiting" in tail or "consecutive 429" in tail:
+                if "rate-limiting" in tail or "consecutive 429" in tail or "quota exhausted" in tail:
                     until = _next_midnight_bern()
                     cooldown[canton] = until
                     resume = datetime.datetime.fromtimestamp(until).strftime("%H:%M")
