@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Herrenlos scanner watchdog — managed by install-watchdog.sh -->
+    <!-- Keeps scan-loop.sh running at all times after login.       -->
+    <!-- launchd auto-restarts the process if it exits for any reason. -->
+    <!-- ThrottleInterval prevents restart storms on rapid failure.    -->
+
+    <key>Label</key>
+    <string>com.herrenlos.watchdog</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__SCAN_LOOP__</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__PROJECT_DIR__</string>
+
+    <!-- Start at login and keep alive after any exit -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- Don't restart faster than every 5 minutes -->
+    <key>ThrottleInterval</key>
+    <integer>300</integer>
+
+    <!-- Redirect stdout/stderr so you can tail the log -->
+    <key>StandardOutPath</key>
+    <string>/tmp/herrenlos-scanner.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/herrenlos-scanner.err</string>
+
+    <!-- Pass the login environment (needed for PATH, ANTHROPIC_API_KEY, etc.) -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>__HOME__</string>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
+    </dict>
+</dict>
+</plist>

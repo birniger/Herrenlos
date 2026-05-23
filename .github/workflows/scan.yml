@@ -11,11 +11,15 @@
 #   SZ  — OCR-solvable image CAPTCHA (ddddocr), no login    (~18k parcels)
 #   SH  — 100 req/day per IP; rotated via WEBSHARE_PROXY_LIST (~9k parcels)
 #         10 proxies → 900 parcels/day → completes in ~10 CI runs
+#   NE  — Playwright + Altcha PoW; 10 proxies × 45 = 450/day  (~50k parcels)
+#         Chromium installed conditionally (only when NE is picked).
+#         ~111 CI runs to complete.
+#   GR  — pure requests; 10 proxies × 9 = 90/day             (~85k parcels)
+#         Slow (~944 CI runs) but CI runs even when laptop is off.
 #
 # Run locally instead (see main.py for details):
 #   FR          — keycloak.fr.ch geo-blocks datacenter IPs; works from Swiss IP
 #   UR          — geo.ur.ch geo-blocks datacenter IPs; works from Swiss IP
-#   NE, GR      — Playwright (NE) / 10/day quota (GR) — run locally with proxies
 #   SO          — reCAPTCHA v3 score passes from residential IP, not datacenter
 #   BE, VS      — one-time interactive login; token cached; macOS/laptop only
 #   BL          — needs ANTHROPIC_API_KEY for handwritten CAPTCHA
@@ -50,12 +54,17 @@ jobs:
       # ur — geo.ur.ch blocks datacenter IPs ("access denied for your country")
       # bs — cmd_bs is metadata-only (no owner names, no Type B); use bs-public locally
       # sh — rotated via WEBSHARE_PROXY_LIST (10 proxies × 90 q = 900/day)
-      ELIGIBLE_CANTONS: "ju sz sh"
+      # ne — Playwright + Altcha; 10 proxies × 45 q = 450/day
+      # gr — pure requests; 10 proxies × 9 q = 90/day (slow but passive)
+      ELIGIBLE_CANTONS: "ju sz sh ne gr"
       # Optional: BS needs a free API key (one-time registration at api.geo.bs.ch).
       BS_API_KEY: ${{ secrets.BS_API_KEY }}
-      # Webshare datacenter proxy list for SH quota rotation.
+      # Webshare datacenter proxy list for quota-rotating cantons.
+      # Single secret WEBSHARE_PROXY_LIST is forwarded to all three scanners.
       # Add comma-separated host:port:user:pass lines as repo secret WEBSHARE_PROXY_LIST.
       SH_PROXY_LIST: ${{ secrets.WEBSHARE_PROXY_LIST }}
+      NE_PROXY_LIST: ${{ secrets.WEBSHARE_PROXY_LIST }}
+      GR_PROXY_LIST: ${{ secrets.WEBSHARE_PROXY_LIST }}
 
     steps:
       - uses: actions/checkout@v4
@@ -64,7 +73,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: "pip" }
 
-      - name: Install scanner deps (no Playwright needed for eligible cantons)
+      - name: Install scanner deps (base; Playwright installed conditionally per-pick)
         run: |
           pip install --upgrade pip
           pip install requests beautifulsoup4 lxml ddddocr pillow numpy
@@ -96,6 +105,12 @@ jobs:
           fi
           echo "canton=$CANTON" >> "$GITHUB_OUTPUT"
 
+      - name: Install Playwright + Chromium (NE only)
+        if: steps.pick.outputs.canton == 'ne'
+        run: |
+          pip install playwright
+          playwright install chromium --with-deps
+
       - name: Run scan
         env:
           CANTON: ${{ steps.pick.outputs.canton }}
@@ -112,6 +127,8 @@ jobs:
             sz) LIMIT=12000 ;;      # ~7.5h full → cap at 5h
             fr) LIMIT=18000 ;;      # FR is large (~80k) → many runs needed
             sh) LIMIT=9000  ;;      # SH is small (~9k); proxy rotation caps actual queries
+            ne) LIMIT=500   ;;      # NE: 10 proxies × 45 = 450/day; scanner exits on quota
+            gr) LIMIT=100   ;;      # GR: 10 proxies × 9 = 90/day; scanner exits on quota
             *)  LIMIT=10000 ;;
           esac
           timeout 5h python main.py "$CANTON" --limit "$LIMIT" || echo "Scan timed out or failed — committing partial progress."
