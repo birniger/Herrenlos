@@ -394,18 +394,37 @@ def main() -> int:
     print("Ctrl+C to stop cleanly.\n")
 
     consecutive_failures = 0
+    # canton → earliest time it may be picked again (rate-limit cooldown)
+    cooldown: dict[str, float] = {}
+    COOLDOWN_SECONDS = 3600  # 1 hour before retrying a rate-limited canton
 
     while True:
         try:
-            canton = pick_canton(ready)
+            now = time.time()
+            available = [c for c in ready if now >= cooldown.get(c, 0)]
+            if not available:
+                next_up = min(cooldown.values())
+                wait = int(next_up - now) + 1
+                log.info("All cantons in cooldown — sleeping %ds.", wait)
+                time.sleep(wait)
+                continue
+
+            canton = pick_canton(available)
             if canton is None:
                 log.error("No eligible cantons remain — exiting.")
                 return 2
 
             rc, tail = run_canton(canton)
             if rc == 0:
-                log.info("%s scan exited cleanly. Sleeping %ds.",
-                         canton.upper(), INTER_CANTON_DELAY_SECONDS)
+                # Detect 429 circuit-breaker exit — impose cooldown so the
+                # loop doesn't immediately re-pick the same blocked canton.
+                if "rate-limiting" in tail or "consecutive 429" in tail:
+                    cooldown[canton] = time.time() + COOLDOWN_SECONDS
+                    log.info("%s rate-limited — cooling down for %ds before retry.",
+                             canton.upper(), COOLDOWN_SECONDS)
+                else:
+                    log.info("%s scan exited cleanly. Sleeping %ds.",
+                             canton.upper(), INTER_CANTON_DELAY_SECONDS)
                 consecutive_failures = 0
                 time.sleep(INTER_CANTON_DELAY_SECONDS)
                 continue
