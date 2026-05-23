@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-23T00:41:57+00:00",
+  "generated_at": "2026-05-23T00:54:09+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -81,11 +81,11 @@
     },
     {
       "canton": "JU",
-      "enumerated": 16183,
-      "scanned": 11000,
-      "herrenlos": 327,
+      "enumerated": 0,
+      "scanned": 10673,
+      "herrenlos": 0,
       "errors": 0,
-      "percent": 68.0,
+      "percent": 66.7,
       "estimated_total": 16000,
       "last_scan_at": "2026-05-19 03:06:40",
       "access": "public",
@@ -172,8 +172,8 @@
     }
   ],
   "totals": {
-    "scanned": 11080,
-    "herrenlos": 327,
+    "scanned": 10753,
+    "herrenlos": 0,
     "errors": 20
   }
 }

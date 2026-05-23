@@ -198,7 +198,7 @@ def _wfs_page(session: requests.Session, startindex: int, count: int = 1000) -> 
         "REQUEST":      "GetFeature",
         "COUNT":        count,
         "STARTINDEX":   startindex,
-        "PROPERTYNAME": "ms:commune,ms:numero,ms:egris_egrid,ms:url_rf",
+        "PROPERTYNAME": "ms:commune,ms:numero,ms:egris_egrid,ms:url_rf,ms:genre_bf",
     }, timeout=30)
     r.raise_for_status()
     root = ET.fromstring(r.text)
@@ -210,6 +210,7 @@ def _wfs_page(session: requests.Session, startindex: int, count: int = 1000) -> 
         egrid_el   = feat.find("ms:egris_egrid", WFS_NS)
         url_rf_el  = feat.find("ms:url_rf",      WFS_NS)
         commune_el = feat.find("ms:commune",      WFS_NS)
+        genre_el   = feat.find("ms:genre_bf",     WFS_NS)
         if egrid_el is None or url_rf_el is None:
             continue
         url_rf = url_rf_el.text or ""
@@ -218,13 +219,16 @@ def _wfs_page(session: requests.Session, startindex: int, count: int = 1000) -> 
             continue
         nocompar = m.group(1)
         # JU BFS numbers are always 4 digits (6700–6899 range)
-        bfs      = nocompar[:4]
+        bfs       = nocompar[:4]
         parcel_nr = nocompar[4:]
+        genre_bf  = (genre_el.text or "").strip() if genre_el is not None else ""
         parcels.append({
             "egrid":     egrid_el.text or "",
             "bfs_nr":    bfs,
             "parcel_nr": parcel_nr,
             "commune":   commune_el.text if commune_el is not None else "",
+            "genre_bf":  genre_bf,                              # top-level for immediate use
+            "extra":     {"genre_bf": genre_bf} if genre_bf else None,  # stored in DB
         })
     return parcels
 
@@ -507,13 +511,21 @@ def scan(limit: int | None = None,
 
     with get_conn() as conn:
         for p in parcels:
-            egrid   = p.get("egrid", "")
-            bfs     = p.get("bfs_nr", "")
-            nr      = p.get("parcel_nr", "")
-            commune = p.get("commune", "")
+            egrid    = p.get("egrid", "")
+            bfs      = p.get("bfs_nr", "")
+            nr       = p.get("parcel_nr", "")
+            commune  = p.get("commune", "")
+            # genre_bf: top-level when fresh from WFS, inside extra{} when loaded from cache
+            genre_bf = p.get("genre_bf") or (p.get("extra") or {}).get("genre_bf", "")
 
             if not bfs or not nr:
                 errors += 1
+                continue
+
+            # BGE 118 II 115: Droit de superficie (Baurecht) cannot be herrenlos —
+            # the right always has a holder; skip to avoid false positives.
+            if genre_bf == "Droit de superficie":
+                log.debug("Skipping Droit de superficie  bfs=%s nr=%s", bfs, nr)
                 continue
 
             if skip_existing and already_scanned(conn, "JU", bfs, nr):
