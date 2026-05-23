@@ -742,6 +742,7 @@ def scan(limit: int | None = None,
         return True
 
     scanned = errors = herrenlos = 0
+    consecutive_429 = 0
 
     with get_conn() as conn:
         for p in parcels:
@@ -766,21 +767,21 @@ def scan(limit: int | None = None,
                     break
                 result = check_owner(session, egrid)
 
-            # 429 handling — GRUDIS quota is per-token, not per-IP.
-            # Short backoffs first; if still blocked, the token is exhausted
-            # so force a fresh login to get a new token + fresh quota.
+            # 429 handling — one short backoff, then give up for this rotation.
+            # GRUDIS rate-limits per-account/IP; token refreshes don't help.
+            # Circuit breaker: 3 consecutive 429s → abort and let the loop
+            # move to the next canton (VS). BE will be retried next rotation.
             if result.get("error") == "http_429":
-                for _wait in (10, 30):
-                    log.info("GRUDIS 429 — backing off %ds …", _wait)
-                    time.sleep(_wait)
-                    result = check_owner(session, egrid)
-                    if result.get("error") != "http_429":
-                        break
-                if result.get("error") == "http_429":
-                    log.info("GRUDIS 429 persists — refreshing token for fresh quota …")
-                    if not _do_refresh():
-                        break
-                    result = check_owner(session, egrid)
+                time.sleep(10)
+                result = check_owner(session, egrid)
+            if result.get("error") == "http_429":
+                consecutive_429 += 1
+                if consecutive_429 >= 3:
+                    log.warning("BE: 3 consecutive 429s — GRUDIS is rate-limiting. "
+                                "Aborting this rotation; will retry next cycle.")
+                    break
+            else:
+                consecutive_429 = 0
 
             annotate_herrenlos(result, "BE")
 
