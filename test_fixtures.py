@@ -201,14 +201,40 @@ CANTON_STATUS: dict[str, dict] = {
     #   VS — Playwright opens its own Chromium window (headless=False) →
     #        user logs into SwissID with 2FA → scanner intercepts the
     #        access_token automatically. No console paste needed.
+    #
+    # CRITICAL DISTINCTION — per-account, not per-IP:
+    #   Both cantons authenticate via a PERSONAL government identity
+    #   (AGOV for BE, SwissID for VS). Any rate limiting or abuse detection
+    #   is PER ACCOUNT — there is no IP rotation workaround. A suspended
+    #   account means losing access to the portal entirely, not just for
+    #   scanning but for any legitimate use. Run at conservative delays.
+    #
+    # Token lifecycle (both cantons):
+    #   access_token  ~5 min — refreshed automatically by the scanner
+    #   refresh_token ~30 min rotating — a new one is issued on each use
+    #   Session stays alive indefinitely while the scanner runs continuously.
+    #   Any gap >~30 min without a query causes the refresh_token to expire
+    #   → manual re-auth required on next run.
     "BE": {"access": "own_account", "test_group": "own_login", "ip_rotation": None,
-           "daily_limit": None, "rate_limit": None, "max_test_parcels": 5,
+           "daily_limit": None,
+           "rate_limit": "per-account (personal AGOV identity) — no explicit per-query "
+                         "limit observed (no 429 in production runs at delay=1.0s); "
+                         "access_token 5min / refresh_token 30min rotating; session "
+                         "alive while running, re-auth after >~30min gap; IP rotation "
+                         "not applicable — account is the constraint",
+           "max_test_parcels": 5,
            "blocker": "Interactive BE-Login (AGOV) — Safari opens; on macOS the scanner pulls the token automatically via AppleScript (one-time setup: enable 'Show Develop menu' + 'Allow JavaScript from Apple Events' in Safari); paste-in-console fallback otherwise",
-           "needs": "free AGOV/BE-Login account; one-time enable Safari's Apple Events JS"},
+           "needs": "free AGOV/BE-Login account; one-time enable Safari's Apple Events JS; run at delay≥1.0s to avoid triggering undocumented account-level abuse detection"},
     "VS": {"access": "own_account", "test_group": "own_login", "ip_rotation": None,
-           "daily_limit": None, "rate_limit": None, "max_test_parcels": 5,
+           "daily_limit": None,
+           "rate_limit": "per-account (personal SwissID identity) — server returns HTTP 429 "
+                         "(threshold unknown, not hit at delay=1.5s); ICP-extract endpoint "
+                         "is 10/day but scanner uses JSON API only; access_token ~5min / "
+                         "refresh_token rotating; session alive while running, re-auth after "
+                         "extended gap; IP rotation not applicable — account is the constraint",
+           "max_test_parcels": 5,
            "blocker": "Interactive SwissID login — Playwright Chromium window opens; just log in there, scanner extracts token automatically",
-           "needs": "free SwissID account at swissid.ch; complete login in the Chromium window that opens"},
+           "needs": "free SwissID account at swissid.ch; complete login in the Chromium window that opens; run at delay≥1.5s — 429 handling present in scanner but threshold unknown"},
 
     # ── geoportal.ch-based cantons + other restricted ones ──────────────────
     # VERIFICATION PASS — 2026-05-18 (agent + direct portal inspection):
