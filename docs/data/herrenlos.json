@@ -1,5 +1,34 @@
 {
-  "generated_at": "2026-05-23T08:34:33+00:00",
-  "count": 0,
-  "parcels": []
+  "generated_at": "2026-05-23T16:34:56+00:00",
+  "count": 2,
+  "parcels": [
+    {
+      "egrid": "CH432277405797",
+      "canton": "SZ",
+      "commune": "1944",
+      "bfs_nr": "1367",
+      "parcel_nr": "1944",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "dereliktion",
+      "claim_possible": 1,
+      "scanned_at": "2026-05-23 16:27:57",
+      "lat": 46.99063491821289,
+      "lng": 8.68479061126709
+    },
+    {
+      "egrid": "CH444022775711",
+      "canton": "SZ",
+      "commune": "2064",
+      "bfs_nr": "1367",
+      "parcel_nr": "2064",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "dereliktion",
+      "claim_possible": 1,
+      "scanned_at": "2026-05-23 16:27:53",
+      "lat": 46.99063491821289,
+      "lng": 8.68479061126709
+    }
+  ]
 }
