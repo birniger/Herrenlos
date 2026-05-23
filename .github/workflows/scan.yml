@@ -64,6 +64,16 @@ jobs:
           pip install --upgrade pip
           pip install requests beautifulsoup4 lxml ddddocr pillow numpy
 
+      - name: Sync to latest main before scanning
+        # Reset to origin/main so we start from the freshest DB (includes any
+        # concurrent local scans that landed since this run was triggered).
+        # Without this, CI checks out a stale commit and its pick_canton gap
+        # numbers are wrong; the merge step at commit time fixes data loss but
+        # this ensures the scan itself builds on up-to-date state.
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+
       - name: Initialise database (if not committed yet)
         run: python -c "from db import init_db; init_db()"
 
@@ -111,6 +121,16 @@ jobs:
         run: |
           git config user.name  "herrenlos-scanner[bot]"
           git config user.email "herrenlos-scanner@users.noreply.github.com"
+
+          # Merge any local scans (BE/VS/FR) that committed to origin/main while
+          # CI was running.  Without this, the rebase below would take CI's DB
+          # wholesale and overwrite concurrent local data.
+          git fetch origin main 2>/dev/null || true
+          if git show origin/main:herrenlos.db > _origin.db 2>/dev/null; then
+            python scripts/merge_dbs.py _origin.db herrenlos.db
+            rm -f _origin.db
+          fi
+
           # Force-add herrenlos.db (gitignored locally so dev DBs don't clutter,
           # but the cloud-managed DB IS committed here).
           git add -f herrenlos.db
@@ -122,13 +142,19 @@ jobs:
           fi
           git commit -m "scan: ${{ steps.pick.outputs.canton }} (auto)"
           # Push with retries. If a local commit raced us, rebase preferring
-          # CI's fresh scan results for the DB (binary conflict resolution).
-          # NOTE: in `git rebase`, -X theirs = prefer the commits being replayed
-          # (CI's data), -X ours = prefer the branch being rebased onto (origin).
+          # CI's fresh scan results for the DB.  This is now safe: CI's DB was
+          # already merged with origin/main above, so -X theirs preserves all data.
           for attempt in 1 2 3; do
             if git push; then exit 0; fi
             echo "Push rejected (attempt $attempt) — rebasing on origin/main..."
             git fetch origin main
+            # Re-merge before replaying: another local commit may have landed
+            # between our fetch above and the push attempt.
+            if git show origin/main:herrenlos.db > _origin.db 2>/dev/null; then
+              python scripts/merge_dbs.py _origin.db herrenlos.db
+              git add -f herrenlos.db
+              rm -f _origin.db
+            fi
             git rebase origin/main -X theirs || git rebase --abort
             sleep 5
           done
