@@ -766,14 +766,21 @@ def scan(limit: int | None = None,
                     break
                 result = check_owner(session, egrid)
 
-            # 429 backoff — GRUDIS rate-limits aggressively; back off and retry
+            # 429 handling — GRUDIS quota is per-token, not per-IP.
+            # Short backoffs first; if still blocked, the token is exhausted
+            # so force a fresh login to get a new token + fresh quota.
             if result.get("error") == "http_429":
-                for _wait in (30, 60, 120):
+                for _wait in (10, 30):
                     log.info("GRUDIS 429 — backing off %ds …", _wait)
                     time.sleep(_wait)
                     result = check_owner(session, egrid)
                     if result.get("error") != "http_429":
                         break
+                if result.get("error") == "http_429":
+                    log.info("GRUDIS 429 persists — refreshing token for fresh quota …")
+                    if not _do_refresh():
+                        break
+                    result = check_owner(session, egrid)
 
             annotate_herrenlos(result, "BE")
 
