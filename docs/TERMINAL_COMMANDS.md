@@ -1,9 +1,10 @@
 # Herrenlos — Terminal Commands
 
-First, cd into the repo (paste this once per terminal session):
+Paste these two lines once per terminal session:
 
 ```bash
 cd "/Users/basilirniger/Local Docs/herrenlos_scanner"
+source .venv/bin/activate
 ```
 
 ---
@@ -24,7 +25,7 @@ pkill -f run_local.py
 
 ```bash
 # CHECK if running
-pgrep -fl "scan-loop\|run_local" || echo "Not running"
+pgrep -fl "scan-loop|run_local" || echo "Not running"
 ```
 
 ---
