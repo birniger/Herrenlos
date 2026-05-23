@@ -1,0 +1,18 @@
+title: Herrenlos
+description: Scanner + live map for ownerless Swiss parcels (ZGB Art. 658)
+url: "https://birniger.github.io"
+baseurl: "/Herrenlos/docs"
+
+# Suppress jekyll-github-metadata API calls. The gem queries GitHub's API
+# for repo metadata (stars, description, etc.) during every build. When the
+# build runner's token is briefly invalid it fails the entire build. Since
+# our dashboard page (index.html) doesn't use Jekyll liquid tags at all,
+# we don't need any of this metadata.
+github:
+  repository_url: https://github.com/birniger/Herrenlos
+
+# Don't try to render the raw data files or the DB
+exclude:
+  - "data/*.json"
+  - "data/*.geojson"
+  - "data/*.csv"
