@@ -3,9 +3,11 @@
 Local bulk scanner — cycles through the cantons that CAN'T run on GitHub Actions
 but CAN run unattended from your laptop on a single Swiss residential IP.
 
-Eligible (no rotation needed for full-canton bulk; all have NO daily quota):
+Eligible for bulk scanning from the laptop:
 
     BE  — one-time AGOV/BE-Login (Safari + AppleScript on macOS); ~400k parcels
+          NOTE: GRUDIS enforces a per-account daily quota (account-level, not IP).
+          When the quota is exhausted the loop cools BE down until midnight Bern time.
     VS  — one-time SwissID 2FA (Playwright window); ~210k parcels
     BL  — needs ANTHROPIC_API_KEY (Claude vision for handwritten CAPTCHA); ~70k parcels
 
@@ -56,6 +58,7 @@ For auto-restart across crashes / network outages, use the bash wrapper:
 """
 from __future__ import annotations
 
+import datetime
 import logging
 import os
 import pathlib
@@ -64,6 +67,7 @@ import signal
 import subprocess
 import sys
 import time
+import zoneinfo
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -396,7 +400,12 @@ def main() -> int:
     consecutive_failures = 0
     # canton → earliest time it may be picked again (rate-limit cooldown)
     cooldown: dict[str, float] = {}
-    COOLDOWN_SECONDS = 3600  # 1 hour before retrying a rate-limited canton
+
+    def _next_midnight_bern() -> float:
+        tz = zoneinfo.ZoneInfo("Europe/Zurich")
+        tomorrow = datetime.date.today() + datetime.timedelta(days=1)
+        return datetime.datetime(tomorrow.year, tomorrow.month, tomorrow.day,
+                                 tzinfo=tz).timestamp()
 
     while True:
         try:
@@ -419,9 +428,12 @@ def main() -> int:
                 # Detect 429 circuit-breaker exit — impose cooldown so the
                 # loop doesn't immediately re-pick the same blocked canton.
                 if "rate-limiting" in tail or "consecutive 429" in tail:
-                    cooldown[canton] = time.time() + COOLDOWN_SECONDS
-                    log.info("%s rate-limited — cooling down for %ds before retry.",
-                             canton.upper(), COOLDOWN_SECONDS)
+                    until = _next_midnight_bern()
+                    cooldown[canton] = until
+                    resume = datetime.datetime.fromtimestamp(until).strftime("%H:%M")
+                    log.info("%s rate-limited — daily quota exhausted. "
+                             "Cooling down until midnight (%s).",
+                             canton.upper(), resume)
                 else:
                     log.info("%s scan exited cleanly. Sleeping %ds.",
                              canton.upper(), INTER_CANTON_DELAY_SECONDS)
