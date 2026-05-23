@@ -514,8 +514,15 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                     "raw_response": None, "error": None}
 
         if r.status_code != 200:
-            return {"error": f"http_{r.status_code}", "is_herrenlos": None,
-                    "owner": None, "owner_address": None, "raw_response": None}
+            try:
+                body = r.json()
+                exc  = body.get("exceptionName") or body.get("error") or ""
+                err  = f"http_{r.status_code}:{exc}" if exc else f"http_{r.status_code}"
+            except Exception:
+                err = f"http_{r.status_code}"
+            return {"error": err, "is_herrenlos": None,
+                    "owner": None, "owner_address": None,
+                    "raw_response": r.text[:200] if r.text else None}
 
         gs_data = r.json()
 
@@ -771,10 +778,10 @@ def scan(limit: int | None = None,
             # GRUDIS rate-limits per-account/IP; token refreshes don't help.
             # Circuit breaker: 3 consecutive 429s → abort and let the loop
             # move to the next canton (VS). BE will be retried next rotation.
-            if result.get("error") == "http_429":
+            if (result.get("error") or "").startswith("http_429"):
                 time.sleep(10)
                 result = check_owner(session, egrid)
-            if result.get("error") == "http_429":
+            if (result.get("error") or "").startswith("http_429"):
                 consecutive_429 += 1
                 if consecutive_429 >= 3:
                     log.warning("BE: 3 consecutive 429s — GRUDIS is rate-limiting. "
