@@ -662,7 +662,7 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
 
 def scan(limit: int | None = None,
          skip_existing: bool = True,
-         delay: float = 1.0):
+         delay: float = 3.0):
     """
     Scan BE parcels for herrenlos detection via GRUDIS public portal.
 
@@ -765,6 +765,15 @@ def scan(limit: int | None = None,
                 if not _do_refresh():
                     break
                 result = check_owner(session, egrid)
+
+            # 429 backoff — GRUDIS rate-limits aggressively; back off and retry
+            if result.get("error") == "http_429":
+                for _wait in (30, 60, 120):
+                    log.info("GRUDIS 429 — backing off %ds …", _wait)
+                    time.sleep(_wait)
+                    result = check_owner(session, egrid)
+                    if result.get("error") != "http_429":
+                        break
 
             annotate_herrenlos(result, "BE")
 
