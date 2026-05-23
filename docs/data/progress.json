@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-05-23T00:54:09+00:00",
+  "generated_at": "2026-05-23T00:58:45+00:00",
   "cantons": [
     {
       "canton": "BE",
-      "enumerated": 5,
+      "enumerated": 0,
       "scanned": 11,
       "herrenlos": 0,
       "errors": 0,
@@ -16,7 +16,7 @@
     },
     {
       "canton": "BL",
-      "enumerated": 5,
+      "enumerated": 0,
       "scanned": 0,
       "herrenlos": 0,
       "errors": 5,
@@ -28,21 +28,8 @@
       "rate_limit": "CAPTCHA per query; portal cooldown after ~10 rapid (built-in 4s retry delay)"
     },
     {
-      "canton": "BS",
-      "enumerated": 1,
-      "scanned": 0,
-      "herrenlos": 0,
-      "errors": 0,
-      "percent": 0.0,
-      "estimated_total": 7000,
-      "last_scan_at": null,
-      "access": "free_key",
-      "test_group": "captcha_pow",
-      "rate_limit": "HTML viewer: 10 req/day/IP (reCAPTCHA Enterprise); metadata API: unlimited with free key"
-    },
-    {
       "canton": "FR",
-      "enumerated": 11,
+      "enumerated": 0,
       "scanned": 8,
       "herrenlos": 0,
       "errors": 3,
@@ -68,7 +55,7 @@
     },
     {
       "canton": "GR",
-      "enumerated": 5,
+      "enumerated": 0,
       "scanned": 4,
       "herrenlos": 0,
       "errors": 1,
@@ -107,7 +94,7 @@
     },
     {
       "canton": "SH",
-      "enumerated": 6,
+      "enumerated": 0,
       "scanned": 6,
       "herrenlos": 0,
       "errors": 0,
@@ -120,7 +107,7 @@
     },
     {
       "canton": "SO",
-      "enumerated": 5,
+      "enumerated": 0,
       "scanned": 0,
       "herrenlos": 0,
       "errors": 5,
@@ -133,7 +120,7 @@
     },
     {
       "canton": "SZ",
-      "enumerated": 5,
+      "enumerated": 0,
       "scanned": 4,
       "herrenlos": 0,
       "errors": 1,
@@ -146,7 +133,7 @@
     },
     {
       "canton": "UR",
-      "enumerated": 11,
+      "enumerated": 0,
       "scanned": 29,
       "herrenlos": 0,
       "errors": 0,
@@ -159,7 +146,7 @@
     },
     {
       "canton": "VS",
-      "enumerated": 2,
+      "enumerated": 0,
       "scanned": 7,
       "herrenlos": 0,
       "errors": 0,
