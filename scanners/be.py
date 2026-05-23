@@ -662,7 +662,7 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
 
 def scan(limit: int | None = None,
          skip_existing: bool = True,
-         delay: float = 3.0):
+         delay: float = 1.0):
     """
     Scan BE parcels for herrenlos detection via GRUDIS public portal.
 
