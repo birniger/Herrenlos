@@ -6,11 +6,18 @@
 #
 # Public repo: unlimited minutes. The repo IS the synced database.
 #
-# Only includes cantons that work from a GitHub Actions datacenter IP:
-#   BS, UR, JU, SZ, FR  (no rate limit gates / no Imperva / no Google reCAPTCHA)
-# GE, SO, GR, SH, NE all fail from datacenter IPs — run those on residential
-# proxies or your laptop instead.
-# BE, VS need interactive logins — phase 2.
+# CI-eligible cantons (no login, no proxy, no geo-block from datacenter IPs):
+#   FR  — keycloak public session, no CAPTCHA               (~80k parcels)
+#   JU  — OCR-solvable image CAPTCHA (ddddocr), no login    (~13k parcels)
+#   SZ  — OCR-solvable image CAPTCHA (ddddocr), no login    (~18k parcels)
+#
+# Run locally instead (see main.py for details):
+#   UR          — geo.ur.ch geo-blocks datacenter IPs; works from Swiss IP
+#   SH, NE, GR  — daily quotas fine for testing; rotation only needed for bulk
+#   SO          — reCAPTCHA v3 score passes from residential IP, not datacenter
+#   BE, VS      — one-time interactive login; token cached; macOS/laptop only
+#   BL          — needs ANTHROPIC_API_KEY for handwritten CAPTCHA
+#   GE          — Imperva + image CAPTCHA; needs proxies + ANTHROPIC_API_KEY
 
 name: scan
 

@@ -2,50 +2,77 @@
 """
 Herrenlos Scanner
 =================
-Detects parcels with no Grundbuch entry (herrenlos under ZGB Art. 658)
+Detects ownerless Swiss land parcels (herrenlos under ZGB Art. 658/664/964)
 across Swiss cantons using public geo portals.
 
-Usage:
+── CI (GitHub Actions) ─────────────────────────────────────────────────────
+    python main.py fr           # FR scan (~80k parcels; keycloak public session)
+    python main.py ju           # JU scan (~13k parcels; OCR-solvable CAPTCHA per query)
+    python main.py sz           # SZ scan (~18k parcels; OCR-solvable CAPTCHA per query)
+    All three are auto-scheduled every 6h; pick_canton.py selects by gap size.
+
+── Laptop — true bulk-capable (single IP completes the whole canton) ──────
+    These are what scripts/run_local.py runs automatically in a loop.
+    python main.py so           # SO scan (~70k parcels); reCAPTCHA v3, no daily limit;
+                                #   residential IP passes, datacenter IPs fail
+    python main.py be           # BE scan (~400k parcels); one-time AGOV/BE-Login:
+                                #   Safari opens → log in → token cached
+                                #   (macOS: enable 'Allow JavaScript from Apple Events' in Safari)
+    python main.py vs           # VS scan (~210k parcels); one-time SwissID 2FA:
+                                #   Playwright Chromium window opens → complete 2FA →
+                                #   token extracted automatically; token cached
+    python main.py bl           # BL scan (~70k parcels); handwritten CAPTCHA —
+                                #   needs ANTHROPIC_API_KEY (~$0.003/parcel, ~$210 total)
+
+── Laptop — slow-background only (daily quota, bulk infeasible without rotation)
+    python main.py ur           # UR scan (~20k parcels); ~14-30/day before math
+                                #   CAPTCHA (extendable via ANTHROPIC_API_KEY)
+                                #   Geo-blocked from non-Swiss IPs.
+    python main.py sh           # SH scan (~50k parcels); 100 req/day/IP
+    python main.py ne           # NE scan (~50k parcels); ~50 Altcha PoW/day;
+                                #   use --refresh-enum when stale_uuid errors appear
+    python main.py gr           # GR scan (~85k parcels); 10 req/day/IP — VERY slow
+                                #   solo (~2000 days without rotation)
+
+── Needs proxies for bulk scanning ─────────────────────────────────────────
+    python main.py ge           # GE scan (~69k parcels); Imperva TSPD ~30 req/IP +
+                                #   image CAPTCHA per parcel; needs GE_PROXY_LIST in .env
+                                #   AND ANTHROPIC_API_KEY (~$200 total); proxy plumbing wired
+    python main.py bs           # BS metadata scan (Type A only); needs BS_API_KEY in .env
+    python main.py bs-public    # BS full scan (Type A + B, owner names); reCAPTCHA Enterprise
+                                #   on HTML viewer, 10 req/day/IP; needs BS_PROXY_LIST in .env
+
+── Blocked — no automatable public path ────────────────────────────────────
+    python main.py zg           # ZG — lr.zugmap.ch requires SMS per query (BLOCKED)
+    python main.py tg           # TG — map.geo.tg.ch requires SMS per query (BLOCKED)
+    python main.py ar           # AR — Terravis professional only; mail for private (BLOCKED)
+    python main.py ai           # AI — same as AR (BLOCKED)
+    python main.py gl           # GL — AGOV LoA-3; revisit Dec 2026 (BLOCKED)
+    python main.py nw           # NW — form-mail only, not direct lookup (BLOCKED)
+    python main.py ow           # OW — Terravis professional only (BLOCKED)
+    python main.py ti           # TI — SIFTI requires registry authorization (BLOCKED)
+    python main.py vd           # VD — form + 48h email turnaround, 5/day (BLOCKED)
+    # ZH, LU: SMS-per-query (no cmd — no scanner built)
+    # AG, SG: access possible but scanner not yet written
+
+── Utilities ────────────────────────────────────────────────────────────────
     python main.py poc          # PoC: small sample from UR + FR
-    python main.py ur           # Full UR scan (~20k parcels)
-    python main.py fr           # Full FR scan (~2.5h enum + Grundbuch queries)
-    python main.py so           # Full SO scan (reCAPTCHA v3 stealth)
-    python main.py bs           # BS scan (requires BS_API_KEY env var)
-    python main.py gr           # GR scan (10 req/day/IP, use VPN rotation)
-    python main.py bl           # BL scan (image CAPTCHA, OCR/Claude)
-    python main.py be           # BE scan (interactive BE-Login/AGOV — browser opens on first run; token cached)
-    python main.py sh           # SH scan (100 req/day/IP, no account needed)
-    python main.py ju           # JU scan (CAPTCHA per query, no account needed)
-    python main.py vs           # VS scan (interactive SwissID/AGOV — browser opens on first run; token cached)
-    python main.py ne           # NE scan (Altcha PoW CAPTCHA; ~50 queries/day per IP)
-    python main.py sz           # SZ scan (image CAPTCHA; ddddocr/tesseract)
-    python main.py ar           # AR scan (geoportal.ch login; set AR_USERNAME/AR_PASSWORD)
-    python main.py ai           # AI scan (geoportal.ch login; set AI_USERNAME/AI_PASSWORD)
-    python main.py ag           # AG scan (geoportal.ch login; set AG_USERNAME/AG_PASSWORD)
-    python main.py tg           # TG scan (geoportal.ch login; set TG_USERNAME/TG_PASSWORD)
-    python main.py sg           # SG scan (geoportal.ch login; set SG_USERNAME/SG_PASSWORD)
-    python main.py zg           # ZG scan (lr.zugmap.ch; Playwright stealth, no SMS/account needed)
-    python main.py gl           # GL scan (geoportal.ch login; set GL_USERNAME/GL_PASSWORD)
-    python main.py nw           # NW scan (geoportal.ch login; set NW_USERNAME/NW_PASSWORD)
-    python main.py ow           # OW scan (geoportal.ch login; set OW_USERNAME/OW_PASSWORD)
-    python main.py ti           # TI scan (geoportal.ch login; set TI_USERNAME/TI_PASSWORD)
-    python main.py vd           # VD scan (geoportal.ch login; set VD_USERNAME/VD_PASSWORD)
-    python main.py ge           # GE scan (ge.ch/terextraitfoncier; Playwright stealth + CAPTCHA)
-    python main.py stats        # print DB stats
-    python main.py herrenlos    # print all herrenlos parcels found so far
-    python main.py captcha      # print CAPTCHA solver accuracy (BL, SZ, ...)
+    python main.py stats        # print DB stats per canton
+    python main.py herrenlos    # list all herrenlos parcels found so far
+    python main.py captcha      # CAPTCHA solver accuracy (BL, SZ, JU, …)
     python main.py captcha bl   # CAPTCHA stats for BL only
     python main.py test         # false-positive guard tests (TIER A: fast, REST-only)
     python main.py test ge bs   # test specific cantons only
-    python main.py test --tier b              # also run slow portal/CAPTCHA tests for ALL testable cantons
+    python main.py test --tier b              # TIER A + B (slow portal/CAPTCHA tests)
     python main.py test --tier b ju sz        # TIER B for specific cantons
     python main.py test --seed                # seed parcel_enum for smoke runs
-    python main.py test-history               # last 7 days of test_runs (what works, what doesn't, why)
+    python main.py test-history               # last 7 days of test_runs
     python main.py test-history bl --days 30  # one canton, 30-day window
-    python main.py ready                      # production-readiness view: which scanners are PASS / SKIP / FAIL
+    python main.py ready                      # production-readiness view per canton
 
     Add --limit N to any canton command to cap queries.
     Add --rescan   to re-scan parcels already in DB.
+    Add --refresh-enum (NE only) to discard stale WFS UUIDs and re-enumerate.
 """
 
 import argparse
@@ -106,7 +133,12 @@ def cmd_fr(args):
 
 
 def cmd_so(args):
-    from scanners.so import scan
+    # Use the PUBLIC scanner (scanners/so_public.py) — Playwright + invisible
+    # reCAPTCHA v3 against geo.so.ch. Works from any Swiss residential IP, no
+    # account needed. The legacy professional Capitastra path is still in
+    # scanners/so.py but requires institutional Keycloak access; use it only
+    # if you actually hold an intercapi.so.ch account.
+    from scanners.so_public import scan
     scan(limit=args.limit, skip_existing=not args.rescan)
 
 

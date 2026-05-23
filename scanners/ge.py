@@ -1,14 +1,15 @@
 """
 GE scanner — Geneva / Genève
 ==============================
-STATUS (2026-05-17): WORKING — IP rotation implemented but needs proxy credentials.
-  First test (5 parcels, no proxies): scanned=5  herrenlos=2  errors=3.
-  Both "herrenlos" were FALSE POSITIVES — Imperva TSPD challenge pages misclassified.
-  Confirmed via GE SITG cadastre API (TYPE_PROPRI field):
-    - Vernier  Nr.3102  EGRID=CH616356658840  → TYPE_PROPRI="privé"   (has owner)
-    - Versoix  Nr.7403  EGRID=CH776392106563  → TYPE_PROPRI="dépendance" (appurtenance)
-  Root cause: TSPD challenge pages not matching _is_service_error() phrases → parsed
-  as "no Propriétaire section" → flagged herrenlos. Fixed: additional TSPD phrases added.
+STATUS (2026-05-17): SCANNER BUILT — needs GE_PROXY_LIST + ANTHROPIC_API_KEY to run
+  at any meaningful scale.
+  - Imperva TSPD blocks after ~30 req/IP even from residential IPs → proxy rotation
+    required from the first parcel batch (set GE_PROXY_LIST in .env).
+  - Per-parcel image CAPTCHA: ddddocr struggles with GE style; Claude vision gives
+    best results (~$0.003/parcel × 69k = ~$200 total; set ANTHROPIC_API_KEY in .env).
+  - False positive fix (2026-05-17): TSPD challenge pages were misclassified as
+    herrenlos ("no Propriétaire section"). Fixed by adding TSPD phrases to
+    _is_service_error(). Confirmed via GE SITG TYPE_PROPRI field on affected EGRIDs.
 
 - Enumeration : GE SITG BIENS_FONDS REST layer (public, no auth)
                 https://ge.ch/terags/rest/services/ECADASTRE_rdppf_map/MapServer/19/query

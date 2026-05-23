@@ -39,10 +39,11 @@ AUTH (reCAPTCHA v3 invisible, score-based):
 
   This is the SAME technique as the working GE scanner — see scanners/ge.py.
 
-RATE LIMIT:
-  No documented hard limit; soft rate limit on bad reCAPTCHA scores. Server
-  blocks queries when Google flags the IP. Plan to use paid residential
-  proxies for full canton scan (~$30, similar profile to GE).
+RATE LIMIT / IP:
+  No documented hard daily limit. Access is purely score-based (reCAPTCHA v3).
+  From a Swiss residential IP the score passes — no rotation needed even for
+  bulk scanning. Datacenter IPs (GitHub Actions etc.) score too low and are
+  rejected. Run locally on your laptop; proxies are NOT needed.
 
 EGRID enumeration:
   swisstopo identify API grid scan (standard pattern). ~70k parcels in SO,

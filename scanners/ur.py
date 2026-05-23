@@ -5,6 +5,10 @@ UR scanner — Uri
 - Owner lookup      : GET  geo.ur.ch/grundbuchauskunft/?gem={bfs}&nr={nr}
 - Herrenlos signal  : response ≤ 500 B  OR  contains "existiert nicht"
 - Rate limit        : ~30 req/day per IP  (X-RateLimit-Remaining header)
+- Geo-IP block      : geo.ur.ch returns "access denied for your country" from
+                      non-Swiss IPs (e.g. GitHub Actions datacenter). Run locally
+                      from a Swiss IP. is_herrenlos=None / error="geo_blocked"
+                      is stored for geo-blocked responses so they can be re-scanned.
 """
 
 import time

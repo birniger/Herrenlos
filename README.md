@@ -25,15 +25,21 @@ that this repo carries with it.
 
 ## Status (Switzerland's 26 cantons, May 2026)
 
-| Category | Count | Cantons |
-|----------|------:|---------|
-| ✅ Fully working scanners | 12 | UR, FR, GE, GR, JU, NE, SH, SZ, BL, BS, BE, VS |
-| 🟢 Buildable but not wired | 3 | AG, SG, SO (`scanners/so_public.py` wired but blocked by Google reCAPTCHA score on datacenter IPs) |
-| 💰 Need paid residential proxies | (overlap) | GE, SO, GR, SH, NE for full-scale scans |
-| 💰 Need ANTHROPIC_API_KEY | (overlap) | BL (handwritten CAPTCHA), GE (image CAPTCHA at scale) |
-| ❌ Operationally blocked | 11 | AI, AR, GL, LU, NW, OW, TG, TI, VD, ZG, ZH (SMS-per-query, mail-only, or professional-only) |
+| Category | Cantons | Where it runs |
+|----------|---------|---------------|
+| ☁️ CI (GitHub Actions, no auth, no proxy) | FR, JU, SZ | Auto-scheduled every 6h |
+| 💻 Laptop bulk (no quota, one IP completes the canton) | SO, BE, VS, BL | `./scripts/scan-loop.sh` cycles these |
+| 🐌 Laptop slow-background (daily quota; bulk infeasible without rotation) | UR, SH, NE, GR | `python main.py <canton>` — leave running long-term |
+| 💰 Needs paid residential proxies for ANY scan | GE (+ API key), BS-public | Imperva / 10/day cap |
+| 🛠 Buildable but not wired | AG, SG | Scanner module not yet written |
+| ❌ Operationally blocked | AI, AR, GL, LU, NW, OW, TG, TI, VD, ZG, ZH | SMS-per-query, mail-only, or professional-only |
 
 Detailed reasoning per canton lives in `test_fixtures.py:CANTON_STATUS`.
+
+**Rotation distinction (read carefully):**
+- **Bulk on one IP**: SO (no quota), BE & VS (no quota; one-time login), BL (no quota; needs `ANTHROPIC_API_KEY`)
+- **One IP works but is too slow for bulk**: UR (~14-30/day), SH (100/day), NE (~50/day), GR (10/day) — rotation needed only if you want to finish the canton in reasonable time
+- **One IP doesn't work at all**: GE (Imperva blocks after ~30 even on residential) — proxies required from request #1
 
 ## How the data flow works
 
@@ -65,26 +71,44 @@ on every scan commit:
 
 ## Running scans
 
-**Cloud (zero effort):** GitHub Actions cron runs `BS / UR / JU / SZ / FR` every 6h.
+**Cloud (zero effort):** GitHub Actions cron runs `FR / JU / SZ` every 6h.
 Picks the canton with the largest scan gap. Commits DB + JSON back to the repo.
 See [`docs/SETUP.md`](docs/SETUP.md) for setup.
 
-**Local:**
+**Local — single canton (any of the laptop-runnable ones):**
 ```bash
-python main.py ur                      # scan one canton
-python main.py test --tier b           # run smoke tests
-python main.py ready                   # see what's working + what needs setup
+python main.py so                      # bulk: SO, BE, VS, BL all work end-to-end
+python main.py ur                      # slow background: UR, SH, NE, GR (quota-limited)
+python main.py test --tier b           # smoke tests
+python main.py ready                   # live per-canton status
 python scripts/export_for_web.py       # regenerate dashboard JSON
 open docs/index.html                    # preview dashboard locally
 ```
 
+**Local — unattended bulk loop (SO + BE + VS + BL):**
+```bash
+./scripts/scan-loop.sh                 # restart-on-crash wrapper around run_local.py
+# or, without the auto-restart wrapper:
+python scripts/run_local.py            # runs preflight, then loops canton→canton
+```
+
+`run_local.py` only targets the cantons that complete on one Swiss residential
+IP without rotation (SO, BE, VS, BL). It deliberately **excludes** FR/JU/SZ
+(handled by GitHub Actions) and UR/SH/NE/GR (daily quotas make bulk infeasible).
+
+At startup it checks for missing tokens / API keys and offers to launch the
+relevant interactive setup. If a scan exits looking like an auth failure mid-loop,
+a macOS desktop notification fires so you know to re-authenticate.
+
 ## Operational caveats
 
-- Herrenlos parcels are genuinely rare (~0.01% nationwide). The cloud-scannable
-  cantons cover ~140 000 parcels; expect maybe 0–5 actual herrenlos in that subset.
+- Herrenlos parcels are genuinely rare (~0.01% nationwide). The CI-scannable
+  cantons (FR, JU, SZ) cover ~111 000 parcels; expect maybe 0–5 actual herrenlos.
 - BL: handwritten CAPTCHA defeats local OCR; needs `ANTHROPIC_API_KEY`.
-- GE, SO: pass-rate for the underlying CAPTCHA is IP-reputation-bound;
-  residential proxies needed for sustained scanning.
+- GE: Imperva blocks after ~30 req/IP — needs `GE_PROXY_LIST` + `ANTHROPIC_API_KEY`.
+- SO: works from any Swiss residential IP; datacenter IPs (GitHub Actions) fail Google reCAPTCHA score check.
+- BE, VS: one-time interactive login; macOS only (Safari AppleScript for BE,
+  Playwright Chromium window for VS SwissID 2FA).
 - LU, TG, ZG, ZH: portals require SMS verification per query — operational dead-end.
 
 ## Repo layout

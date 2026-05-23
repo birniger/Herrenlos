@@ -97,9 +97,15 @@ log = logging.getLogger("TEST")
 
 CANTON_STATUS: dict[str, dict] = {
     # ── REST (no CAPTCHA, no auth) ───────────────────────────────────────────
-    "UR": {"access": "public",   "test_group": "rest", "ip_rotation": None,
-           "daily_limit": None, "rate_limit": None, "max_test_parcels": 11,
-           "blocker": None, "needs": None},
+    # UR: works from any Swiss residential IP. Server enforces ~14 req/day per IP
+    # before triggering an SVG math CAPTCHA (solvable via scanners/ur_captcha.py
+    # with ANTHROPIC_API_KEY). Geo-blocked from non-Swiss IPs entirely
+    # (e.g. GitHub Actions) — scanner emits error="geo_blocked".
+    "UR": {"access": "public",   "test_group": "rest", "ip_rotation": "deferred",
+           "daily_limit": 30, "rate_limit": "~14 req/day/IP before math CAPTCHA; geo-blocked from non-Swiss IPs",
+           "max_test_parcels": 11,
+           "blocker": "geo-blocked from GitHub Actions datacenter IPs; daily quota makes bulk impractical without rotation or CAPTCHA solver",
+           "needs": "run locally from a Swiss IP; for full 20k-parcel scan either rotate IPs OR set ANTHROPIC_API_KEY (math CAPTCHA solver extends the daily window)"},
     "FR": {"access": "public",   "test_group": "rest", "ip_rotation": None,
            "daily_limit": None, "rate_limit": None, "max_test_parcels": 11,
            "blocker": None, "needs": None},

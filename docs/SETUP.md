@@ -4,13 +4,19 @@ This kit gives you:
 - **Cloud scanners** that run every 6 hours on GitHub Actions and commit results back to the repo
 - **A static dashboard + Leaflet map** served from GitHub Pages, automatically refreshed after each scan
 
-You don't need to keep your laptop on. Public repos get unlimited free Actions
-minutes; private repos get 2000 min / month.
+Public repos get unlimited free Actions minutes; private repos get 2000 min / month.
 
-The cloud workflow handles cantons that work from datacenter IPs:
-**BS, UR, JU, SZ, FR**. The other free-tier cantons (BE, VS) need
-interactive logins and stay on your laptop for now. GE, SO, GR, SH, NE need
-paid residential proxies — defer those.
+The cloud workflow handles cantons that work from GitHub Actions datacenter IPs:
+**FR, JU, SZ** (no auth, no rotation, no CAPTCHA service required).
+
+Other cantons stay on your laptop:
+- **UR** — geo-blocked from datacenter IPs (Swiss IP only)
+- **SH, NE, GR** — daily quotas; rotation needed only for full-scale completion
+- **SO** — reCAPTCHA v3 score fails from datacenter; passes from residential IP
+- **BE, VS** — interactive login (Safari/Playwright on macOS), token cached after first run
+- **BL** — needs `ANTHROPIC_API_KEY` for handwritten CAPTCHA
+- **GE** — needs `GE_PROXY_LIST` (Imperva) + `ANTHROPIC_API_KEY` (image CAPTCHA)
+- **BS** (full owner data) — needs `BS_PROXY_LIST` + `BS_API_KEY`
 
 ---
 
@@ -36,16 +42,14 @@ GitHub → your repo → **Settings → Pages** →
 Within a minute your dashboard is live at
 `https://<you>.github.io/<repo>/`.
 
-### 3. (Optional) Add the BS API key
+### 3. (Optional) Configure secrets
 
-The BS scanner needs a free key from <https://api.geo.bs.ch/> — sign up,
-copy your key. Then in GitHub:
+The current CI cantons (FR, JU, SZ) need no secrets at all. The workflow
+forwards a few optional secrets if you've set them — useful only if you
+later expand `ELIGIBLE_CANTONS` in `.github/workflows/scan.yml`:
 
 **Settings → Secrets and variables → Actions → New repository secret**
-- Name: `BS_API_KEY`
-- Value: your key
-
-Without this, the workflow skips BS automatically and just scans UR / JU / SZ / FR.
+- `BS_API_KEY` — only needed if you re-enable BS in CI (free key at <https://api.geo.bs.ch/>)
 
 ### 4. (Optional) Trigger the first scan immediately
 
@@ -96,30 +100,29 @@ The dashboard works as a static file with no server needed — opening
 
 ## Production-realistic time estimates (cloud)
 
+CI cantons only — laptop work is unbounded:
+
 | Canton | Parcels | Compute time | Runs needed at 5h each |
 |--------|---------:|-------------:|-----------------------:|
-| BS     |  7,000   |  2h          | 1 |
-| UR     | 20,000   |  5h          | 1 |
 | JU     | 16,000   |  7h          | 2 |
 | SZ     | 18,000   |  8h          | 2 |
 | FR     | 80,000   | 30h          | 6 |
-| **Total** | ~140k | **~52h** | **~12 runs ≈ 3 days at 4 runs/day** |
+| **Total** | ~114k | **~45h** | **~10 runs ≈ 2.5 days at 4 runs/day** |
 
-After ~3 days of cron firing every 6 hours, the cloud-friendly cantons
-are done. Your laptop only needs to handle BE/VS (and later the proxied
-cantons when you fund them).
+After ~3 days of cron firing every 6 hours, the CI cantons are done.
+The rest are laptop-only (see laptop scan loop in README).
 
 ---
 
 ## Adding a canton that needs special handling
 
-- **Image CAPTCHA cantons that use ddddocr** (JU, SZ, BL, partial GE): already
-  install `ddddocr` in the workflow. To add BL, also pass `ANTHROPIC_API_KEY`
-  as a repo secret and add to the env block.
-- **Datacenter-blocked cantons** (GE, SO, GR, SH, NE): would need residential
-  proxies in `<CANTON>_PROXY_LIST` repo secrets. Not currently included.
-- **Interactive-login cantons** (BE, VS): would need cached OIDC tokens
-  uploaded as secrets and refreshed periodically — deferred.
+- **Image CAPTCHA cantons (ddddocr)** — JU, SZ already in CI. BL would also need
+  `ANTHROPIC_API_KEY` because ddddocr fails on its handwritten CAPTCHA — and BL
+  works fine from your laptop, so adding to CI is rarely worth it.
+- **Datacenter-blocked cantons** (UR, SO, SH, NE, GR, GE, BS-public) — laptop
+  runs work; full proxy plumbing exists in GE/BS but no equivalent for SH/NE/GR yet.
+- **Interactive-login cantons** (BE, VS) — cannot be CI'd: VS requires SwissID
+  2FA, BE has Cloudflare Turnstile + macOS Safari AppleScript. Laptop only.
 
 ---
 
