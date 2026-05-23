@@ -28,18 +28,18 @@ that this repo carries with it.
 | Category | Cantons | Where it runs |
 |----------|---------|---------------|
 | ☁️ CI (GitHub Actions, no auth, no proxy) | FR, JU, SZ | Auto-scheduled every 6h |
-| 💻 Laptop bulk (no quota, one IP completes the canton) | SO, BE, VS, BL | `./scripts/scan-loop.sh` cycles these |
+| 💻 Laptop bulk (no quota, one IP completes the canton) | BE, VS, BL | `./scripts/scan-loop.sh` cycles these |
 | 🐌 Laptop slow-background (daily quota; bulk infeasible without rotation) | UR, SH, NE, GR | `python main.py <canton>` — leave running long-term |
-| 💰 Needs paid residential proxies for ANY scan | GE (+ API key), BS-public | Imperva / 10/day cap |
+| 💰 Needs paid residential proxies for ANY scan | GE (+ API key), SO, BS-public | Imperva / reCAPTCHA score / 10/day cap |
 | 🛠 Buildable but not wired | AG, SG | Scanner module not yet written |
 | ❌ Operationally blocked | AI, AR, GL, LU, NW, OW, TG, TI, VD, ZG, ZH | SMS-per-query, mail-only, or professional-only |
 
 Detailed reasoning per canton lives in `test_fixtures.py:CANTON_STATUS`.
 
 **Rotation distinction (read carefully):**
-- **Bulk on one IP**: SO (no quota), BE & VS (no quota; one-time login), BL (no quota; needs `ANTHROPIC_API_KEY`)
+- **Bulk on one IP**: BE & VS (no quota; one-time login), BL (no quota; needs `ANTHROPIC_API_KEY`)
 - **One IP works but is too slow for bulk**: UR (~14-30/day), SH (100/day), NE (~50/day), GR (10/day) — rotation needed only if you want to finish the canton in reasonable time
-- **One IP doesn't work at all**: GE (Imperva blocks after ~30 even on residential) — proxies required from request #1
+- **One IP doesn't work at all (proxies required from request #1)**: GE (Imperva blocks after ~30), SO (reCAPTCHA v3 score degrades after ~2 queries — empirically observed 96%+ failure rate even from a Swiss residential IP)
 
 ## How the data flow works
 

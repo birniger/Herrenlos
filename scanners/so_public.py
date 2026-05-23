@@ -260,26 +260,58 @@ def _parse_owner(data: dict) -> dict:
     """
     Map the SO JSON response to our 7-key canonical dict.
 
-    Expected fields (best-effort — actual response fields confirmed via the
-    visible info panel during inspection):
-      eigentuemer          : "Staat Solothurn"
-      eigentumsform        : "Alleineigentum"  /  "Miteigentum" / "Stockwerkeigentum" / ...
-      adresse / strasse / ort  : optional address fields
+    Confirmed SO response schema (verified 2026-05-23 against live data):
+      {
+        "eigentum": {
+          "grundstueck": "GB-Nr. 4000 Grenchen",
+          "eigentumsform": "Alleineigentum",
+          "eigentuemer": [
+            {"berechtigte": ["Bürgergemeinde Grenchen"]},
+            ...                                    # one entry per share
+          ]
+        },
+        "success": true
+      }
+
+    Earlier versions of this scanner assumed `data["eigentuemer"]` was a top-
+    level string — that was wrong and produced false positives (any parcel with
+    a real owner was classified herrenlos because the lookup found None). The
+    real owner data is nested in `data["eigentum"]["eigentuemer"]` and is a
+    list of dicts with `berechtigte` arrays.
     """
-    # Try a few possible key names — SO's exact JSON schema may differ
-    owner_name = (data.get("eigentuemer")
-                  or data.get("owner")
-                  or data.get("name"))
-    owner_form = (data.get("eigentumsform")
-                  or data.get("ownership_form"))
+    # Real SO responses nest everything under `eigentum`. Fall back to root
+    # for forward compatibility if the API ever flattens.
+    inner = data.get("eigentum") or data
+
+    # Owner extraction: walk the eigentuemer list and collect every name in
+    # the `berechtigte` arrays. Each entry is one ownership share; multiple
+    # entries = co-ownership (Miteigentum / Stockwerkeigentum).
+    owners_field = inner.get("eigentuemer")
+    names: list[str] = []
+    if isinstance(owners_field, list):
+        for entry in owners_field:
+            if not isinstance(entry, dict):
+                continue
+            berechtigte = entry.get("berechtigte") or []
+            if isinstance(berechtigte, list):
+                names.extend(str(n).strip() for n in berechtigte if n)
+            elif isinstance(berechtigte, str):
+                names.append(berechtigte.strip())
+    elif isinstance(owners_field, str):
+        names.append(owners_field.strip())
+    # Filter out any blank strings that crept in
+    names = [n for n in names if n]
+    owner_name = "; ".join(names) if names else None
+
+    owner_form = inner.get("eigentumsform") or inner.get("ownership_form")
+
     addr_parts = []
     for k in ("strasse", "adresse", "plz", "ort"):
-        v = data.get(k)
+        v = inner.get(k)
         if v:
             addr_parts.append(str(v))
     address = ", ".join(addr_parts) or None
 
-    # Combine name + ownership-form for the owner column when both present
     if owner_name and owner_form:
         owner = f"{owner_name} ({owner_form})"
     else:
@@ -295,7 +327,7 @@ def _parse_owner(data: dict) -> dict:
         "is_herrenlos":   is_herrenlos,
         "herrenlos_type": herrenlos_type,
         "claim_possible": claim_possible,
-        "raw_response":   json.dumps(data)[:300] if not owner else None,
+        "raw_response":   json.dumps(data)[:400] if not owner else None,
         "error":          None,
     }
 

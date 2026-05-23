@@ -5,7 +5,6 @@ but CAN run unattended from your laptop on a single Swiss residential IP.
 
 Eligible (no rotation needed for full-canton bulk; all have NO daily quota):
 
-    SO  — reCAPTCHA v3, no daily limit, residential IP passes; ~70k parcels
     BE  — one-time AGOV/BE-Login (Safari + AppleScript on macOS); ~400k parcels
     VS  — one-time SwissID 2FA (Playwright window); ~210k parcels
     BL  — needs ANTHROPIC_API_KEY (Claude vision for handwritten CAPTCHA); ~70k parcels
@@ -18,6 +17,12 @@ NOT included by design:
                       for slow-background runs.
   - GE              : Imperva blocks ~30/IP even from residential; needs proxies
                       AND ANTHROPIC_API_KEY. Use `python main.py ge` separately.
+  - SO              : the scanner is wired (scanners/so_public.py) but in practice
+                      Google reCAPTCHA v3 degrades the score after ~2 successful
+                      queries even from a Swiss residential IP — empirically
+                      observed 96%+ failure rate. SO actually needs proxies
+                      (was previously thought not to). Run via `python main.py so`
+                      only after proxies/CAPTCHA service are wired.
   - BS-public, etc. : need proxies / institutional accounts.
 
 Pre-flight: at startup, checks each eligible canton's prerequisites:
@@ -84,7 +89,12 @@ if _env_file.exists():
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
-LOCAL_ELIGIBLE_DEFAULT = ["so", "be", "vs", "bl"]
+# SO removed 2026-05-23: empirically Google reCAPTCHA v3 degrades the score
+# after ~2 successful queries even from Swiss residential IPs. A 9h overnight
+# run produced 2 results + 497 errors (96% failure rate). SO needs proxies after
+# all — keep so_public.py for when proxies/CAPTCHA service is added, but don't
+# include SO in the laptop bulk loop.
+LOCAL_ELIGIBLE_DEFAULT = ["be", "vs", "bl"]
 
 # enum_count below this = "not yet enumerated" (test seeds / empty). Strategy 0
 # picks these first so every canton gets bootstrapped before gap comparison.
