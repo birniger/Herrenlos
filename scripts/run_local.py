@@ -12,16 +12,10 @@ Eligible for bulk scanning from the laptop:
     FR  — no login, no CAPTCHA; needs residential IP (keycloak.fr.ch geo-blocks
           GitHub Actions datacenter IPs). ~80k parcels; ~600-800/hr.
     BL  — needs ANTHROPIC_API_KEY (Claude vision for handwritten CAPTCHA); ~70k parcels
-    NE  — Playwright + Altcha PoW; ~50k parcels; 10 proxies → 450/day.
-          Exits naturally when daily proxy quota exhausted; loop rotates to next canton.
-          Requires: pip install playwright && playwright install chromium
-    GR  — pure requests; ~85k parcels; 10 proxies → 90/day.
-          Very slow but fully passive — just chips away at the backlog overnight.
-          Exits naturally on quota; loop rotates.
-
 NOT included by design:
-  - JU, SZ          : handled by GitHub Actions (no login, datacenter IP OK).
-                      Duplicating from laptop would race CI commits.
+  - JU, SZ, SH, NE, GR : handled by GitHub Actions. NE/GR share the same Webshare
+                          proxy quota — running them here too would just compete with CI
+                          for the same 90–450 queries/day without adding throughput.
   - UR              : daily quota (10/day), geo-blocked from CI; use `python main.py ur`.
   - GE              : Imperva blocks ~30/IP even from residential; needs proxies
                       AND ANTHROPIC_API_KEY. Use `python main.py ge` separately.
@@ -37,8 +31,6 @@ Pre-flight: at startup, checks each eligible canton's prerequisites:
   - BE  : ~/.herrenlos_scanner/be_token.json exists?
   - VS  : ~/.herrenlos_scanner/vs_token.json exists?
   - BL  : ANTHROPIC_API_KEY in env / .env?
-  - NE  : playwright Python package importable?
-  - GR  : no prerequisites (pure requests)
   - SO  : nothing — just needs to be on a Swiss residential IP
 
 For each missing prerequisite you'll be offered:
@@ -109,7 +101,7 @@ if _env_file.exists():
 # run produced 2 results + 497 errors (96% failure rate). SO needs proxies after
 # all — keep so_public.py for when proxies/CAPTCHA service is added, but don't
 # include SO in the laptop bulk loop.
-LOCAL_ELIGIBLE_DEFAULT = ["be", "vs", "fr", "bl", "ne", "gr"]
+LOCAL_ELIGIBLE_DEFAULT = ["be", "vs", "fr", "bl"]
 
 # enum_count below this = "not yet enumerated" (test seeds / empty). Strategy 0
 # picks these first so every canton gets bootstrapped before gap comparison.
@@ -172,33 +164,6 @@ def _check_fr() -> tuple[bool, str]:
     return True, "FR needs no token (residential IP only — no setup required)"
 
 
-def _check_ne() -> tuple[bool, str]:
-    try:
-        import playwright  # noqa: F401
-    except ImportError:
-        return False, (
-            "NE requires playwright — run: "
-            "pip install playwright && playwright install chromium"
-        )
-    try:
-        from scanners.utils import load_proxies
-        proxies = load_proxies("NE_PROXY_LIST")
-        proxy_note = f"{len(proxies)} proxies from NE_PROXY_LIST" if proxies else "no proxies (quota: ~50/day)"
-    except Exception:
-        proxy_note = "proxy status unknown"
-    return True, f"NE: playwright ✓, {proxy_note}"
-
-
-def _check_gr() -> tuple[bool, str]:
-    try:
-        from scanners.utils import load_proxies
-        proxies = load_proxies("GR_PROXY_LIST")
-        proxy_note = f"{len(proxies)} proxies from GR_PROXY_LIST" if proxies else "no proxies (quota: 10/day)"
-    except Exception:
-        proxy_note = "proxy status unknown"
-    return True, f"GR: pure requests, {proxy_note}"
-
-
 def _check_so() -> tuple[bool, str]:
     # SO needs only a Swiss residential IP — we can't reliably introspect that
     # without making a real request, so we just optimistically pass and let the
@@ -239,24 +204,6 @@ PREFLIGHT_CHECKS = {
         "check":   _check_fr,
         "setup_cmd": None,
         "setup_note": "FR needs no setup — just run from a Swiss residential IP.",
-    },
-    "ne": {
-        "check":   _check_ne,
-        "setup_cmd": None,    # pip + playwright install — not interactive, user does manually
-        "setup_note": (
-            "NE setup: install Playwright and Chromium —\n"
-            "    pip install playwright\n"
-            "    playwright install chromium\n"
-            "Then rerun this script. Proxies loaded automatically from NE_PROXY_LIST in .env."
-        ),
-    },
-    "gr": {
-        "check":   _check_gr,
-        "setup_cmd": None,
-        "setup_note": (
-            "GR needs no interactive setup. Proxies loaded automatically from "
-            "GR_PROXY_LIST in .env (quota: 10 proxies × 9 req = 90/day)."
-        ),
     },
     "so": {
         "check":   _check_so,
