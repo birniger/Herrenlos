@@ -3,11 +3,18 @@
 Picks which canton the next GitHub Actions scan run should work on.
 
 Strategy:
-  1. Among the ELIGIBLE list (cantons known to work from a datacenter IP),
-     pick the one with the largest gap = enumerated - scanned.
-  2. If every eligible canton is fully scanned (no gap), pick the first
-     eligible one that hasn't been enumerated yet — this kicks off enumeration.
-  3. As a last fallback, just rotate to the first eligible canton.
+  0. If any eligible canton has no real enumeration yet (enum count below
+     REAL_ENUM_MIN), pick it first — in ELIGIBLE order — to kick off
+     enumeration before a large already-enumerated canton dominates the gap.
+  1. Among fully-enumerated eligible cantons, pick the one with the largest
+     gap = enumerated − scanned.
+  2. As a last fallback (all gaps zero), rotate to the first eligible canton.
+
+Why strategy 0 matters:
+  If canton A has 16,000 enumerated parcels and canton B only has test seeds
+  (5–11 rows), strategy 1 always picks A even though B has never been
+  enumerated.  Strategy 0 fixes this by prioritising unenumerated cantons
+  so every canton eventually gets scanned.
 
 Prints the chosen canton's lower-case code on stdout. The workflow YAML
 captures it via $(python scripts/pick_canton.py).
@@ -18,15 +25,13 @@ Eligibility criteria (all must be true):
   - Scanner can run headless in CI (no Playwright requirement)
 
 Current eligible cantons:
-  ur  — swisstopo REST + cantonal WFS, no CAPTCHA, no login
-  fr  — keycloak public session, no CAPTCHA, no residential IP
-  ju  — public + OCR-solvable CAPTCHA (ddddocr), no login
-  sz  — public + OCR-solvable CAPTCHA (ddddocr), no login
+  fr  — keycloak public session, no CAPTCHA, no residential IP  (~80k parcels)
+  ju  — public + OCR-solvable CAPTCHA (ddddocr), no login       (~13k parcels)
+  sz  — public + OCR-solvable CAPTCHA (ddddocr), no login       (~18k parcels)
 
 NOT eligible (excluded reasons):
-  bs  — cmd_bs only collects metadata (Type A only, no owner names).
-         Full detection needs bs_public (Playwright + reCAPTCHA Enterprise,
-         10 req/day/IP). Add bs back once bs_public can run in CI.
+  ur  — geo.ur.ch blocks datacenter IPs ("access denied for your country")
+  bs  — cmd_bs is metadata-only (no owner names, no Type B detection)
   ne  — reCAPTCHA Enterprise + ip_rotation deferred
   ge  — reCAPTCHA Enterprise + ip_rotation deferred
   so  — Playwright + reCAPTCHA, ip_rotation deferred
@@ -44,9 +49,14 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from db import init_db, get_conn   # noqa: E402
 
 # Cantons that work cleanly from a GitHub Actions datacenter IP.
-# Order matters only for the strategy-3 fallback (all-zeros case).
-# Strategy 1 (biggest gap) dominates in practice.
-ELIGIBLE_DEFAULT = ["ur", "fr", "ju", "sz"]
+# Order is the priority for strategy 0 (enumeration) and strategy 2 (fallback).
+ELIGIBLE_DEFAULT = ["fr", "ju", "sz"]
+
+# A real enumeration produces at least this many parcel_enum rows.
+# Below this threshold the canton is treated as "not yet enumerated".
+# Values well above known test-seed counts (≤11) but below smallest real
+# canton (SZ ~18k → use 100 as a safe floor for all).
+REAL_ENUM_MIN = 100
 
 
 def pick() -> str:
@@ -56,10 +66,11 @@ def pick() -> str:
 
     init_db()
     with get_conn() as conn:
-        # Gap = enumerated parcels − parcels with is_herrenlos IS NOT NULL.
-        # Larger gap = more work outstanding for that canton.
+        # enum_count  = rows in parcel_enum for this canton
+        # scanned     = subset that already has a result in parcels
         rows = conn.execute("""
             SELECT LOWER(pe.canton)                                              AS canton,
+                   COUNT(pe.id)                                                 AS enum_count,
                    COUNT(pe.id) - COALESCE(SUM(
                        CASE WHEN p.is_herrenlos IS NOT NULL THEN 1 ELSE 0 END), 0) AS gap
               FROM parcel_enum pe
@@ -70,25 +81,25 @@ def pick() -> str:
              GROUP BY LOWER(pe.canton)
         """).fetchall()
 
-    by_canton = {r["canton"]: r["gap"] for r in rows}
+    enum_count = {r["canton"]: r["enum_count"] for r in rows}
+    by_gap     = {r["canton"]: r["gap"]        for r in rows}
+
+    # Strategy 0: kick off enumeration for any canton that hasn't been properly
+    # enumerated yet (missing entirely or only has test seeds).
+    for c in eligible:
+        if enum_count.get(c, 0) < REAL_ENUM_MIN:
+            return c
 
     # Strategy 1: pick the eligible canton with the largest positive gap.
     best, best_gap = None, 0
     for c in eligible:
-        gap = by_canton.get(c, 0)
+        gap = by_gap.get(c, 0)
         if gap > best_gap:
             best, best_gap = c, gap
     if best is not None:
         return best
 
-    # Strategy 2: pick the first eligible canton with no enumeration yet —
-    # this triggers a one-time enumeration on first run.
-    enumerated = set(by_canton)
-    for c in eligible:
-        if c not in enumerated:
-            return c
-
-    # Strategy 3: just rotate to the first eligible canton.
+    # Strategy 2: all gaps zero — rotate to first eligible canton for re-scan.
     return eligible[0]
 
 
