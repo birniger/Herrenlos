@@ -454,6 +454,33 @@ def _parse_owner_html(html: str, egrid: str, nocompar: str) -> dict:
             # Address not in this table — sitrf only shows name, share, date.
             # Address lookup would require separate RF query (not implemented).
 
+    if not table:
+        # Fallback: sitrf.jura.ch renders co-ownership bases (COP) and parcel
+        # cross-references (B-F) using <div> elements instead of a <table>.
+        # These parcels are NOT herrenlos — their ownership lives in sub-units.
+        # Parse the Propriété section from the page text.
+        _skip = {"Propriétaire", "Part", "Date acquisition"}
+        _section_end = {"Surface", "Bâtiments", "Droits", "Charges",
+                        "Servitudes", "Remarques", "Annotations"}
+        lines = [ln.strip() for ln in text.split("\n") if ln.strip()]
+        try:
+            prop_idx = next(i for i, ln in enumerate(lines) if ln == "Propriété")
+            for ln in lines[prop_idx + 1:]:
+                if ln in _skip:
+                    continue
+                if re.match(r"^\d+/\d+$", ln):           # ownership fractions
+                    continue
+                if re.match(r"^\d{4}-\d{2}-\d{2}$", ln):  # acquisition dates
+                    continue
+                if ln in _section_end:
+                    break
+                if not is_herrenlos_owner_text(ln):
+                    owners.append(ln)
+        except StopIteration:
+            pass
+        if owners:
+            log.debug("div-layout ownership  EGRID=%s  refs=%s", egrid, owners[:3])
+
     owner = "; ".join(owners) if owners else None
 
     if owner is None:

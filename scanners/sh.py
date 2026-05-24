@@ -298,6 +298,11 @@ def check_owner(session: requests.Session, east: int, north: int,
             continue
 
         name = (rec.get("p_name") or "").strip()
+        if not name:
+            # Fallback: SH API uses g_name for corporate/collective ownership
+            # identified by a Grundbuch cross-reference (e.g. "GB 7083, Hallau").
+            # p_name is None for these entities — not herrenlos.
+            name = (rec.get("g_name") or "").strip()
         if not name or is_herrenlos_owner_text(name):
             continue
 
