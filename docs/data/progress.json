@@ -1,18 +1,18 @@
 {
-  "generated_at": "2026-05-23T16:34:55+00:00",
+  "generated_at": "2026-05-24T01:30:24+00:00",
   "cantons": [
     {
       "canton": "BE",
       "enumerated": 0,
-      "scanned": 1,
+      "scanned": 62,
       "herrenlos": 0,
       "errors": 0,
       "percent": 0.0,
       "estimated_total": 400000,
-      "last_scan_at": "2026-05-23 01:47:22",
+      "last_scan_at": "2026-05-23 09:56:56",
       "access": "own_account",
       "test_group": "own_login",
-      "rate_limit": null
+      "rate_limit": "per-account (personal AGOV identity) \u2014 CONFIRMED per-account (empirically verified: fresh browser session + new token still returned 429, proving the limit is on the account, not the IP). Limit appears to be on the person/owner-name resolution step (GET /api/gb/person/master), not on parcel lookups. Threshold count unknown. access_token 5min / refresh_token 30min rotating; session alive while running, re-auth after >~30min gap; IP rotation cannot help \u2014 account is the hard constraint"
     },
     {
       "canton": "GE",
@@ -29,13 +29,13 @@
     },
     {
       "canton": "JU",
-      "enumerated": 0,
-      "scanned": 10673,
-      "herrenlos": 0,
+      "enumerated": 14156,
+      "scanned": 12884,
+      "herrenlos": 199,
       "errors": 0,
-      "percent": 66.7,
+      "percent": 91.0,
       "estimated_total": 16000,
-      "last_scan_at": "2026-05-19 03:06:40",
+      "last_scan_at": "2026-05-24 01:30:22",
       "access": "public",
       "test_group": "captcha_ocr",
       "rate_limit": "CAPTCHA per query only"
@@ -77,12 +77,12 @@
       "last_scan_at": "2026-05-23 01:48:06",
       "access": "own_account",
       "test_group": "own_login",
-      "rate_limit": null
+      "rate_limit": "per-account \u2014 10/day established from portal research. VS portal uses AGOV (same identity provider as BE) as well as SwissID; scanner uses SwissID path but the limit is on the account identity, not the IP. IP rotation cannot help for the same structural reason as BE: the constraint is the personal identity (AGOV/SwissID), not the network path. 429s seen in production; scanner saves rate_limited rows and retries on next run. access_token ~5min / refresh_token rotating; session alive while running continuously, re-auth after extended gap"
     }
   ],
   "totals": {
-    "scanned": 12803,
-    "herrenlos": 2,
+    "scanned": 15075,
+    "herrenlos": 201,
     "errors": 386
   }
 }
