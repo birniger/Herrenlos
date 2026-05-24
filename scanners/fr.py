@@ -186,10 +186,18 @@ def check_owner(session: requests.Session, xv1: str,
                     "herrenlos_type": None, "claim_possible": None,
                     "owner": None, "owner_address": None, "raw_response": None}
 
+        # A tiny response without NOT_FOUND_NEEDLE is a blank session-expired
+        # page (body commented out, no content) — treat as session_exhausted so
+        # the parcel gets retried, not permanently marked as herrenlos.
+        if size < NOT_FOUND_MAX_B and NOT_FOUND_NEEDLE not in raw:
+            return {"error": "session_exhausted", "is_herrenlos": None,
+                    "herrenlos_type": None, "claim_possible": None,
+                    "owner": None, "owner_address": None, "raw_response": None}
+
         # With swisstopo enumeration we only query real cadaster parcels, so
-        # "INFORMATION INTROUVABLE" / tiny response means the parcel IS in the
-        # official survey but has NO Grundbuch entry → Type 2 herrenlos.
-        if NOT_FOUND_NEEDLE in raw or size < NOT_FOUND_MAX_B:
+        # "INFORMATION INTROUVABLE" means the parcel IS in the official survey
+        # but has NO Grundbuch entry → Type 2 herrenlos.
+        if NOT_FOUND_NEEDLE in raw:
             return {"owner": None, "owner_address": None,
                     "is_herrenlos": 1,
                     "herrenlos_type": "not_in_grundbuch", "claim_possible": 0,
