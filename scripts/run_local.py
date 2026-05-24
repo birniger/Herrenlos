@@ -132,6 +132,18 @@ AUTH_FAILURE_KEYWORDS = [
     "invalid token", "no token cached",
 ]
 
+# Substrings that indicate the scanner opened a login browser window but the
+# user didn't complete the login within the 3-minute timeout. The scanner
+# exits rc=0 in this case (it just returns early), so we can't rely on the
+# exit code — we detect these keywords in the output instead.
+LOGIN_TIMEOUT_KEYWORDS = [
+    "timed out waiting for be token",
+    "be login failed",
+    "no token captured",
+    "login failed — aborting",
+    "login timed out",
+]
+
 log = logging.getLogger("local")
 
 
@@ -378,6 +390,11 @@ def looks_like_auth_failure(canton: str, output: str) -> bool:
     return any(kw in o for kw in AUTH_FAILURE_KEYWORDS)
 
 
+def looks_like_login_timeout(output: str) -> bool:
+    o = output.lower()
+    return any(kw in o for kw in LOGIN_TIMEOUT_KEYWORDS)
+
+
 # ── Signal handling ──────────────────────────────────────────────────────────
 
 def install_signal_handlers():
@@ -511,6 +528,28 @@ def main() -> int:
                     log.info("%s rate-limited — daily quota exhausted. "
                              "Cooling down until midnight (%s).",
                              canton.upper(), resume)
+
+                # Detect login-window timeout: scanner opened the browser but
+                # no login happened within 3 min. Scanner exits rc=0 (it just
+                # returns early), so we can't rely on the exit code.
+                # Skip this canton for the rest of the run so the loop moves
+                # on to FR/VS instead of re-opening the browser endlessly.
+                elif looks_like_login_timeout(tail):
+                    notify(
+                        title=f"Herrenlos — {canton.upper()} login not completed",
+                        message=(f"{canton.upper()} login window timed out (no login "
+                                 f"within 3 min). Skipping for this run."),
+                        sound=True,
+                    )
+                    log.warning("%s login timed out — skipping for this run. "
+                                "Restart scan-loop.sh to try again.", canton.upper())
+                    ready = [c for c in ready if c != canton]
+                    if not ready:
+                        log.error("All cantons skipped — exiting.")
+                        return 3
+                    consecutive_failures = 0
+                    continue
+
                 else:
                     log.info("%s scan exited cleanly. Sleeping %ds.",
                              canton.upper(), INTER_CANTON_DELAY_SECONDS)
