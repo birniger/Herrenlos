@@ -165,24 +165,26 @@ jobs:
             echo "Nothing to commit."; exit 0
           fi
           git commit -m "scan: ${{ steps.pick.outputs.canton }} (auto)"
-          # Push with retries. If a local commit raced us, rebase preferring
-          # CI's fresh scan results for the DB.  This is now safe: CI's DB was
-          # already merged with origin/main above, so -X theirs preserves all data.
-          for attempt in 1 2 3; do
+          # Push with retries. If a local commit raced us, re-merge the DB,
+          # amend the scan commit with the merged state, then rebase.
+          # Amending before rebase is critical: -X theirs replays the commit's
+          # DB content, so the re-merge must be baked into the commit first.
+          for attempt in 1 2 3 4 5 6 7 8; do
             if git push; then exit 0; fi
             echo "Push rejected (attempt $attempt) — rebasing on origin/main..."
             git fetch origin main
-            # Re-merge before replaying: another local commit may have landed
-            # between our fetch above and the push attempt.
+            # Re-merge: another local commit may have landed since our last fetch.
             if git show origin/main:herrenlos.db > _origin.db 2>/dev/null; then
               python scripts/merge_dbs.py _origin.db herrenlos.db
               git add -f herrenlos.db
               rm -f _origin.db
             fi
+            # Amend the scan commit so the rebase replays the freshly merged DB.
+            git commit --amend --no-edit
             git rebase origin/main -X theirs || git rebase --abort
-            sleep 5
+            sleep $((RANDOM % 10 + 5))
           done
-          echo "Push failed after 3 attempts — uploading DB as artifact for manual recovery."
+          echo "Push failed after 8 attempts — uploading DB as artifact for manual recovery."
           exit 1
 
       - name: Backup DB as artifact (only if commit step failed)
