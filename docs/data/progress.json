@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-24T09:48:41+00:00",
+  "generated_at": "2026-05-24T17:39:30+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -26,6 +26,19 @@
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "Imperva TSPD ~30 req/IP + image CAPTCHA per parcel"
+    },
+    {
+      "canton": "GR",
+      "enumerated": 6292,
+      "scanned": 2,
+      "herrenlos": 0,
+      "errors": 98,
+      "percent": 0.0,
+      "estimated_total": 150000,
+      "last_scan_at": "2026-05-24 17:39:28",
+      "access": "public",
+      "test_group": "rest",
+      "rate_limit": "10 req/day/IP"
     },
     {
       "canton": "JU",
@@ -94,8 +107,8 @@
     }
   ],
   "totals": {
-    "scanned": 14990,
+    "scanned": 14992,
     "herrenlos": 2,
-    "errors": 1147
+    "errors": 1245
   }
 }
