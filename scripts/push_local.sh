@@ -36,6 +36,24 @@ else
     echo "[push_local] No herrenlos.db on origin/main yet — skipping merge."
 fi
 
+# Checkpoint WAL into the main DB file before staging.
+# Without this, rows written since the last checkpoint sit in herrenlos.db-wal
+# and are invisible to git (which reads the raw file, not SQLite's WAL view).
+# PASSIVE: checkpoints all frames it can without blocking active writers.
+"$PYTHON" -c "
+import sqlite3, time
+for attempt in range(3):
+    try:
+        c = sqlite3.connect('herrenlos.db', timeout=10)
+        wal_pages, checkpointed = c.execute('PRAGMA wal_checkpoint(PASSIVE)').fetchone()[1:]
+        c.close()
+        print(f'[push_local] WAL checkpoint: {checkpointed}/{wal_pages} pages flushed')
+        break
+    except Exception as e:
+        print(f'[push_local] WAL checkpoint attempt {attempt+1} failed: {e}')
+        time.sleep(2)
+"
+
 # Stage the DB and any dashboard exports.
 git add -f herrenlos.db
 git add docs/data/*.json docs/data/*.geojson docs/data/*.csv 2>/dev/null || true
