@@ -202,12 +202,14 @@ CANTON_STATUS: dict[str, dict] = {
     #        user logs into SwissID with 2FA → scanner intercepts the
     #        access_token automatically. No console paste needed.
     #
-    # CRITICAL DISTINCTION — per-account, not per-IP:
-    #   Both cantons authenticate via a PERSONAL government identity
-    #   (AGOV for BE, SwissID for VS). Any rate limiting or abuse detection
-    #   is PER ACCOUNT — there is no IP rotation workaround. A suspended
-    #   account means losing access to the portal entirely, not just for
-    #   scanning but for any legitimate use. Run at conservative delays.
+    # AUTH PROVIDERS (different for each):
+    #   BE — AGOV (be.ch identity portal); per-account quota confirmed on
+    #        owner-name resolution endpoint (GET /api/gb/person/master).
+    #        Run at conservative delays; 429s are real and per-account.
+    #   VS — SwissID (swissid.ch); scan endpoints appear unlimited once
+    #        authenticated. ICP-extract is 10/day but scanner avoids it.
+    #        IP rotation is irrelevant (no quota to route around; 2FA
+    #        binds session to a personal account regardless).
     #
     # Token lifecycle (both cantons):
     #   access_token  ~5 min — refreshed automatically by the scanner
@@ -229,19 +231,18 @@ CANTON_STATUS: dict[str, dict] = {
            "blocker": "Interactive BE-Login (AGOV) — Safari opens; on macOS the scanner pulls the token automatically via AppleScript (one-time setup: enable 'Show Develop menu' + 'Allow JavaScript from Apple Events' in Safari); paste-in-console fallback otherwise",
            "needs": "free AGOV/BE-Login account; one-time enable Safari's Apple Events JS; run at conservative delay — 429s are real and per-account with no IP rotation workaround"},
     "VS": {"access": "own_account", "test_group": "own_login", "ip_rotation": None,
-           "daily_limit": 10,
-           "rate_limit": "per-account — 10/day established from portal research. VS portal "
-                         "uses AGOV (same identity provider as BE) as well as SwissID; "
-                         "scanner uses SwissID path but the limit is on the account identity, "
-                         "not the IP. IP rotation cannot help for the same structural reason "
-                         "as BE: the constraint is the personal identity (AGOV/SwissID), not "
-                         "the network path. 429s seen in production; scanner saves "
-                         "rate_limited rows and retries on next run. access_token ~5min / "
-                         "refresh_token rotating; session alive while running continuously, "
-                         "re-auth after extended gap",
+           "daily_limit": None,
+           "rate_limit": "SwissID session, scan endpoints appear unlimited. VS uses SwissID "
+                         "(login.swissid.ch) — NOT AGOV; BE and VS use different identity "
+                         "providers. The ICP-extract endpoint is 10/day but the scanner "
+                         "deliberately avoids it. Main scan endpoints (grundstueck + eigentum "
+                         "JSON API) show no per-query quota. IP rotation is irrelevant: "
+                         "SwissID 2FA means any session is bound to a personal account, but "
+                         "there is no quota to route around. access_token ~5min / "
+                         "refresh_token rotating; re-auth needed after any gap >~30min.",
            "max_test_parcels": 5,
            "blocker": "Interactive SwissID login — Playwright Chromium window opens; just log in there, scanner extracts token automatically",
-           "needs": "free SwissID account at swissid.ch; complete login in the Chromium window that opens; 10/day account quota — no proxy workaround (per-account, same as BE)"},
+           "needs": "free SwissID account at swissid.ch; complete login in the Chromium window that opens; scan endpoints appear unlimited once authenticated"},
 
     # ── geoportal.ch-based cantons + other restricted ones ──────────────────
     # VERIFICATION PASS — 2026-05-18 (agent + direct portal inspection):
