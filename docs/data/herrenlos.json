@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-05-24T01:30:34+00:00",
-  "count": 201,
+  "generated_at": "2026-05-24T04:33:32+00:00",
+  "count": 203,
   "parcels": [
     {
       "egrid": "CH385044067233",
@@ -2787,6 +2787,34 @@
       "scanned_at": "2026-05-24 01:10:32",
       "lat": 47.27903366088867,
       "lng": 7.013906955718994
+    },
+    {
+      "egrid": "CH380908547952",
+      "canton": "SH",
+      "commune": "1352",
+      "bfs_nr": "2971",
+      "parcel_nr": "1352",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "dereliktion",
+      "claim_possible": null,
+      "scanned_at": "2026-05-24 03:31:20",
+      "lat": 47.68404769897461,
+      "lng": 8.45654296875
+    },
+    {
+      "egrid": "CH367908548168",
+      "canton": "SH",
+      "commune": "2106",
+      "bfs_nr": "2971",
+      "parcel_nr": "2106",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "dereliktion",
+      "claim_possible": null,
+      "scanned_at": "2026-05-24 03:31:22",
+      "lat": 47.687984466552734,
+      "lng": 8.45712947845459
     },
     {
       "egrid": "CH432277405797",

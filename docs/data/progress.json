@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-24T01:30:24+00:00",
+  "generated_at": "2026-05-24T04:33:31+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -54,6 +54,19 @@
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
     },
     {
+      "canton": "SH",
+      "enumerated": 857,
+      "scanned": 100,
+      "herrenlos": 2,
+      "errors": 757,
+      "percent": 11.7,
+      "estimated_total": 30000,
+      "last_scan_at": "2026-05-24 04:33:29",
+      "access": "public",
+      "test_group": "rest",
+      "rate_limit": "100 req/day/IP"
+    },
+    {
       "canton": "SZ",
       "enumerated": 6372,
       "scanned": 2128,
@@ -81,8 +94,8 @@
     }
   ],
   "totals": {
-    "scanned": 15075,
-    "herrenlos": 201,
-    "errors": 386
+    "scanned": 15175,
+    "herrenlos": 203,
+    "errors": 1143
   }
 }

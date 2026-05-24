@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-05-24T01:30:34+00:00",
+  "generated_at": "2026-05-24T04:33:32+00:00",
   "features": [
     {
       "type": "Feature",
@@ -4378,6 +4378,50 @@
         "herrenlos_type": "dereliktion",
         "claim_possible": null,
         "scanned_at": "2026-05-24 01:10:32"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8.45654296875,
+          47.68404769897461
+        ]
+      },
+      "properties": {
+        "egrid": "CH380908547952",
+        "canton": "SH",
+        "commune": "1352",
+        "bfs_nr": "2971",
+        "parcel_nr": "1352",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": null,
+        "scanned_at": "2026-05-24 03:31:20"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8.45712947845459,
+          47.687984466552734
+        ]
+      },
+      "properties": {
+        "egrid": "CH367908548168",
+        "canton": "SH",
+        "commune": "2106",
+        "bfs_nr": "2971",
+        "parcel_nr": "2106",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": null,
+        "scanned_at": "2026-05-24 03:31:22"
       }
     },
     {
