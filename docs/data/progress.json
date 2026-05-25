@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-25T00:14:22+00:00",
+  "generated_at": "2026-05-25T08:34:07+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -74,7 +74,7 @@
       "errors": 195,
       "percent": 0.0,
       "estimated_total": 80000,
-      "last_scan_at": "2026-05-25 00:14:21",
+      "last_scan_at": "2026-05-25 08:33:58",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
