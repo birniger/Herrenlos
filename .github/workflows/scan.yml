@@ -107,6 +107,13 @@ jobs:
           SCANNED_CANTONS=""
           MANUAL="${{ github.event.inputs.canton }}"
 
+          # Proxy-limited cantons: each has a fixed daily quota tied to the
+          # Webshare proxy pool.  Once they've had one turn they're spent for
+          # the day — exclude them from further picks so the loop doesn't
+          # immediately re-pick them (they still show a large gap in the DB).
+          PROXY_LIMITED="sh gr"
+          EXCLUDE_CANTONS=""
+
           while [ $(date +%s) -lt $DEADLINE ]; do
             REMAINING=$(( DEADLINE - $(date +%s) ))
             [ $REMAINING -lt 120 ] && break   # stop if < 2 min left
@@ -116,7 +123,8 @@ jobs:
               MANUAL=""   # only honour the manual override once, then auto-pick
               echo "=== $(date -u '+%H:%M:%S') Manual pick: $CANTON (${REMAINING}s remaining) ==="
             else
-              CANTON=$(python scripts/pick_canton.py)
+              CANTON=$(EXCLUDE_CANTONS="$EXCLUDE_CANTONS" python scripts/pick_canton.py) \
+                || { echo "No eligible cantons remaining — done."; break; }
               echo "=== $(date -u '+%H:%M:%S') Auto-picked: $CANTON (${REMAINING}s remaining) ==="
             fi
 
@@ -136,6 +144,13 @@ jobs:
 
             timeout ${REMAINING}s python main.py "$CANTON" --limit "$LIMIT" \
               || echo "Scan exited (timeout or failure) — continuing loop."
+
+            # Proxy-limited cantons are spent after one turn — exclude them
+            # from the rest of this job so pick_canton.py doesn't re-pick them.
+            if echo " $PROXY_LIMITED " | grep -qw " $CANTON "; then
+              EXCLUDE_CANTONS="${EXCLUDE_CANTONS:+$EXCLUDE_CANTONS }$CANTON"
+              echo "[$CANTON] proxy quota spent — excluded from further picks this job."
+            fi
 
             # Accumulate distinct canton names for the commit message.
             if ! echo " $SCANNED_CANTONS " | grep -qw "$CANTON"; then

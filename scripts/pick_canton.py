@@ -61,10 +61,17 @@ ELIGIBLE_DEFAULT = ["ju", "sz", "sh", "gr"]
 REAL_ENUM_MIN = 100
 
 
-def pick() -> str:
+def pick() -> str | None:
     eligible = os.environ.get("ELIGIBLE_CANTONS", " ".join(ELIGIBLE_DEFAULT)).split()
     if not eligible:
         eligible = ELIGIBLE_DEFAULT
+
+    # Cantons to skip this invocation (e.g. already exhausted their proxy
+    # quota in the current CI job).  Passed via EXCLUDE_CANTONS env var.
+    exclude = set(os.environ.get("EXCLUDE_CANTONS", "").lower().split())
+    eligible = [c for c in eligible if c not in exclude]
+    if not eligible:
+        return None
 
     init_db()
     with get_conn() as conn:
@@ -106,4 +113,7 @@ def pick() -> str:
 
 
 if __name__ == "__main__":
-    print(pick())
+    result = pick()
+    if result is None:
+        sys.exit(1)   # signals the caller (scan loop) that no cantons remain
+    print(result)
