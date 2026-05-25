@@ -518,6 +518,20 @@ def _parse_owner_html(html: str, egrid: str, uuid: str) -> dict:
     addr   = None
     owners: list[str] = []
 
+    def _is_gray_row(tr_el, td_el) -> bool:
+        """
+        NE uses two HTML variants for owner rows:
+          v1: <tr class="graybg"><td>Owner name</td></tr>
+          v2: <tr><td class="graybg" (or class=graybg)>Owner name</td></tr>
+        Accept either form.
+        """
+        for el in (tr_el, td_el):
+            cls = el.get("class", [])
+            cls_str = " ".join(cls) if isinstance(cls, list) else str(cls)
+            if "graybg" in cls_str or "gray" in cls_str:
+                return True
+        return False
+
     # Primary parser: find the "Propriétaire(s)" label then collect graybg rows
     prop_label_found = False
     for tr in soup.find_all("tr"):
@@ -533,14 +547,18 @@ def _parse_owner_html(html: str, egrid: str, uuid: str) -> dict:
                 prop_label_found = True
             continue
 
-        # Rows AFTER the label: collect <tr class=graybg> as owner rows
-        cls = tr.get("class", [])
-        cls_str = " ".join(cls) if isinstance(cls, list) else str(cls)
-        if "graybg" in cls_str or "gray" in cls_str:
+        # Rows AFTER the label: collect owner-value rows (graybg on tr OR first td)
+        if _is_gray_row(tr, tds[0]):
             val = tds[0].get_text(separator=" ", strip=True)
             # Collapse internal whitespace
             val = re.sub(r"\s+", " ", val).strip()
-            if val and not is_herrenlos_owner_text(val):
+            # NE encodes co-ownership as "#NNNN, N de part de copropriété".
+            # This IS an owner reference (another GB entry), not herrenlos — treat
+            # as a non-empty owner to avoid false positives.
+            if val and (val.startswith("#") or "copropriété" in val.lower()
+                        or "copropriet" in val.lower()):
+                owners.append(val)   # co-ownership: parcel has owners
+            elif val and not is_herrenlos_owner_text(val):
                 owners.append(val)
         else:
             # Non-graybg row after label = end of owner list
@@ -630,8 +648,32 @@ def scan(limit: int | None = None,
     """
     init_db()
 
+    NE_UUID_MAX_AGE_DAYS = 3  # NE UUIDs expire; re-enumerate if cache is older
+
     with get_conn() as conn:
         cached = enum_cached(conn, "NE")
+        # Check cache age — NE UUIDs are short-lived WFS session tokens.
+        # If the cache is older than NE_UUID_MAX_AGE_DAYS, force re-enumeration.
+        if cached and not refresh_enum:
+            try:
+                row = conn.execute(
+                    "SELECT MIN(enumerated_at) FROM parcel_enum WHERE canton='NE'"
+                ).fetchone()
+                if row and row[0]:
+                    from datetime import datetime, timezone
+                    cached_dt = datetime.fromisoformat(str(row[0]).replace("Z", "+00:00"))
+                    if cached_dt.tzinfo is None:
+                        cached_dt = cached_dt.replace(tzinfo=timezone.utc)
+                    age_days = (datetime.now(timezone.utc) - cached_dt).days
+                    if age_days >= NE_UUID_MAX_AGE_DAYS:
+                        log.warning(
+                            "NE UUID cache is %d days old (>=%d) — forcing re-enumeration "
+                            "to refresh short-lived WFS UUIDs.",
+                            age_days, NE_UUID_MAX_AGE_DAYS,
+                        )
+                        refresh_enum = True
+            except Exception as exc:
+                log.warning("Could not check NE cache age: %s", exc)
 
     if cached and not refresh_enum:
         log.info("Using cached NE parcel list (%d parcels)", len(cached))
@@ -640,7 +682,15 @@ def scan(limit: int | None = None,
         if refresh_enum and cached:
             log.info("Refreshing NE parcel enum (discarding %d cached entries) …", len(cached))
             with get_conn() as conn:
-                conn.execute("DELETE FROM parcel_enum WHERE canton='NE'")
+                # MUST use schema-qualified name: enum.parcel_enum lives in enum.db
+                conn.execute("DELETE FROM enum.parcel_enum WHERE canton='NE'")
+                conn.commit()
+            # Also clear stale_uuid / playwright_no_post errors so fresh UUIDs are tried
+            with get_conn() as conn:
+                conn.execute(
+                    "DELETE FROM parcels WHERE canton='NE' AND is_herrenlos IS NULL "
+                    "AND error IN ('stale_uuid','playwright_no_post')"
+                )
                 conn.commit()
         else:
             log.info("No cache — running WFS enumeration …")
@@ -715,6 +765,16 @@ def scan(limit: int | None = None,
 
                 result = check_owner(browser, egrid, uuid)
                 queries_on_proxy += 1
+
+                # playwright_no_post = proxy is blocked / too slow; rotate immediately
+                if result.get("error") == "playwright_no_post" and proxies:
+                    log.warning("NE playwright timeout — rotating proxy (was #%d)", proxy_idx)
+                    proxy_idx = (proxy_idx + 1) % len(proxies)
+                    browser.close()
+                    browser = _start_browser(proxy_idx)
+                    queries_on_proxy = 0
+                    result = check_owner(browser, egrid, uuid)
+                    queries_on_proxy += 1
 
                 if result.get("error") == "rate_limited":
                     if proxies:

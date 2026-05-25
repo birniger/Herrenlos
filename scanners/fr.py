@@ -223,6 +223,7 @@ def check_owner(session: requests.Session, xv1: str,
         soup = BeautifulSoup(raw, "lxml")
         proprio = soup.find("table", class_="proprio")
         owner = None
+        herrenlos_texts: list = []   # initialised here so the reference below is safe
         if proprio:
             rows = proprio.find_all("tr")
             owner_names = []

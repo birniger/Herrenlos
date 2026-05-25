@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-25T12:48:06+00:00",
+  "generated_at": "2026-05-25T14:28:17+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -22,7 +22,7 @@
       "errors": 5280,
       "percent": 0.2,
       "estimated_total": 147148,
-      "last_scan_at": "2026-05-25 12:48:04",
+      "last_scan_at": "2026-05-25 14:28:16",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -68,13 +68,13 @@
     },
     {
       "canton": "NE",
-      "enumerated": 86494,
+      "enumerated": 90672,
       "scanned": 0,
       "herrenlos": 0,
-      "errors": 195,
+      "errors": 0,
       "percent": 0.0,
-      "estimated_total": 86494,
-      "last_scan_at": "2026-05-25 08:33:58",
+      "estimated_total": 86000,
+      "last_scan_at": null,
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
@@ -120,10 +120,10 @@
     }
   ],
   "totals": {
-    "enumerated": 1378998,
+    "enumerated": 1383176,
     "scanned": 15309,
     "herrenlos": 2,
-    "errors": 6720,
+    "errors": 6525,
     "cantons": 9
   }
 }

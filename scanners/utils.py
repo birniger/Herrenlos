@@ -40,8 +40,11 @@ def load_proxies(env_key: str) -> list[str]:
     Returns a list of "http://username:password@host:port" strings.
     Returns [] if the env var is unset / .env has no matching key.
     """
+    # If env var is explicitly set (even to empty string) honour it and skip .env.
+    # This lets callers force no-proxy with: NE_PROXY_LIST= python3 main.py ne
+    _env_explicitly_set = env_key in os.environ
     raw = os.environ.get(env_key, "").strip()
-    if not raw:
+    if not raw and not _env_explicitly_set:
         proj_root = pathlib.Path(__file__).parent.parent
         for env_file in [proj_root / ".env", pathlib.Path.home() / ".env"]:
             if env_file.exists():
