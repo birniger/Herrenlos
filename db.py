@@ -5,9 +5,33 @@ DB_PATH = Path(__file__).parent / "herrenlos.db"
 
 
 def get_conn() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
+    """
+    Open a connection with robust concurrency settings.
+
+    The scanner runs multiple processes against the same DB file:
+      - launchd `run_local.py` and its `main.py <canton>` subprocess
+      - manual scripts (export_for_web.py, push_local.sh's checkpoint)
+      - the CI scanner during its run window
+    Without `busy_timeout`, a writer holding the lock for >5s causes the
+    other writer to fail with "database is locked" — and if it fails
+    mid-transaction the indexes can end up inconsistent (we've seen
+    "wrong # of entries in index idx_egrid" several times after concurrent
+    writes during enum backfills).
+
+    Settings:
+      - timeout=30          : Python's default is 5s; bump to 30 so brief
+                              WAL checkpoints don't fail concurrent writers.
+      - PRAGMA busy_timeout : SQLite-level wait when another process holds
+                              the lock (separate from Python's `timeout=`).
+      - WAL journal mode    : allows one writer + many readers in parallel.
+      - synchronous=NORMAL  : safe with WAL, much faster than FULL.
+    """
+    conn = sqlite3.connect(DB_PATH, timeout=30.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=30000")     # 30s waits for locks
+    conn.execute("PRAGMA synchronous=NORMAL")     # WAL-safe, faster than FULL
+    conn.execute("PRAGMA wal_autocheckpoint=1000")  # checkpoint every 1000 pages
     return conn
 
 
