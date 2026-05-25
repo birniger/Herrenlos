@@ -404,10 +404,14 @@ def scan(limit: int | None = None,
     proxies = load_proxies("SH_PROXY_LIST")
     proxy_idx = 0
     queries_on_proxy = 0
-    ROTATE_EVERY = 90  # stay under 100/day hard limit per IP
+    ROTATE_EVERY = 100  # full 100/day per proxy (was 90 — wasted 10 slots per proxy)
+    consecutive_429 = 0
+    MAX_CONSECUTIVE_429 = max(len(proxies) * 2, 5) if proxies else 5
 
     if proxies:
-        log.info("SH proxy rotation: %d proxies, rotate every %d queries", len(proxies), ROTATE_EVERY)
+        log.info("SH proxy rotation: %d proxies, rotate every %d queries "
+                 "(circuit breaker after %d consecutive 429s)",
+                 len(proxies), ROTATE_EVERY, MAX_CONSECUTIVE_429)
 
     session = _sh_session(proxies[0] if proxies else None)
 
@@ -459,8 +463,15 @@ def scan(limit: int | None = None,
                 else:
                     result = _err("token_refresh_failed")
 
-            # Rate limited → rotate proxy if available, else sleep 24h
+            # Rate limited → rotate proxy; circuit-break when all are spent
             if result.get("error") == "rate_limited":
+                consecutive_429 += 1
+                if consecutive_429 >= MAX_CONSECUTIVE_429:
+                    log.warning(
+                        "SH all proxies exhausted — %d consecutive 429s. "
+                        "Daily quota fully used.", consecutive_429
+                    )
+                    break
                 if proxies:
                     proxy_idx = (proxy_idx + 1) % len(proxies)
                     session = _sh_session(proxies[proxy_idx])
@@ -470,12 +481,16 @@ def scan(limit: int | None = None,
                     time.sleep(2)
                     result = check_owner(session, east, north, token, egrid)
                     queries_on_proxy += 1
+                    if result.get("error") == "rate_limited":
+                        consecutive_429 += 1
                 else:
                     log.warning(
                         "SH rate limit hit (100/day) with no proxies — stopping scan for today. "
                         "Set SH_PROXY_LIST to rotate IPs, or run again tomorrow."
                     )
                     break
+            else:
+                consecutive_429 = 0
 
             upsert_parcel(conn, {
                 "egrid":       egrid,

@@ -133,8 +133,8 @@ jobs:
             case "$CANTON" in
               ju) LIMIT=11000 ;;    # ~14k total; full run ~6h → cap at 5h slice
               sz) LIMIT=12000 ;;    # ~50k total; many rotations needed
-              sh) LIMIT=9000  ;;    # proxy exhaustion exits early (~900 actual)
-              gr) LIMIT=100   ;;    # proxy exhaustion exits early (~90 actual)
+              sh) LIMIT=99999 ;;    # runs until all proxies exhausted (~1000/day)
+              gr) LIMIT=99999 ;;    # runs until all proxies exhausted (~100/day)
               bs) LIMIT=12000 ;;
               ur) LIMIT=20000 ;;
               fr) LIMIT=18000 ;;

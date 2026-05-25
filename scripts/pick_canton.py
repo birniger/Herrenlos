@@ -65,8 +65,8 @@ REAL_ENUM_MIN = 100
 # re-picking the canton just wastes time on immediate 429s.
 # Figures from scan.yml comments: SH=900/day, GR=90/day; use 90% of that.
 DAILY_PROXY_CAPACITY: dict[str, int] = {
-    "sh": 810,   # 10 proxies × 100/day × 0.9
-    "gr": 81,    # 10 proxies ×  10/day × 0.9
+    "sh": 900,   # 10 proxies × 100/day (scanner circuit-breaks at exhaustion)
+    "gr": 90,    # 10 proxies ×  10/day (scanner circuit-breaks at exhaustion)
 }
 
 

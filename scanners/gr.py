@@ -358,10 +358,16 @@ def scan(limit: int | None = None,
     proxies = load_proxies("GR_PROXY_LIST")
     proxy_idx = 0
     queries_on_proxy = 0
-    ROTATE_EVERY = 9  # stay under 10/day hard limit per IP
+    ROTATE_EVERY = 10   # full 10/day per proxy (was 9 — wasted 1 slot per proxy)
+    consecutive_429 = 0
+    # All proxies are exhausted once we've seen more consecutive 429s than we
+    # have proxies (each proxy rotated and still returned 429 on both attempts).
+    MAX_CONSECUTIVE_429 = max(len(proxies) * 2, 5) if proxies else 5
 
     if proxies:
-        log.info("GR proxy rotation: %d proxies, rotate every %d queries", len(proxies), ROTATE_EVERY)
+        log.info("GR proxy rotation: %d proxies, rotate every %d queries "
+                 "(circuit breaker after %d consecutive 429s)",
+                 len(proxies), ROTATE_EVERY, MAX_CONSECUTIVE_429)
 
     session = _gr_session(proxies[0] if proxies else None)
 
@@ -388,6 +394,13 @@ def scan(limit: int | None = None,
             queries_on_proxy += 1
 
             if result.get("error") == "rate_limited":
+                consecutive_429 += 1
+                if consecutive_429 >= MAX_CONSECUTIVE_429:
+                    log.warning(
+                        "GR all proxies exhausted — %d consecutive 429s. "
+                        "Daily quota fully used.", consecutive_429
+                    )
+                    break
                 if proxies:
                     proxy_idx = (proxy_idx + 1) % len(proxies)
                     session = _gr_session(proxies[proxy_idx])
@@ -396,12 +409,16 @@ def scan(limit: int | None = None,
                     time.sleep(2)
                     result = check_owner(session, egrid)
                     queries_on_proxy += 1
+                    if result.get("error") == "rate_limited":
+                        consecutive_429 += 1
                 else:
                     log.warning(
                         "GR rate limit hit with no proxies — stopping scan for today. "
                         "Set GR_PROXY_LIST to rotate IPs, or run again tomorrow."
                     )
                     break
+            else:
+                consecutive_429 = 0
 
             upsert_parcel(conn, {
                 "egrid":       egrid,
