@@ -599,8 +599,18 @@ def _canton_loop(
 
         # ── Handle clean exit (rc=0) ────────────────────────────────────────
         if rc == 0:
+            # Fully scanned — scanner skipped every parcel (all already have
+            # results). Sleep until the next day so new parcels can appear
+            # in the cadastre before we bother re-picking.
+            if "scanned=0" in tail or "scan done — scanned=0" in tail:
+                cooldown_until = _next_midnight_bern()
+                _save_cooldown(canton, cooldown_until)
+                log.info("[%s] fully scanned — no remaining parcels. "
+                         "Sleeping until midnight.", canton.upper())
+                consecutive_failures = 0
+
             # Daily quota exhausted — cool down until midnight Bern time.
-            if ("rate-limiting" in tail
+            elif ("rate-limiting" in tail
                     or "consecutive 429" in tail
                     or "quota exhausted" in tail):
                 cooldown_until = _next_midnight_bern()

@@ -129,8 +129,14 @@ def pick() -> str | None:
     if best is not None:
         return best
 
-    # Strategy 2: all gaps zero — rotate to first eligible canton for re-scan.
-    return eligible[0]
+    # Strategy 2: all gaps zero — every enumerated parcel has a result.
+    # Return None so the caller (CI loop / local runner) can stop cleanly
+    # rather than spinning on a no-op re-scan (skip_existing=True means the
+    # scanner would skip everything and exit in seconds, then be re-picked
+    # immediately in a tight loop).
+    # Re-scanning for owner changes is a separate future feature (needs
+    # skip_existing=False and a staleness threshold).
+    return None
 
 
 if __name__ == "__main__":
