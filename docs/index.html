@@ -212,11 +212,61 @@
   .popup .badge.dereliktion      { background: #fef2f2; color: var(--herrenlos); }
   .popup .badge.not_in_grundbuch { background: #fffbeb; color: var(--not-in-gb); }
 
+  /* ── About explainer ─────────────────────────────────────────────────── */
+  .about {
+    background: #fafbfc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+  }
+  .about summary {
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 8px;
+    list-style: none;
+    user-select: none;
+  }
+  .about summary::-webkit-details-marker { display: none; }
+  .about summary::before {
+    content: "▾";
+    display: inline-block;
+    transition: transform .15s ease;
+    margin-right: 6px;
+    color: var(--muted);
+  }
+  .about:not([open]) summary::before { transform: rotate(-90deg); }
+  .about:not([open]) summary { margin-bottom: 0; }
+  .about p { margin: 0 0 8px; }
+  .about p:last-child { margin-bottom: 0; }
+  .about a { color: var(--accent); text-decoration: none; }
+  .about a:hover { text-decoration: underline; }
+  .about em { font-style: italic; color: var(--ink); }
+
+  /* ── Layer switcher (Leaflet control) ────────────────────────────────── */
+  .leaflet-control-layers {
+    font-family: var(--font); font-size: 12px;
+    border-radius: 8px !important;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+  .leaflet-control-layers-expanded {
+    padding: 10px 12px;
+    background: var(--panel);
+  }
+  .leaflet-control-layers label { margin: 3px 0; }
+
   /* ── Mobile ───────────────────────────────────────────────────────────── */
   @media (max-width: 768px) {
     main { grid-template-columns: 1fr; height: auto; }
     #sidebar { max-height: 50vh; }
     #map { height: 50vh; }
+    .about { display: none; }
   }
 </style>
 </head>
@@ -225,7 +275,7 @@
 <header>
   <div class="brand">
     <h1>🇨🇭 Herrenlos</h1>
-    <div class="sub">Switzerland's ownerless parcels — live scan + map</div>
+    <div class="sub">Mapping Switzerland's unowned land, one parcel at a time</div>
   </div>
   <div class="meta">
     <span id="scan-status"></span>
@@ -236,11 +286,34 @@
 
 <main>
   <div id="sidebar">
+
+    <!-- Brief explainer (collapsed by default on small screens) -->
+    <details class="about" open>
+      <summary>What is a herrenlos parcel?</summary>
+      <p>
+        Under Swiss law (<a href="https://www.fedlex.admin.ch/eli/cc/24/233_245_233/de#art_664"
+        target="_blank" rel="noopener">ZGB Art. 664</a> and
+        <a href="https://www.fedlex.admin.ch/eli/cc/24/233_245_233/de#art_964"
+        target="_blank" rel="noopener">Art. 964</a>), most land in Switzerland has
+        a registered owner. A small fraction does not — either because the owner
+        gave it up (<em>Dereliktion</em>) or because the parcel was never entered
+        in the Grundbuch in the first place.
+      </p>
+      <p>
+        This site scans every cantonal land registry that's publicly accessible
+        and flags parcels that match the legal pattern of <em>herrenlos</em>.
+        Owner names come from the registries cited above (public under
+        <a href="https://www.fedlex.admin.ch/eli/cc/24/233_245_233/de#art_970"
+        target="_blank" rel="noopener">ZGB Art. 970 §2</a>); the parcel
+        geometry comes from the federal cadastral survey.
+      </p>
+    </details>
+
     <!-- Stat cards -->
     <div class="stats">
-      <div class="stat"><div class="v" id="stat-enumerated">—</div><div class="l">Enumerated</div></div>
-      <div class="stat"><div class="v" id="stat-scanned">—</div><div class="l">Scanned</div></div>
-      <div class="stat h"><div class="v" id="stat-herrenlos">—</div><div class="l">Herrenlos</div></div>
+      <div class="stat"><div class="v" id="stat-enumerated">—</div><div class="l">Parcels indexed</div></div>
+      <div class="stat"><div class="v" id="stat-scanned">—</div><div class="l">Checked</div></div>
+      <div class="stat h"><div class="v" id="stat-herrenlos">—</div><div class="l">Herrenlos found</div></div>
       <div class="stat"><div class="v" id="stat-errors">—</div><div class="l">Errors</div></div>
     </div>
 
@@ -272,24 +345,24 @@
 
     <!-- Herrenlos list -->
     <div class="section-h">
-      <h2>Discovered herrenlos</h2>
+      <h2>Flagged parcels</h2>
       <span class="hint" id="herrenlos-count">—</span>
     </div>
     <div id="herrenlos-list"></div>
 
     <!-- Data downloads + source link -->
     <div class="section-h" style="margin-top: 24px;">
-      <h2>Data + source</h2>
+      <h2>Download / source</h2>
     </div>
-    <div style="font-size:11px;line-height:1.8">
-      Download the raw discovery data:
+    <div style="font-size:11px;line-height:1.8;color:var(--ink-soft)">
+      Raw findings:
       <a href="data/herrenlos.json" download style="margin:0 4px">JSON</a> ·
       <a href="data/herrenlos.geojson" download style="margin:0 4px">GeoJSON</a> ·
       <a href="data/herrenlos.csv" download style="margin:0 4px">CSV</a><br>
       Per-canton progress:
       <a href="data/progress.json" download style="margin:0 4px">progress.json</a><br>
       <a href="https://github.com/birniger/Herrenlos" target="_blank" rel="noopener"
-         style="color:var(--muted)">View source on GitHub →</a>
+         style="color:var(--muted)">Source code on GitHub →</a>
     </div>
   </div>
 
@@ -324,12 +397,38 @@
   const map = L.map("map", { preferCanvas: true, zoomControl: false })
               .setView([46.8, 8.3], 8);
   L.control.zoom({ position: "topright" }).addTo(map);
-  L.tileLayer(
-    "https://wmts10.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg",
+
+  // Swisstopo background — color, gray, and aerial.  Gray is the default
+  // because the cadastral overlay's parcel lines are most legible against it.
+  const wmts = (id, fmt) =>
+    `https://wmts10.geo.admin.ch/1.0.0/${id}/default/current/3857/{z}/{x}/{y}.${fmt}`;
+  const layerColor = L.tileLayer(wmts("ch.swisstopo.pixelkarte-farbe", "jpeg"),
+    { attribution: "© <a href='https://www.swisstopo.ch'>swisstopo</a>", maxZoom: 19, minZoom: 7 });
+  const layerGray  = L.tileLayer(wmts("ch.swisstopo.pixelkarte-grau",  "jpeg"),
+    { attribution: "© <a href='https://www.swisstopo.ch'>swisstopo</a>", maxZoom: 19, minZoom: 7 });
+  const layerAerial = L.tileLayer(wmts("ch.swisstopo.swissimage", "jpeg"),
+    { attribution: "© <a href='https://www.swisstopo.ch'>swisstopo</a>", maxZoom: 20, minZoom: 7 });
+  layerGray.addTo(map);
+
+  // Cadastral overlay — THE Swiss parcel map (ch.kantone.cadastralwebmap-farbe).
+  // Shows every Liegenschaft boundary, parcel number, building footprint.
+  // Only legible at zoom ≥14 so the layer auto-hides at lower zooms.
+  const cadaster = L.tileLayer(
+    wmts("ch.kantone.cadastralwebmap-farbe", "png"),
     {
-      attribution: "© <a href='https://www.swisstopo.ch'>swisstopo</a>",
-      maxZoom: 18, minZoom: 7,
+      attribution: "Cadastral data © cantons via swisstopo",
+      maxZoom: 22, minZoom: 14, opacity: 0.85,
     }
+  );
+  cadaster.addTo(map);
+
+  // Layer switcher (top-left) — basemap + optional overlay
+  L.control.layers(
+    { "Map (gray)":  layerGray,
+      "Map (color)": layerColor,
+      "Aerial":      layerAerial },
+    { "Cadastral parcels (zoom ≥14)": cadaster },
+    { position: "topleft", collapsed: true }
   ).addTo(map);
 
   /* Map legend (only added when we have parcels — see below) */
