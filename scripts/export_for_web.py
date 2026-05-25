@@ -52,13 +52,17 @@ def _is_scannable(canton: str) -> bool:
 def build_progress() -> dict:
     """One row per canton: enumeration size, scans so far, herrenlos, errors."""
     with get_conn() as conn:
+        # parcel_enum lives in the attached enum.db now (see db.py).  Use the
+        # qualified `enum.parcel_enum` name; without it the query silently
+        # resolves to a legacy main.parcel_enum that init_db()'s migration left
+        # behind (containing pre-WFS data) and shows stale enumerated counts.
         rows = conn.execute("""
             SELECT canton,
-                   (SELECT COUNT(*) FROM parcel_enum pe WHERE pe.canton=p.canton)            AS enumerated,
-                   SUM(CASE WHEN is_herrenlos IS NOT NULL THEN 1 ELSE 0 END)                 AS scanned,
-                   SUM(CASE WHEN is_herrenlos=1                THEN 1 ELSE 0 END)            AS herrenlos,
-                   SUM(CASE WHEN error IS NOT NULL             THEN 1 ELSE 0 END)            AS errors,
-                   MAX(scanned_at)                                                            AS last_scan_at
+                   (SELECT COUNT(*) FROM enum.parcel_enum pe WHERE pe.canton=p.canton) AS enumerated,
+                   SUM(CASE WHEN is_herrenlos IS NOT NULL THEN 1 ELSE 0 END)           AS scanned,
+                   SUM(CASE WHEN is_herrenlos=1                THEN 1 ELSE 0 END)      AS herrenlos,
+                   SUM(CASE WHEN error IS NOT NULL             THEN 1 ELSE 0 END)      AS errors,
+                   MAX(scanned_at)                                                      AS last_scan_at
               FROM parcels p
              GROUP BY canton
              ORDER BY canton
@@ -108,7 +112,7 @@ def build_progress() -> dict:
     with get_conn() as conn:
         empty_rows = conn.execute("""
             SELECT canton, COUNT(*) AS enumerated
-              FROM parcel_enum
+              FROM enum.parcel_enum
              WHERE canton NOT IN (SELECT DISTINCT canton FROM parcels)
              GROUP BY canton
         """).fetchall()
@@ -133,9 +137,11 @@ def build_progress() -> dict:
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "cantons":      sorted(out_cantons, key=lambda c: c["canton"]),
         "totals": {
-            "scanned":   sum(c["scanned"] for c in out_cantons),
-            "herrenlos": sum(c["herrenlos"] for c in out_cantons),
-            "errors":    sum(c["errors"] for c in out_cantons),
+            "enumerated": sum(c["enumerated"] for c in out_cantons),
+            "scanned":    sum(c["scanned"]    for c in out_cantons),
+            "herrenlos":  sum(c["herrenlos"]  for c in out_cantons),
+            "errors":     sum(c["errors"]     for c in out_cantons),
+            "cantons":    len(out_cantons),
         },
     }
 

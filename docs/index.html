@@ -80,7 +80,7 @@
   #map { height: 100%; background: #d6e4ee; }
 
   /* ── Stat cards ───────────────────────────────────────────────────────── */
-  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
            margin-bottom: 18px; }
   .stat {
     background: var(--bg); border: 1px solid var(--border);
@@ -238,6 +238,7 @@
   <div id="sidebar">
     <!-- Stat cards -->
     <div class="stats">
+      <div class="stat"><div class="v" id="stat-enumerated">—</div><div class="l">Enumerated</div></div>
       <div class="stat"><div class="v" id="stat-scanned">—</div><div class="l">Scanned</div></div>
       <div class="stat h"><div class="v" id="stat-herrenlos">—</div><div class="l">Herrenlos</div></div>
       <div class="stat"><div class="v" id="stat-errors">—</div><div class="l">Errors</div></div>
@@ -357,6 +358,8 @@
   }
 
   /* ── Stat cards ──────────────────────────────────────────────────────── */
+  document.getElementById("stat-enumerated").textContent =
+    (progress.totals.enumerated || 0).toLocaleString();
   document.getElementById("stat-scanned").textContent =
     progress.totals.scanned.toLocaleString();
   document.getElementById("stat-herrenlos").textContent =
