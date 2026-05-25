@@ -94,46 +94,57 @@ jobs:
       - name: Initialise database (if not committed yet)
         run: python -c "from db import init_db; init_db()"
 
-      - name: Pick the canton needing work most
-        id: pick
+      - name: Run scan loop
+        # Keep picking and scanning cantons until the time budget runs out.
+        # Previously each job scanned ONE canton then sat idle for the rest of
+        # the 6h window.  Now when GR exhausts its 90 proxy queries in ~10 min,
+        # the loop immediately picks JU or SZ and keeps scanning.
+        id: scan_loop
         run: |
           set -e
-          INPUT="${{ github.event.inputs.canton }}"
-          if [ -n "$INPUT" ]; then
-            CANTON="$INPUT"
-            echo "Picked manually: $CANTON"
-          else
-            CANTON=$(python scripts/pick_canton.py)
-            echo "Picked automatically: $CANTON"
-          fi
-          echo "canton=$CANTON" >> "$GITHUB_OUTPUT"
+          # 5h25m budget — leaves ~35 min for export + commit + push retries.
+          DEADLINE=$(( $(date +%s) + 5*3600 + 25*60 ))
+          SCANNED_CANTONS=""
+          MANUAL="${{ github.event.inputs.canton }}"
 
-      - name: Install Playwright + Chromium (NE only)
-        if: steps.pick.outputs.canton == 'ne'
-        run: |
-          pip install playwright
-          playwright install chromium --with-deps
+          while [ $(date +%s) -lt $DEADLINE ]; do
+            REMAINING=$(( DEADLINE - $(date +%s) ))
+            [ $REMAINING -lt 120 ] && break   # stop if < 2 min left
 
-      - name: Run scan
-        env:
-          CANTON: ${{ steps.pick.outputs.canton }}
-        run: |
-          set -e
-          echo "Scanning $CANTON …"
-          # --limit caps parcels per run.  Aim for ~5h of compute.
-          # SH/GR: scanner exits naturally once all proxies are exhausted for the day.
-          case "$CANTON" in
-            bs) LIMIT=12000 ;;      # BS small (~7k); ~2h
-            ur) LIMIT=20000 ;;      # UR ~20k; ~5h
-            ju) LIMIT=11000 ;;      # JU ~14k WFS; full ~6.7h → cap at 5h
-            sz) LIMIT=12000 ;;      # SZ ~50k WFS; many runs needed
-            fr) LIMIT=18000 ;;      # FR ~147k WFS; many runs needed
-            sh) LIMIT=9000  ;;      # SH ~43k WFS; proxy rotation caps actual queries
-            ne) LIMIT=500   ;;      # NE ~86k WFS; 10 proxies × 45 = 450/day; scanner exits on quota
-            gr) LIMIT=100   ;;      # GR ~226k WFS; 10 proxies × 9 = 90/day; scanner exits on quota
-            *)  LIMIT=10000 ;;
-          esac
-          timeout 5h python main.py "$CANTON" --limit "$LIMIT" || echo "Scan timed out or failed — committing partial progress."
+            if [ -n "$MANUAL" ]; then
+              CANTON="$MANUAL"
+              MANUAL=""   # only honour the manual override once, then auto-pick
+              echo "=== $(date -u '+%H:%M:%S') Manual pick: $CANTON (${REMAINING}s remaining) ==="
+            else
+              CANTON=$(python scripts/pick_canton.py)
+              echo "=== $(date -u '+%H:%M:%S') Auto-picked: $CANTON (${REMAINING}s remaining) ==="
+            fi
+
+            # Per-canton limits.  SH/GR exit naturally on proxy exhaustion;
+            # JU/SZ are CPU-bound so the limit caps their per-rotation slice.
+            case "$CANTON" in
+              ju) LIMIT=11000 ;;    # ~14k total; full run ~6h → cap at 5h slice
+              sz) LIMIT=12000 ;;    # ~50k total; many rotations needed
+              sh) LIMIT=9000  ;;    # proxy exhaustion exits early (~900 actual)
+              gr) LIMIT=100   ;;    # proxy exhaustion exits early (~90 actual)
+              bs) LIMIT=12000 ;;
+              ur) LIMIT=20000 ;;
+              fr) LIMIT=18000 ;;
+              ne) LIMIT=500   ;;
+              *)  LIMIT=10000 ;;
+            esac
+
+            timeout ${REMAINING}s python main.py "$CANTON" --limit "$LIMIT" \
+              || echo "Scan exited (timeout or failure) — continuing loop."
+
+            # Accumulate distinct canton names for the commit message.
+            if ! echo " $SCANNED_CANTONS " | grep -qw "$CANTON"; then
+              SCANNED_CANTONS="${SCANNED_CANTONS:+$SCANNED_CANTONS }$CANTON"
+            fi
+          done
+
+          echo "cantons=${SCANNED_CANTONS}" >> "$GITHUB_OUTPUT"
+          echo "Scan loop complete. Scanned: ${SCANNED_CANTONS}"
 
       - name: Export dashboard JSON
         # Don't lose scan results if export glitches (e.g. swisstopo geocoding
@@ -164,7 +175,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "Nothing to commit."; exit 0
           fi
-          git commit -m "scan: ${{ steps.pick.outputs.canton }} (auto)"
+          git commit -m "scan: ${{ steps.scan_loop.outputs.cantons }} (auto)"
           # Push with retries. If a local commit raced us, re-merge the DB,
           # amend the scan commit with the merged state, then rebase.
           # Amending before rebase is critical: -X theirs replays the commit's
