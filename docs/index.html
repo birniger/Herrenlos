@@ -281,10 +281,12 @@
   }
   #progress-table th.r { text-align: right; }
   #progress-table td {
-    padding: 9px 0;
+    padding: 9px 6px;
     border-bottom: 1px solid var(--rule-soft);
     vertical-align: middle;
   }
+  #progress-table td:first-child { padding-left: 0; }
+  #progress-table td:last-child  { padding-right: 0; }
   #progress-table td.r { text-align: right; font-variant-numeric: tabular-nums; }
   #progress-table tr { cursor: pointer; transition: background .12s ease; }
   #progress-table tr:hover td { background: var(--rule-soft); }

@@ -385,12 +385,10 @@ def scan(limit: int | None = None,
                 queries_on_proxy = 0
                 log.info("GR proactive proxy rotate → proxy #%d", proxy_idx)
 
-            # Respect rate limit sleep (no-proxy fallback)
-            now = time.time()
-            if now < rate_wait_until:
-                wait = rate_wait_until - now
-                log.warning("Rate-limited — sleeping %.0fs", wait)
-                time.sleep(wait + 5)
+            # Daily quota exhausted (no-proxy fallback — belt-and-suspenders)
+            if time.time() < rate_wait_until:
+                log.warning("GR daily quota exhausted — stopping scan.")
+                break
 
             result = check_owner(session, egrid)
             queries_on_proxy += 1
@@ -405,11 +403,11 @@ def scan(limit: int | None = None,
                     result = check_owner(session, egrid)
                     queries_on_proxy += 1
                 else:
-                    # GR resets at midnight — sleep until then + buffer
-                    rate_wait_until = time.time() + 86_400
-                    log.warning("GR rate limit hit — sleeping 24h (set GR_PROXY_LIST to rotate instead)")
-                    time.sleep(5)
-                    result = check_owner(session, egrid)
+                    log.warning(
+                        "GR rate limit hit with no proxies — stopping scan for today. "
+                        "Set GR_PROXY_LIST to rotate IPs, or run again tomorrow."
+                    )
+                    break
 
             upsert_parcel(conn, {
                 "egrid":       egrid,

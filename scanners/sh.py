@@ -448,12 +448,10 @@ def scan(limit: int | None = None,
                 queries_on_proxy = 0
                 log.info("SH proactive proxy rotate → proxy #%d", proxy_idx)
 
-            # Respect rate limit sleep (no-proxy fallback)
-            now = time.time()
-            if now < rate_wait_until:
-                wait = rate_wait_until - now
-                log.warning("Rate-limited — sleeping %.0fs", wait)
-                time.sleep(wait + 5)
+            # Daily quota exhausted (no-proxy fallback — belt-and-suspenders)
+            if time.time() < rate_wait_until:
+                log.warning("SH daily quota exhausted — stopping scan.")
+                break
 
             result = check_owner(session, east, north, token, egrid)
             queries_on_proxy += 1
@@ -479,10 +477,11 @@ def scan(limit: int | None = None,
                     result = check_owner(session, east, north, token, egrid)
                     queries_on_proxy += 1
                 else:
-                    rate_wait_until = time.time() + 86_400
-                    log.warning("SH rate limit hit (100/day) — sleeping 24h (set SH_PROXY_LIST to rotate instead)")
-                    time.sleep(5)
-                    result = check_owner(session, east, north, token, egrid)
+                    log.warning(
+                        "SH rate limit hit (100/day) with no proxies — stopping scan for today. "
+                        "Set SH_PROXY_LIST to rotate IPs, or run again tomorrow."
+                    )
+                    break
 
             upsert_parcel(conn, {
                 "egrid":       egrid,
