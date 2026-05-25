@@ -593,37 +593,31 @@
               .setView([46.8, 8.3], 8);
   L.control.zoom({ position: "topright" }).addTo(map);
 
-  // Swisstopo background — color, gray, and aerial.  Gray is the default
-  // because the cadastral overlay's parcel lines are most legible against it.
+  // Three basemap choices — each is a complete map style, no overlay stacking.
+  // The earlier "cadastral overlay on top of gray topo" combination produced a
+  // muddy result because ch.kantone.cadastralwebmap-farbe is itself an opaque
+  // basemap, not a transparent overlay, so it covered up the underlying tiles.
   const wmts = (id, fmt) =>
-    `https://wmts10.geo.admin.ch/1.0.0/${id}/default/current/3857/{z}/{x}/{y}.${fmt}`;
+    `https://wmts.geo.admin.ch/1.0.0/${id}/default/current/3857/{z}/{x}/{y}.${fmt}`;
+  const attribution = "© <a href='https://www.swisstopo.ch'>swisstopo</a>, cantons";
   const layerColor = L.tileLayer(wmts("ch.swisstopo.pixelkarte-farbe", "jpeg"),
-    { attribution: "© <a href='https://www.swisstopo.ch'>swisstopo</a>", maxZoom: 19, minZoom: 7 });
-  const layerGray  = L.tileLayer(wmts("ch.swisstopo.pixelkarte-grau",  "jpeg"),
-    { attribution: "© <a href='https://www.swisstopo.ch'>swisstopo</a>", maxZoom: 19, minZoom: 7 });
+    { attribution, maxZoom: 19, minZoom: 7 });
   const layerAerial = L.tileLayer(wmts("ch.swisstopo.swissimage", "jpeg"),
-    { attribution: "© <a href='https://www.swisstopo.ch'>swisstopo</a>", maxZoom: 20, minZoom: 7 });
-  layerGray.addTo(map);
+    { attribution, maxZoom: 20, minZoom: 7 });
+  // Cadastral basemap — shows every Liegenschaft boundary, parcel number,
+  // building footprint.  This is THE iconic Swiss cadaster look (the same
+  // tiles map.geo.admin.ch shows when you switch to "Amtliche Vermessung").
+  const layerCadastre = L.tileLayer(wmts("ch.kantone.cadastralwebmap-farbe", "png"),
+    { attribution, maxZoom: 22, minZoom: 7 });
+  layerColor.addTo(map);
 
-  // Cadastral overlay — THE Swiss parcel map (ch.kantone.cadastralwebmap-farbe).
-  // Shows every Liegenschaft boundary, parcel number, building footprint.
-  // Only legible at zoom ≥14 so the layer auto-hides at lower zooms.
-  const cadaster = L.tileLayer(
-    wmts("ch.kantone.cadastralwebmap-farbe", "png"),
-    {
-      attribution: "Cadastral data © cantons via swisstopo",
-      maxZoom: 22, minZoom: 14, opacity: 0.85,
-    }
-  );
-  cadaster.addTo(map);
-
-  // Layer switcher (top-left) — basemap + optional overlay
+  // Layer switcher (top-left).  Only basemaps — no overlay stacking.
   L.control.layers(
-    { "Map (gray)":  layerGray,
-      "Map (color)": layerColor,
-      "Aerial":      layerAerial },
-    { "Cadastral parcels (zoom ≥14)": cadaster },
-    { position: "topleft", collapsed: true }
+    { "Map":       layerColor,
+      "Cadastre":  layerCadastre,
+      "Aerial":    layerAerial },
+    null,
+    { position: "topleft", collapsed: false }
   ).addTo(map);
 
   /* Map legend (only added when we have parcels — see below) */
