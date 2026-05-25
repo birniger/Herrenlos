@@ -1,7 +1,1085 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-05-25T08:34:07+00:00",
+  "generated_at": "2026-05-25T09:27:54+00:00",
   "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.017080307006836,
+          46.73626708984375
+        ]
+      },
+      "properties": {
+        "egrid": "CH331073946233",
+        "canton": "FR",
+        "commune": "Autigny .",
+        "bfs_nr": "2173",
+        "parcel_nr": "1013a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:50:29"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.017059803009033,
+          46.732181549072266
+        ]
+      },
+      "properties": {
+        "egrid": "CH308894111028",
+        "canton": "FR",
+        "commune": "Autigny .",
+        "bfs_nr": "2173",
+        "parcel_nr": "1312.02401;0250",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:48:46"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.0239362716674805,
+          46.73221206665039
+        ]
+      },
+      "properties": {
+        "egrid": "CH338577016888",
+        "canton": "FR",
+        "commune": "Autigny .",
+        "bfs_nr": "2173",
+        "parcel_nr": "29b",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:54:01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.0089569091796875,
+          46.750240325927734
+        ]
+      },
+      "properties": {
+        "egrid": "CH131089941997",
+        "canton": "FR",
+        "commune": "Autigny .",
+        "bfs_nr": "2173",
+        "parcel_nr": "417aab",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:40:25"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.0353193283081055,
+          46.741050720214844
+        ]
+      },
+      "properties": {
+        "egrid": "CH281110948582",
+        "canton": "FR",
+        "commune": "Autigny .",
+        "bfs_nr": "2173",
+        "parcel_nr": "441c",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 01:03:15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.010646343231201,
+          46.75164794921875
+        ]
+      },
+      "properties": {
+        "egrid": "CH919414107842",
+        "canton": "FR",
+        "commune": "Autigny .",
+        "bfs_nr": "2173",
+        "parcel_nr": "496b",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:47:51"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.011166095733643,
+          46.750057220458984
+        ]
+      },
+      "properties": {
+        "egrid": "CH679487091042",
+        "canton": "FR",
+        "commune": "Autigny .",
+        "bfs_nr": "2173",
+        "parcel_nr": "497b",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:47:50"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.030617713928223,
+          46.741146087646484
+        ]
+      },
+      "properties": {
+        "egrid": "CH868510944621",
+        "canton": "FR",
+        "commune": "Autigny .",
+        "bfs_nr": "2173",
+        "parcel_nr": "869b",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:59:12"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.029480934143066,
+          46.74009323120117
+        ]
+      },
+      "properties": {
+        "egrid": "CH586610949240",
+        "canton": "FR",
+        "commune": "Autigny .",
+        "bfs_nr": "2173",
+        "parcel_nr": "888cb",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:59:10"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.027264595031738,
+          46.741703033447266
+        ]
+      },
+      "properties": {
+        "egrid": "CH119424107929",
+        "canton": "FR",
+        "commune": "Autigny .",
+        "bfs_nr": "2173",
+        "parcel_nr": "907a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:57:28"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.995954990386963,
+          46.739498138427734
+        ]
+      },
+      "properties": {
+        "egrid": "CH389810947339",
+        "canton": "FR",
+        "commune": "Ch\u00e9nens",
+        "bfs_nr": "2177",
+        "parcel_nr": "132a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:36:49"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.006556987762451,
+          46.74678039550781
+        ]
+      },
+      "properties": {
+        "egrid": "CH384610949860",
+        "canton": "FR",
+        "commune": "Ch\u00e9nens",
+        "bfs_nr": "2177",
+        "parcel_nr": "135ba",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:39:28"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.992483615875244,
+          46.741458892822266
+        ]
+      },
+      "properties": {
+        "egrid": "CH567310946639",
+        "canton": "FR",
+        "commune": "Ch\u00e9nens",
+        "bfs_nr": "2177",
+        "parcel_nr": "140a.01401",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:35:07"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.994080543518066,
+          46.74512481689453
+        ]
+      },
+      "properties": {
+        "egrid": "CH219495107143",
+        "canton": "FR",
+        "commune": "Ch\u00e9nens",
+        "bfs_nr": "2177",
+        "parcel_nr": "149ab",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:44:00"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.995115756988525,
+          46.74769973754883
+        ]
+      },
+      "properties": {
+        "egrid": "CH879488691076",
+        "canton": "FR",
+        "commune": "Ch\u00e9nens",
+        "bfs_nr": "2177",
+        "parcel_nr": "159.01501;01601",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:36:20"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.0041913986206055,
+          46.7381591796875
+        ]
+      },
+      "properties": {
+        "egrid": "CH510181857917",
+        "canton": "FR",
+        "commune": "Ch\u00e9nens",
+        "bfs_nr": "2177",
+        "parcel_nr": "226b",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:45:35"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.990548610687256,
+          46.744625091552734
+        ]
+      },
+      "properties": {
+        "egrid": "CH431090945349",
+        "canton": "FR",
+        "commune": "Ch\u00e9nens",
+        "bfs_nr": "2177",
+        "parcel_nr": "294b",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:35:51"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.998639106750488,
+          46.73972702026367
+        ]
+      },
+      "properties": {
+        "egrid": "CH728230109496",
+        "canton": "FR",
+        "commune": "Ch\u00e9nens",
+        "bfs_nr": "2177",
+        "parcel_nr": "533b",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:37:27"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.993966579437256,
+          46.73741912841797
+        ]
+      },
+      "properties": {
+        "egrid": "CH831070940940",
+        "canton": "FR",
+        "commune": "Ch\u00e9nens",
+        "bfs_nr": "2177",
+        "parcel_nr": "548a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:36:15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.006892681121826,
+          46.73823165893555
+        ]
+      },
+      "properties": {
+        "egrid": "CH879478181028",
+        "canton": "FR",
+        "commune": "Ch\u00e9nens",
+        "bfs_nr": "2177",
+        "parcel_nr": "592.00801",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:46:08"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.009554862976074,
+          46.741600036621094
+        ]
+      },
+      "properties": {
+        "egrid": "CH310158857802",
+        "canton": "FR",
+        "commune": "Ch\u00e9nens",
+        "bfs_nr": "2177",
+        "parcel_nr": "635b",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:46:54"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.998210906982422,
+          46.74986267089844
+        ]
+      },
+      "properties": {
+        "egrid": "CH691076759425",
+        "canton": "FR",
+        "commune": "Ch\u00e9nens",
+        "bfs_nr": "2177",
+        "parcel_nr": "691a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:37:33"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.004368305206299,
+          46.73931121826172
+        ]
+      },
+      "properties": {
+        "egrid": "CH255110729478",
+        "canton": "FR",
+        "commune": "Ch\u00e9nens",
+        "bfs_nr": "2177",
+        "parcel_nr": "87a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:38:39"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.026341438293457,
+          46.74962615966797
+        ]
+      },
+      "properties": {
+        "egrid": "CH109794181026",
+        "canton": "FR",
+        "commune": "Cottens (FR)",
+        "bfs_nr": "2186",
+        "parcel_nr": "295a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:55:58"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.020966053009033,
+          46.75371551513672
+        ]
+      },
+      "properties": {
+        "egrid": "CH291097099473",
+        "canton": "FR",
+        "commune": "Cottens (FR)",
+        "bfs_nr": "2186",
+        "parcel_nr": "37ba",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:52:26"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.025686264038086,
+          46.754966735839844
+        ]
+      },
+      "properties": {
+        "egrid": "CH149410723462",
+        "canton": "FR",
+        "commune": "Cottens (FR)",
+        "bfs_nr": "2186",
+        "parcel_nr": "517a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:57:41"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.004900932312012,
+          46.7166633605957
+        ]
+      },
+      "properties": {
+        "egrid": "CH428300109453",
+        "canton": "FR",
+        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
+        "bfs_nr": "2236",
+        "parcel_nr": "118.00901",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:45:33"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.023660182952881,
+          46.709747314453125
+        ]
+      },
+      "properties": {
+        "egrid": "CH519446108775",
+        "canton": "FR",
+        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
+        "bfs_nr": "2236",
+        "parcel_nr": "121b",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:53:40"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.009573459625244,
+          46.727760314941406
+        ]
+      },
+      "properties": {
+        "egrid": "CH791090639495",
+        "canton": "FR",
+        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
+        "bfs_nr": "2236",
+        "parcel_nr": "128aa",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:40:07"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.014132499694824,
+          46.70602035522461
+        ]
+      },
+      "properties": {
+        "egrid": "CH119464108056",
+        "canton": "FR",
+        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
+        "bfs_nr": "2236",
+        "parcel_nr": "129b",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:48:28"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.025341987609863,
+          46.72376251220703
+        ]
+      },
+      "properties": {
+        "egrid": "CH284410948465",
+        "canton": "FR",
+        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
+        "bfs_nr": "2236",
+        "parcel_nr": "219a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:55:35"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.007707595825195,
+          46.72734451293945
+        ]
+      },
+      "properties": {
+        "egrid": "CH419415107512",
+        "canton": "FR",
+        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
+        "bfs_nr": "2236",
+        "parcel_nr": "316b",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:39:17"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.020441055297852,
+          46.720611572265625
+        ]
+      },
+      "properties": {
+        "egrid": "CH238578012163",
+        "canton": "FR",
+        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
+        "bfs_nr": "2236",
+        "parcel_nr": "33a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:51:53"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.006643772125244,
+          46.7125244140625
+        ]
+      },
+      "properties": {
+        "egrid": "CH249410930195",
+        "canton": "FR",
+        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
+        "bfs_nr": "2236",
+        "parcel_nr": "356b",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:39:12"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.035087585449219,
+          46.694602966308594
+        ]
+      },
+      "properties": {
+        "egrid": "CH227521109451",
+        "canton": "FR",
+        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
+        "bfs_nr": "2236",
+        "parcel_nr": "369a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 01:00:33"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.008969306945801,
+          46.71110153198242
+        ]
+      },
+      "properties": {
+        "egrid": "CH819430107334",
+        "canton": "FR",
+        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
+        "bfs_nr": "2236",
+        "parcel_nr": "372a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:40:00"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.0218682289123535,
+          46.72840118408203
+        ]
+      },
+      "properties": {
+        "egrid": "CH767810948808",
+        "canton": "FR",
+        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
+        "bfs_nr": "2236",
+        "parcel_nr": "37aab",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:52:01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.009445667266846,
+          46.70743179321289
+        ]
+      },
+      "properties": {
+        "egrid": "CH391082609421",
+        "canton": "FR",
+        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
+        "bfs_nr": "2236",
+        "parcel_nr": "40ab",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:39:57"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.024631977081299,
+          46.70698928833008
+        ]
+      },
+      "properties": {
+        "egrid": "CH349410751108",
+        "canton": "FR",
+        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
+        "bfs_nr": "2236",
+        "parcel_nr": "54b",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:55:21"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.033296585083008,
+          46.77370071411133
+        ]
+      },
+      "properties": {
+        "egrid": "CH387910949941",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "124a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 01:01:56"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.02200174331665,
+          46.771663665771484
+        ]
+      },
+      "properties": {
+        "egrid": "CH549410910295",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "192a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:54:37"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.996510982513428,
+          46.75440216064453
+        ]
+      },
+      "properties": {
+        "egrid": "CH257010749444",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "20a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:37:00"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.01003360748291,
+          46.75635528564453
+        ]
+      },
+      "properties": {
+        "egrid": "CH628581109475",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "272aaa",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:40:30"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.007884502410889,
+          46.755615234375
+        ]
+      },
+      "properties": {
+        "egrid": "CH898578980172",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "272ab",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:46:22"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.035757064819336,
+          46.7684211730957
+        ]
+      },
+      "properties": {
+        "egrid": "CH981410947960",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "312a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 01:03:39"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.025147438049316,
+          46.762393951416016
+        ]
+      },
+      "properties": {
+        "egrid": "CH707894231029",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "392a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:56:09"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.998569965362549,
+          46.765403747558594
+        ]
+      },
+      "properties": {
+        "egrid": "CH891070619453",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "394a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:37:49"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.001419544219971,
+          46.761409759521484
+        ]
+      },
+      "properties": {
+        "egrid": "CH884710948273",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "486a",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:38:17"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.026961803436279,
+          46.813480377197266
+        ]
+      },
+      "properties": {
+        "egrid": "CH786885017722",
+        "canton": "FR",
+        "commune": "Prez (secteur Prez-vers-Nor\u00e9az)",
+        "bfs_nr": "2237",
+        "parcel_nr": "269",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:58:25"
+      }
+    },
     {
       "type": "Feature",
       "geometry": {

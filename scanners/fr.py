@@ -112,6 +112,9 @@ def enumerate_parcels_swisstopo(
                             "bfs_nr":    str(attrs.get("bfsnr", "")),
                             "parcel_nr": str(attrs.get("number", "")),
                             "commune":   attrs.get("label", ""),
+                            # Capture EGRID so herrenlos parcels can be geocoded
+                            # for the website map (otherwise lat/lng are NULL).
+                            "egrid":     attrs.get("egris_egrid", ""),
                         })
             except Exception:
                 pass
