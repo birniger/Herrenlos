@@ -136,11 +136,22 @@ AUTH_FAILURE_KEYWORDS = [
 # user didn't complete the login within the 3-minute timeout. The scanner
 # exits rc=0 in this case (it just returns early), so we can't rely on the
 # exit code — we detect these keywords in the output instead.
+# Rules: keep ALL keywords ASCII-only (no em-dashes etc.) to avoid encoding
+# surprises when subprocess output is decoded.  Cover every code path that
+# calls grudis_login() / vs_login() and then exits early:
+#   - be.py scan()       → "BE login failed"
+#   - be.py _do_refresh()→ "Re-login failed"    ← was missing before
+#   - grudis_login()     → "Timed out waiting for BE token"
+#   - vs_login()         → similar messages
 LOGIN_TIMEOUT_KEYWORDS = [
-    "timed out waiting for be token",
-    "be login failed",
+    "timed out waiting for be token",   # grudis_login() on 3-min poll timeout
+    "timed out waiting for vs token",   # vs equivalent
+    "be login failed",                  # scan() initial token acquisition
+    "vs login failed",                  # vs equivalent
+    "re-login failed",                  # _do_refresh() path (was missing!)
+    "login not completed",              # grudis_login() message suffix
     "no token captured",
-    "login failed — aborting",
+    "login failed",                     # catch-all (covers all aborting variants)
     "login timed out",
 ]
 
@@ -395,6 +406,42 @@ def looks_like_login_timeout(output: str) -> bool:
     return any(kw in o for kw in LOGIN_TIMEOUT_KEYWORDS)
 
 
+# Cantons that require an interactive token and also populate parcel_enum on
+# every successful run (be.py caches even quick enumerations since 2026-05-24).
+# If a scan exits cleanly BUT parcel_enum is still empty, login failed.
+_LOGIN_REQUIRED = {"be", "vs"}
+
+
+def _is_login_failed(canton: str, tail: str) -> bool:
+    """
+    Return True if the canton scan appears to have failed at the login step.
+
+    Two complementary signals:
+      1. Keyword detection in the subprocess tail output (fast, no DB query).
+      2. Structural: login-required cantons enumerate parcels on every successful
+         run.  If parcel_enum is still empty after a clean exit, login failed.
+    """
+    if looks_like_login_timeout(tail):
+        return True
+    if canton not in _LOGIN_REQUIRED:
+        return False
+    # Structural check: did the scan populate parcel_enum?
+    try:
+        with get_conn() as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM parcel_enum WHERE canton = UPPER(?)", (canton,)
+            ).fetchone()
+            enum_count = row[0] if row else 0
+        if enum_count < REAL_ENUM_MIN:
+            log.debug("%s parcel_enum empty after clean exit (%d rows) — "
+                      "login likely failed (tail snippet: %s)",
+                      canton.upper(), enum_count, tail[-120:].replace("\n", "↵"))
+            return True
+    except Exception as exc:
+        log.debug("_is_login_failed DB check error: %s", exc)
+    return False
+
+
 # ── Signal handling ──────────────────────────────────────────────────────────
 
 def install_signal_handlers():
@@ -532,9 +579,12 @@ def main() -> int:
                 # Detect login-window timeout: scanner opened the browser but
                 # no login happened within 3 min. Scanner exits rc=0 (it just
                 # returns early), so we can't rely on the exit code.
-                # Skip this canton for the rest of the run so the loop moves
-                # on to FR/VS instead of re-opening the browser endlessly.
-                elif looks_like_login_timeout(tail):
+                # Two complementary guards — both route to the same "skip" action:
+                #  1. Keyword check (tail content).
+                #  2. Structural check: BE/VS require a token → they also enumerate
+                #     parcels (be.py caches quick enum).  If parcel_enum is STILL
+                #     empty after a clean exit, login never completed.
+                elif _is_login_failed(canton, tail):
                     notify(
                         title=f"Herrenlos — {canton.upper()} login not completed",
                         message=(f"{canton.upper()} login window timed out (no login "

@@ -711,10 +711,18 @@ def scan(limit: int | None = None,
         parcels = cached[:limit] if limit else cached
     else:
         if limit:
-            # Quick mode: small grid around Bern — result NOT cached
+            # Quick mode: small grid around Bern.
+            # Result IS cached so the local bulk scanner doesn't keep treating
+            # BE as "unenumerated" and re-picking it every loop iteration.
+            # The cache is partial (~300-500 Bern-area parcels) but better than
+            # nothing.  Run without --limit to build the full 400k canton cache.
             log.info("No parcel cache — quick scan for first %d BE parcels "
-                     "(run without --limit to build full cache)", limit)
+                     "(result will be cached; run without --limit for full cache)", limit)
             parcels = enumerate_parcels_swisstopo(max_parcels=limit)
+            if parcels:
+                with get_conn() as conn:
+                    store_enum(conn, "BE", parcels)
+                log.info("Cached %d BE parcels (quick/partial)", len(parcels))
         else:
             log.info("No cache — running swisstopo grid scan (~5h) …")
             parcels = enumerate_parcels_swisstopo()
