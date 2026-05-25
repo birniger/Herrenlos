@@ -248,7 +248,7 @@ def pick_canton(eligible: list[str]) -> str | None:
                    COUNT(pe.id)                                                  AS enum_count,
                    COUNT(pe.id) - COALESCE(SUM(
                        CASE WHEN p.is_herrenlos IS NOT NULL THEN 1 ELSE 0 END), 0) AS gap
-              FROM parcel_enum pe
+              FROM enum.parcel_enum pe
               LEFT JOIN parcels p
                      ON p.canton = pe.canton
                     AND p.bfs_nr = pe.bfs_nr
@@ -429,7 +429,7 @@ def _is_login_failed(canton: str, tail: str) -> bool:
     try:
         with get_conn() as conn:
             row = conn.execute(
-                "SELECT COUNT(*) FROM parcel_enum WHERE canton = UPPER(?)", (canton,)
+                "SELECT COUNT(*) FROM enum.parcel_enum WHERE canton = UPPER(?)", (canton,)
             ).fetchone()
             enum_count = row[0] if row else 0
         if enum_count < REAL_ENUM_MIN:

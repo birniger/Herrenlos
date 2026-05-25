@@ -73,7 +73,7 @@ def pick() -> str:
                    COUNT(pe.id)                                                 AS enum_count,
                    COUNT(pe.id) - COALESCE(SUM(
                        CASE WHEN p.is_herrenlos IS NOT NULL THEN 1 ELSE 0 END), 0) AS gap
-              FROM parcel_enum pe
+              FROM enum.parcel_enum pe
               LEFT JOIN parcels p
                      ON p.canton = pe.canton
                     AND p.bfs_nr = pe.bfs_nr

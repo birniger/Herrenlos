@@ -1,7 +1,8 @@
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent / "herrenlos.db"
+DB_PATH      = Path(__file__).parent / "herrenlos.db"
+ENUM_DB_PATH = Path(__file__).parent / "enum.db"
 
 
 def get_conn() -> sqlite3.Connection:
@@ -32,6 +33,19 @@ def get_conn() -> sqlite3.Connection:
     conn.execute("PRAGMA busy_timeout=30000")     # 30s waits for locks
     conn.execute("PRAGMA synchronous=NORMAL")     # WAL-safe, faster than FULL
     conn.execute("PRAGMA wal_autocheckpoint=1000")  # checkpoint every 1000 pages
+    # Attach the enumeration cache as a separate database (`enum.db`).
+    # parcel_enum lives there (~90 MB for a fully-enumerated all-cantons run)
+    # because:
+    #   1. It's regenerable: any canton can be re-enumerated via the geodienste
+    #      WFS in 1-10 minutes (see scanners/wfs_enum.py).
+    #   2. Keeping it in `herrenlos.db` pushed the file over GitHub's 100 MB
+    #      hard limit; splitting it lets us commit `herrenlos.db` (~7 MB) again.
+    # The `enum.db` file is gitignored.  All scripts that join parcels with
+    # enumeration use the `enum.parcel_enum` qualified table name.
+    conn.execute(f"ATTACH DATABASE '{ENUM_DB_PATH}' AS enum")
+    conn.execute("PRAGMA enum.journal_mode=WAL")
+    conn.execute("PRAGMA enum.busy_timeout=30000")
+    conn.execute("PRAGMA enum.synchronous=NORMAL")
     return conn
 
 
@@ -57,20 +71,6 @@ def init_db():
                 raw_response    TEXT,
                 error           TEXT,
                 scanned_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(canton, bfs_nr, parcel_nr)
-            );
-
-            -- Enumeration cache: stores discovered parcel numbers per canton so
-            -- swisstopo grid scans (and other slow enumerations) only run once ever.
-            CREATE TABLE IF NOT EXISTS parcel_enum (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                canton      TEXT NOT NULL,
-                bfs_nr      TEXT NOT NULL,
-                parcel_nr   TEXT NOT NULL,
-                commune     TEXT,
-                egrid       TEXT,
-                extra       TEXT,   -- JSON blob for canton-specific data (e.g. NE UUID)
-                enumerated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(canton, bfs_nr, parcel_nr)
             );
 
@@ -104,20 +104,62 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_canton          ON parcels(canton);
             CREATE INDEX IF NOT EXISTS idx_herrenlos       ON parcels(is_herrenlos);
             CREATE INDEX IF NOT EXISTS idx_egrid           ON parcels(egrid);
-            CREATE INDEX IF NOT EXISTS idx_enum_canton     ON parcel_enum(canton);
             CREATE INDEX IF NOT EXISTS idx_captcha_canton  ON captcha_stats(canton);
             CREATE INDEX IF NOT EXISTS idx_testruns_canton ON test_runs(canton);
             CREATE INDEX IF NOT EXISTS idx_testruns_runat  ON test_runs(run_at);
+
+            -- parcel_enum lives in the attached `enum` database (enum.db).
+            -- This file is gitignored and regenerable; keeping it out of
+            -- herrenlos.db lets that file stay small enough to commit.
+            CREATE TABLE IF NOT EXISTS enum.parcel_enum (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                canton      TEXT NOT NULL,
+                bfs_nr      TEXT NOT NULL,
+                parcel_nr   TEXT NOT NULL,
+                commune     TEXT,
+                egrid       TEXT,
+                extra       TEXT,
+                enumerated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(canton, bfs_nr, parcel_nr)
+            );
+            CREATE INDEX IF NOT EXISTS enum.idx_enum_canton ON parcel_enum(canton);
         """)
+
+    # One-time migration: copy parcel_enum data from herrenlos.db to enum.db
+    # if it exists in the old location.  We don't DROP TABLE here because
+    # another scanner process may be holding a write lock on herrenlos.db —
+    # tolerate that and let `scripts/migrate_parcel_enum.py` do the cleanup
+    # when it's safe.  Until then, the scanner code reads from enum.parcel_enum
+    # (the new location), so the stale main.parcel_enum is just dead weight.
+    with get_conn() as conn:
+        legacy = conn.execute(
+            "SELECT name FROM main.sqlite_master WHERE type='table' AND name='parcel_enum'"
+        ).fetchone()
+        if legacy:
+            already_migrated = conn.execute(
+                "SELECT COUNT(*) FROM enum.parcel_enum"
+            ).fetchone()[0]
+            if already_migrated == 0:
+                print("[db] Migrating parcel_enum from herrenlos.db → enum.db…")
+                n = conn.execute("""
+                    INSERT OR IGNORE INTO enum.parcel_enum
+                        (canton, bfs_nr, parcel_nr, commune, egrid, extra, enumerated_at)
+                    SELECT canton, bfs_nr, parcel_nr, commune, egrid, extra, enumerated_at
+                      FROM main.parcel_enum
+                """).rowcount
+                conn.commit()
+                print(f"[db] Copied {n} rows to enum.db; "
+                      "old main.parcel_enum left in place (drop later with "
+                      "scripts/migrate_parcel_enum.py once scanners are idle)")
 
 
 def _migrate_parcel_enum(conn):
     """Add egrid / extra columns to parcel_enum if they don't exist yet (one-time migration)."""
-    existing = {row[1] for row in conn.execute("PRAGMA table_info(parcel_enum)").fetchall()}
+    existing = {row[1] for row in conn.execute("PRAGMA enum.table_info(parcel_enum)").fetchall()}
     if "egrid" not in existing:
-        conn.execute("ALTER TABLE parcel_enum ADD COLUMN egrid TEXT")
+        conn.execute("ALTER TABLE enum.parcel_enum ADD COLUMN egrid TEXT")
     if "extra" not in existing:
-        conn.execute("ALTER TABLE parcel_enum ADD COLUMN extra TEXT")
+        conn.execute("ALTER TABLE enum.parcel_enum ADD COLUMN extra TEXT")
     conn.commit()
 
 
@@ -130,7 +172,7 @@ def enum_cached(conn, canton: str) -> list[dict] | None:
     """
     _migrate_parcel_enum(conn)
     rows = conn.execute(
-        "SELECT bfs_nr, parcel_nr, commune, egrid, extra FROM parcel_enum WHERE canton=?",
+        "SELECT bfs_nr, parcel_nr, commune, egrid, extra FROM enum.parcel_enum WHERE canton=?",
         (canton,)
     ).fetchall()
     if not rows:
@@ -174,7 +216,7 @@ def store_enum(conn, canton: str, parcels: list[dict]):
             "extra":     extra,
         })
     conn.executemany("""
-        INSERT OR IGNORE INTO parcel_enum (canton, bfs_nr, parcel_nr, commune, egrid, extra)
+        INSERT OR IGNORE INTO enum.parcel_enum (canton, bfs_nr, parcel_nr, commune, egrid, extra)
         VALUES (:canton, :bfs_nr, :parcel_nr, :commune, :egrid, :extra)
     """, rows)
     conn.commit()
