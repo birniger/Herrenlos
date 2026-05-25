@@ -126,11 +126,7 @@ def init_db():
         """)
 
     # One-time migration: copy parcel_enum data from herrenlos.db to enum.db
-    # if it exists in the old location.  We don't DROP TABLE here because
-    # another scanner process may be holding a write lock on herrenlos.db —
-    # tolerate that and let `scripts/migrate_parcel_enum.py` do the cleanup
-    # when it's safe.  Until then, the scanner code reads from enum.parcel_enum
-    # (the new location), so the stale main.parcel_enum is just dead weight.
+    # if it still exists in the old location and enum.db is still empty.
     with get_conn() as conn:
         legacy = conn.execute(
             "SELECT name FROM main.sqlite_master WHERE type='table' AND name='parcel_enum'"
@@ -148,9 +144,25 @@ def init_db():
                       FROM main.parcel_enum
                 """).rowcount
                 conn.commit()
-                print(f"[db] Copied {n} rows to enum.db; "
-                      "old main.parcel_enum left in place (drop later with "
-                      "scripts/migrate_parcel_enum.py once scanners are idle)")
+                print(f"[db] Copied {n} rows to enum.db")
+
+    # Permanent guard: drop legacy tables from herrenlos.db whenever they appear.
+    # merge_dbs.py can re-introduce parcel_enum (750 k rows, ~85 MB) and
+    # lost_and_found (90 k rows) from a pre-migration CI DB, bloating herrenlos.db
+    # past GitHub's 100 MB hard limit.  Running this guard on every init_db()
+    # call prevents that from ever sticking.
+    with get_conn() as conn:
+        tables = {r[0] for r in conn.execute(
+            "SELECT name FROM main.sqlite_master WHERE type='table'"
+        ).fetchall()}
+        dropped = []
+        for _legacy in ("parcel_enum", "lost_and_found"):
+            if _legacy in tables:
+                conn.execute(f"DROP TABLE IF EXISTS main.{_legacy}")
+                dropped.append(_legacy)
+        if dropped:
+            conn.commit()
+            print(f"[db] Dropped legacy tables from herrenlos.db: {', '.join(dropped)}")
 
 
 def _migrate_parcel_enum(conn):
