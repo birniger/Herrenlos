@@ -282,22 +282,55 @@ def scan(communes: list[str] | None = None,
     log.info("Fetching FR commune list …")
     _, _, all_options = new_session()
 
-    # Build bfs_nr → selcom and bfs_nr → commune name mappings
+    # Build selcom → label mapping.  Each FR commune has a SELCOM value of the
+    # form "{bfs_nr} {NBIdent}" (e.g. "2234 FR221512").  Merged communes have
+    # MULTIPLE selcoms for the same BFS — one per pre-merger sector.  Example:
+    #   bfs=2234 La Brillaz has 3 sectors: Lentigny, Lovens, Onnens
+    #   bfs=2236 Gibloux has 8 sectors after merger
+    # We previously mapped {bfs → selcom} which kept only the LAST sector and
+    # routed every parcel to it — so parcels in other sectors hit the wrong
+    # selcom and returned INFORMATION INTROUVABLE → 100% false-positive
+    # herrenlos for those sectors.
+    #
+    # Fix: route each parcel to its actual sector using NBIdent (the cantonal
+    # cadastre district identifier) which the geodienste WFS returns alongside
+    # BFSNr.  parcel_enum.commune holds NBIdent — combine bfs + NBIdent to
+    # reconstruct the correct selcom.
+
     def bfs_from_selcom(selcom: str) -> str:
         return selcom.split()[0]
+
+    def nbident_from_selcom(selcom: str) -> str:
+        parts = selcom.split()
+        return parts[1] if len(parts) > 1 else ""
 
     def clean_label(lbl: str) -> str:
         lbl = re.sub(r'^\[\s*\d+\.\w+\s*\]\s*', '', lbl)
         return re.sub(r'\s+', ' ', lbl).strip()
 
-    bfs_to_selcom = {bfs_from_selcom(v): v for v, _ in all_options}
-    bfs_to_label  = {bfs_from_selcom(v): clean_label(lbl) for v, lbl in all_options}
+    # Index by (bfs, NBIdent) → selcom, label.  Falls back to first selcom for
+    # the bfs if NBIdent isn't in our enum (rare edge case, e.g. test rows).
+    selcom_by_key:    dict[tuple[str, str], str] = {}
+    label_by_key:     dict[tuple[str, str], str] = {}
+    selcoms_by_bfs:   dict[str, list[str]]       = {}
+    labels_by_bfs:    dict[str, list[str]]       = {}
+    for v, lbl in all_options:
+        bfs = bfs_from_selcom(v)
+        nb  = nbident_from_selcom(v)
+        selcom_by_key[(bfs, nb)] = v
+        label_by_key [(bfs, nb)] = clean_label(lbl)
+        selcoms_by_bfs.setdefault(bfs, []).append(v)
+        labels_by_bfs .setdefault(bfs, []).append(clean_label(lbl))
 
     # Determine which BFS numbers to include
     if communes:
         wanted_bfs = {bfs_from_selcom(c) for c in communes}
     else:
         wanted_bfs = None
+
+    multi_sector_bfs = {bfs for bfs, lst in selcoms_by_bfs.items() if len(lst) > 1}
+    log.info("FR communes with multi-sector mergers: %d (e.g. %s)",
+             len(multi_sector_bfs), sorted(multi_sector_bfs)[:5])
 
     # FR has ~120k parcels in 130+ communes. The swisstopo 200m grid scan
     # only captured 19,428 (24% of canton) and 0% EGRID. WFS finds all of
@@ -320,22 +353,49 @@ def scan(communes: list[str] | None = None,
             store_enum(conn, "FR", raw_parcels)
         log.info("Cached %d FR parcels (WFS, 100%% EGRID)", len(raw_parcels))
 
-    # Map to selcom; drop parcels with no matching commune
+    # Map each parcel to its specific (bfs, NBIdent) selcom — NOT just the bfs.
+    # parcel_enum.commune stores NBIdent from the geodienste WFS.  This routes
+    # each parcel to the correct sub-sector of merged communes.
     parcels = []
+    skipped_no_selcom = 0
+    skipped_unknown_nbident = 0
     for p in raw_parcels:
         bfs = p["bfs_nr"]
         if wanted_bfs and bfs not in wanted_bfs:
             continue
-        selcom = bfs_to_selcom.get(bfs)
+        nb = p.get("commune", "") or ""
+
+        # Exact (bfs, NBIdent) match — works for both single- and multi-sector
+        # communes since the WFS NBIdent matches the portal's selcom suffix.
+        selcom = selcom_by_key.get((bfs, nb))
+        label  = label_by_key.get((bfs, nb))
+
         if not selcom:
-            log.debug("No selcom mapping for bfs=%s — skipping", bfs)
-            continue
+            # Fall back: bfs only has one selcom anyway → use it
+            candidates = selcoms_by_bfs.get(bfs, [])
+            if len(candidates) == 1:
+                selcom = candidates[0]
+                label  = labels_by_bfs[bfs][0]
+            elif candidates:
+                # Multi-sector bfs with NBIdent we don't recognise — skip rather
+                # than guess; would re-introduce false positives.
+                skipped_unknown_nbident += 1
+                continue
+            else:
+                skipped_no_selcom += 1
+                continue
+
         parcels.append({
             "bfs_nr":    bfs,
             "parcel_nr": p["parcel_nr"],
             "selcom":    selcom,
-            "commune":   bfs_to_label.get(bfs, p.get("commune", "")),
+            "commune":   label or p.get("commune", ""),
+            "egrid":     p.get("egrid"),
         })
+
+    if skipped_no_selcom or skipped_unknown_nbident:
+        log.warning("Skipped %d parcels (no selcom mapping) + %d (multi-sector bfs with unknown NBIdent)",
+                    skipped_no_selcom, skipped_unknown_nbident)
 
     log.info("%d real FR parcels to scan", len(parcels))
     if limit:
