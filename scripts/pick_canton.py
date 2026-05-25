@@ -48,7 +48,7 @@ import pathlib
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from db import init_db, get_conn   # noqa: E402
+from db import init_db, get_conn, requests_today   # noqa: E402
 
 # Cantons that work cleanly from a GitHub Actions datacenter IP.
 # Order is the priority for strategy 0 (enumeration) and strategy 2 (fallback).
@@ -60,6 +60,15 @@ ELIGIBLE_DEFAULT = ["ju", "sz", "sh", "gr"]
 # canton (SZ ~18k → use 100 as a safe floor for all).
 REAL_ENUM_MIN = 100
 
+# Daily scan capacity for proxy-limited cantons (10 Webshare proxies).
+# Once this many parcels have been scanned today the quota is spent and
+# re-picking the canton just wastes time on immediate 429s.
+# Figures from scan.yml comments: SH=900/day, GR=90/day; use 90% of that.
+DAILY_PROXY_CAPACITY: dict[str, int] = {
+    "sh": 810,   # 10 proxies × 100/day × 0.9
+    "gr": 81,    # 10 proxies ×  10/day × 0.9
+}
+
 
 def pick() -> str | None:
     eligible = os.environ.get("ELIGIBLE_CANTONS", " ".join(ELIGIBLE_DEFAULT)).split()
@@ -69,6 +78,18 @@ def pick() -> str | None:
     # Cantons to skip this invocation (e.g. already exhausted their proxy
     # quota in the current CI job).  Passed via EXCLUDE_CANTONS env var.
     exclude = set(os.environ.get("EXCLUDE_CANTONS", "").lower().split())
+
+    # Permanently exclude proxy-limited cantons whose daily capacity is spent.
+    # requests_today() reads scanned_at from the committed DB, so this
+    # persists across CI job restarts within the same calendar day.
+    for canton, capacity in DAILY_PROXY_CAPACITY.items():
+        if canton not in exclude:
+            scanned = requests_today(canton)
+            if scanned >= capacity:
+                exclude.add(canton)
+                print(f"[pick] {canton.upper()} excluded — {scanned} scanned today "
+                      f"(daily capacity {capacity})", file=sys.stderr)
+
     eligible = [c for c in eligible if c not in exclude]
     if not eligible:
         return None
