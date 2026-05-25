@@ -26,7 +26,34 @@ import os
 import sqlite3
 import sys
 
-TABLES = ["parcel_enum", "parcels"]
+# Per-table merge plan.  parcel_enum lives in the sibling enum.db file
+# (gitignored, regenerable), NOT in herrenlos.db, so we never merge it here —
+# enum data is reconstructible via geodienste WFS and merging stale enum rows
+# from a remote DB would just leave outdated cache around.
+MAIN_TABLES = ["parcels"]
+
+
+def merge_one_table(conn: sqlite3.Connection, tbl: str, src_path: str) -> None:
+    cols = [
+        row[1]
+        for row in conn.execute(f"PRAGMA main.table_info({tbl})")
+        if row[1] != "id"
+    ]
+    if not cols:
+        print(f"[merge_dbs] {tbl}: table not found in dst — skipping")
+        return
+    col_str = ", ".join(cols)
+    try:
+        cur = conn.execute(
+            f"INSERT OR IGNORE INTO main.{tbl} ({col_str}) "
+            f"SELECT {col_str} FROM src.{tbl}"
+        )
+        added = cur.rowcount
+    except Exception as exc:
+        print(f"[merge_dbs] {tbl}: ERROR — {exc}")
+        return
+    total_src = conn.execute(f"SELECT COUNT(*) FROM src.{tbl}").fetchone()[0]
+    print(f"[merge_dbs] {tbl}: {added} / {total_src} rows added from {os.path.basename(src_path)}")
 
 
 def merge(src_path: str, dst_path: str) -> None:
@@ -42,31 +69,48 @@ def merge(src_path: str, dst_path: str) -> None:
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("ATTACH DATABASE ? AS src", (src_path,))
 
-    for tbl in TABLES:
-        # Exclude the auto-increment PK so SQLite assigns fresh IDs in dst,
-        # avoiding collisions when both DBs were built independently.
-        cols = [
-            row[1]
-            for row in conn.execute(f"PRAGMA main.table_info({tbl})")
-            if row[1] != "id"
-        ]
-        if not cols:
-            print(f"[merge_dbs] {tbl}: table not found in dst — skipping")
-            continue
+    # Handle legacy DBs that still have parcel_enum in herrenlos.db:
+    # if src has it, copy into the local enum.db so we don't lose anything.
+    src_has_legacy_enum = conn.execute(
+        "SELECT name FROM src.sqlite_master WHERE type='table' AND name='parcel_enum'"
+    ).fetchone() is not None
 
-        col_str = ", ".join(cols)
-        try:
-            cur = conn.execute(
-                f"INSERT OR IGNORE INTO main.{tbl} ({col_str}) "
-                f"SELECT {col_str} FROM src.{tbl}"
+    for tbl in MAIN_TABLES:
+        merge_one_table(conn, tbl, src_path)
+
+    if src_has_legacy_enum:
+        # Open the local enum.db and pull rows in.  Done in a separate
+        # connection so SQLite doesn't tangle WAL state across attached DBs.
+        enum_db = os.path.join(os.path.dirname(dst_path), "enum.db")
+        ec = sqlite3.connect(enum_db, timeout=30)
+        ec.execute("PRAGMA journal_mode=WAL")
+        ec.execute("ATTACH DATABASE ? AS src", (src_path,))
+        # Recreate the table if enum.db is brand new
+        ec.execute("""
+            CREATE TABLE IF NOT EXISTS parcel_enum (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                canton        TEXT NOT NULL,
+                bfs_nr        TEXT NOT NULL,
+                parcel_nr     TEXT NOT NULL,
+                commune       TEXT,
+                egrid         TEXT,
+                extra         TEXT,
+                enumerated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(canton, bfs_nr, parcel_nr)
             )
-            added = cur.rowcount
-        except Exception as exc:
-            print(f"[merge_dbs] {tbl}: ERROR — {exc}")
-            continue
-
-        total_src = conn.execute(f"SELECT COUNT(*) FROM src.{tbl}").fetchone()[0]
-        print(f"[merge_dbs] {tbl}: {added} / {total_src} rows added from {os.path.basename(src_path)}")
+        """)
+        try:
+            cur = ec.execute("""
+                INSERT OR IGNORE INTO main.parcel_enum
+                  (canton, bfs_nr, parcel_nr, commune, egrid, extra, enumerated_at)
+                SELECT canton, bfs_nr, parcel_nr, commune, egrid, extra, enumerated_at
+                  FROM src.parcel_enum
+            """)
+            print(f"[merge_dbs] parcel_enum (legacy → enum.db): {cur.rowcount} rows added")
+        except Exception as e:
+            print(f"[merge_dbs] parcel_enum legacy merge skipped: {e}")
+        ec.commit()
+        ec.close()
 
     conn.commit()
     conn.execute("DETACH DATABASE src")

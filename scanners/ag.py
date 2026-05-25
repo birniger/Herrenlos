@@ -58,6 +58,7 @@ import sys
 import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
+from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
 from scanners.utils import is_herrenlos_owner_text, claim_possible_for  # noqa: F401
 
 log = logging.getLogger("AG")
@@ -195,11 +196,11 @@ def scan(limit: int | None = None,
         log.info("Using cached AG parcel list (%d parcels)", len(cached))
         parcels = cached
     else:
-        log.info("No cache — running swisstopo grid scan …")
-        parcels = enumerate_parcels_swisstopo()
+        log.info("Enumerating AG parcels via geodienste WFS …")
+        parcels = wfs_enumerate_canton("AG")
         with get_conn() as conn:
             store_enum(conn, "AG", parcels)
-        log.info("Cached %d AG parcels", len(parcels))
+        log.info("Cached %d AG parcels (WFS)", len(parcels))
 
     if limit:
         parcels = parcels[:limit]

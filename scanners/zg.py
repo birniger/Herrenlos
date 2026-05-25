@@ -31,6 +31,7 @@ from bs4 import BeautifulSoup
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
+from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
 from scanners.utils import is_herrenlos_owner_text, claim_possible_for, page_text_contains_herrenlos
 
 log = logging.getLogger("ZG")
@@ -269,11 +270,11 @@ def scan(limit: int | None = None,
         log.info("Using cached ZG parcel list (%d parcels)", len(cached))
         parcels = cached
     else:
-        log.info("No cache — running swisstopo grid scan (~2h) …")
-        parcels = enumerate_parcels_swisstopo()
+        log.info("Enumerating ZG parcels via geodienste WFS …")
+        parcels = wfs_enumerate_canton("ZG")
         with get_conn() as conn:
             store_enum(conn, "ZG", parcels)
-        log.info("Cached %d ZG parcels", len(parcels))
+        log.info("Cached %d ZG parcels (WFS)", len(parcels))
 
     if limit:
         parcels = parcels[:limit]
