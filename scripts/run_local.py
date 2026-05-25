@@ -241,6 +241,50 @@ PREFLIGHT_CHECKS = {
 }
 
 
+# ── Persistent cooldown state ────────────────────────────────────────────────
+# Survives run_local.py restarts (scan-loop.sh crash-recovery, watchdog
+# reboots, etc.) so a canton that exhausted its daily quota doesn't burn
+# more API calls before the quota resets at midnight.
+
+_COOLDOWN_FILE = TOKEN_DIR / "cooldowns.json"
+_cooldown_file_lock = threading.Lock()
+
+
+def _load_cooldown(canton: str) -> float:
+    """Return the persisted cooldown-until timestamp for *canton* (0 if none)."""
+    try:
+        with _cooldown_file_lock:
+            if not _COOLDOWN_FILE.exists():
+                return 0.0
+            data = json.loads(_COOLDOWN_FILE.read_text())
+        until = float(data.get(canton.lower(), 0))
+        # Ignore stale entries from previous days
+        return until if until > time.time() else 0.0
+    except Exception:
+        return 0.0
+
+
+def _save_cooldown(canton: str, until: float) -> None:
+    """Persist a cooldown-until timestamp for *canton* to disk."""
+    try:
+        TOKEN_DIR.mkdir(parents=True, exist_ok=True)
+        with _cooldown_file_lock:
+            data: dict = {}
+            if _COOLDOWN_FILE.exists():
+                try:
+                    data = json.loads(_COOLDOWN_FILE.read_text())
+                except Exception:
+                    data = {}
+            data[canton.lower()] = until
+            # Prune expired entries while we're here
+            now = time.time()
+            data = {k: v for k, v in data.items() if v > now}
+            data[canton.lower()] = until  # re-add (might have been pruned if 0)
+            _COOLDOWN_FILE.write_text(json.dumps(data, indent=2))
+    except Exception as exc:
+        log.debug("_save_cooldown failed: %s", exc)
+
+
 # ── macOS desktop notifications ──────────────────────────────────────────────
 
 def notify(title: str, message: str, sound: bool = False,
@@ -518,10 +562,17 @@ def _canton_loop(
     handling rate-limit cooldowns, login timeouts, auth failures, and
     transient errors independently of all other canton threads.
     """
-    cooldown_until = 0.0
+    # Restore any cooldown that was active before this process started
+    # (e.g. quota exhausted before a crash/restart).
+    cooldown_until = _load_cooldown(canton)
     consecutive_failures = 0
 
-    log.info("[%s] worker started", canton.upper())
+    if cooldown_until > time.time():
+        resume = datetime.datetime.fromtimestamp(cooldown_until).strftime("%H:%M")
+        log.info("[%s] worker started — restoring cooldown until %s",
+                 canton.upper(), resume)
+    else:
+        log.info("[%s] worker started", canton.upper())
 
     while not stop_event.is_set():
         # ── Cooldown wait ───────────────────────────────────────────────────
@@ -553,6 +604,7 @@ def _canton_loop(
                     or "consecutive 429" in tail
                     or "quota exhausted" in tail):
                 cooldown_until = _next_midnight_bern()
+                _save_cooldown(canton, cooldown_until)
                 resume = datetime.datetime.fromtimestamp(
                     cooldown_until).strftime("%H:%M")
                 log.info("[%s] rate-limited — daily quota exhausted. "
@@ -570,6 +622,7 @@ def _canton_loop(
                     execute=f"open '{_ln}'" if _ln.exists() else None,
                 )
                 cooldown_until = time.time() + 2 * 3600
+                _save_cooldown(canton, cooldown_until)
                 resume_str = datetime.datetime.fromtimestamp(
                     cooldown_until).strftime("%H:%M")
                 log.warning("[%s] login timed out — cooldown until %s. "
@@ -604,6 +657,7 @@ def _canton_loop(
                     execute=f"open '{_ln}'" if _ln.exists() else None,
                 )
                 cooldown_until = time.time() + 2 * 3600
+                _save_cooldown(canton, cooldown_until)
                 resume_str = datetime.datetime.fromtimestamp(
                     cooldown_until).strftime("%H:%M")
                 log.warning("[%s] auth failure — cooling down until %s. "
