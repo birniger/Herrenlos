@@ -98,11 +98,10 @@ while true; do
 
     if [ "$rc" -eq 0 ]; then
         echo "[scan-loop $(date '+%Y-%m-%d %H:%M:%S')] run_local.py exited cleanly (rc=0). Bye."
-        _push_to_github
         exit 0
     fi
 
-    # Push whatever was scanned before the crash/restart, then wait and retry.
+    # run_local.py crashed — push whatever was scanned before the crash.
     _push_to_github
     echo "[scan-loop $(date '+%Y-%m-%d %H:%M:%S')] run_local.py exited rc=$rc — sleeping ${RESTART_DELAY}s before restart."
     sleep "$RESTART_DELAY"

@@ -499,6 +499,20 @@ def main() -> int:
     print(f"Starting scan loop with: {', '.join(c.upper() for c in ready)}")
     print("Ctrl+C to stop cleanly.\n")
 
+    def _push_results():
+        """Push local scan results to GitHub (merge + commit + push)."""
+        try:
+            log.info("Pushing local results to GitHub...")
+            r = subprocess.run(
+                ["bash", "scripts/push_local.sh", "auto"],
+                cwd=PROJECT_ROOT, capture_output=True, text=True,
+            )
+            for line in (r.stdout + r.stderr).splitlines():
+                if line.strip():
+                    log.info("  [push] %s", line)
+        except Exception as exc:
+            log.warning("push_local.sh failed: %s", exc)
+
     consecutive_failures = 0
     # canton → earliest time it may be picked again (rate-limit cooldown)
     cooldown: dict[str, float] = {}
@@ -636,6 +650,10 @@ def main() -> int:
                     log.info("%s scan exited cleanly. Sleeping %ds.",
                              canton.upper(), INTER_CANTON_DELAY_SECONDS)
                 consecutive_failures = 0
+                # Push local results to GitHub after every successful canton
+                # rotation so CI data and local data stay in sync continuously
+                # (not just when scan-loop.sh restarts hours later).
+                _push_results()
                 time.sleep(INTER_CANTON_DELAY_SECONDS)
                 continue
 
