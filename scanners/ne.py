@@ -583,6 +583,17 @@ def _parse_owner_html(html: str, egrid: str, uuid: str) -> dict:
     # Herrenlos / not-in-register signals (page text)
     page_text = soup.get_text(separator=" ", strip=True).lower()
 
+    # sitn.ne.ch in-page rate-limit (HTTP 200, but body says "trop de consultations").
+    # Must be checked before herrenlos detection to avoid false positives.
+    if ("trop de consultations" in page_text
+            or "service de consultation" in page_text and "désactivé" in page_text
+            or "too many" in page_text):
+        log.warning("NE in-page rate limit hit (EGRID=%s)", egrid)
+        return {"owner": None, "owner_address": None,
+                "is_herrenlos": None, "raw_response": None,
+                "herrenlos_type": None, "claim_possible": None,
+                "error": "rate_limited"}
+
     # "Non-immatriculé au Registre Foncier" → parcel NOT in land register.
     # This is Type 2 herrenlos (Art. 664 ZGB) — under cantonal sovereignty.
     # NOT claimable by private persons.
