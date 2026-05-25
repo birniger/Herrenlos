@@ -85,7 +85,7 @@ git pull --rebase origin main
 
 ```bash
 # Push your local changes after a CI scan landed
-git fetch origin && git rebase origin/main && git push
+./scripts/push_local.sh
 ```
 
 ---
@@ -96,12 +96,13 @@ git fetch origin && git rebase origin/main && git push
 python main.py be --limit 500
 python main.py vs --limit 500
 python main.py bl --limit 200    # needs ANTHROPIC_API_KEY in .env
-python main.py fr --limit 1000   # CI canton, no login
+python main.py fr --limit 1000   # laptop only (keycloak.fr.ch blocks CI IPs)
 python main.py ju --limit 1000   # CI canton, no login
 python main.py sz --limit 1000   # CI canton, no login
+python main.py sh --limit 100    # CI + laptop; 100 req/day/IP
+python main.py gr --limit 10     # CI + laptop; 10 req/day/IP
 python main.py ur --limit 30     # ~14-30/day quota
-python main.py sh --limit 100    # 100/day quota
-python main.py ne --limit 50     # ~50/day quota
+python main.py ne --limit 50     # ~50/day quota (laptop only — CI IPs blocked)
 ```
 
 ---
@@ -114,7 +115,7 @@ cd "/Users/basilirniger/Local Docs/herrenlos_scanner"
 source .venv/bin/activate
 python main.py ur   # exits when daily math-CAPTCHA quota (~14-30) is hit
 python main.py sh   # 100 req/day
-python main.py ne   # ~50 Altcha PoW/day
+python main.py ne   # ~50 Altcha PoW/day (laptop only)
 ```
 
 ---
@@ -122,9 +123,9 @@ python main.py ne   # ~50 Altcha PoW/day
 ## Smoke tests
 
 ```bash
-python main.py test --tier b        # bulk-capable cantons
-python main.py test --tier c        # slow-background cantons
-python main.py test fr ju sz        # specific cantons
+python main.py test            # all cantons, tier A (fast, REST-only)
+python main.py test --tier b   # tier A + slow portal/CAPTCHA tests
+python main.py test fr ju sz   # specific cantons
 ```
 
 ---
@@ -133,7 +134,7 @@ python main.py test fr ju sz        # specific cantons
 
 ```bash
 # Delete error rows for a canton
-sqlite3 herrenlos.db "DELETE FROM parcels WHERE canton='so' AND status='error';"
+sqlite3 herrenlos.db "DELETE FROM parcels WHERE canton='so' AND error IS NOT NULL;"
 ```
 
 ```bash
@@ -147,9 +148,9 @@ sqlite3 herrenlos.db "DELETE FROM parcels WHERE canton='so';"
 
 | Group | Cantons | Command |
 |-------|---------|---------|
-| CI — automatic every 6h | FR, JU, SZ | nothing needed |
-| Laptop bulk | BE, VS | `scan-loop.sh` above |
+| CI — automatic every 6h | JU, SZ, SH, GR | nothing needed |
+| Laptop bulk | BE, VS, FR | `scan-loop.sh` above |
 | Laptop bulk + API key | BL | add BL to loop; needs `ANTHROPIC_API_KEY` in `.env` |
-| Slow background | UR, SH, NE, GR | `python main.py <canton>` |
+| Slow background | UR, NE | `python main.py <canton>` |
 | Needs proxies | SO, GE, BS | set `SO_PROXY_LIST`/`GE_PROXY_LIST` in `.env` |
 | Blocked | ZH, ZG, TG, LU, AR, AI, OW, NW, TI, VD, GL | no path |

@@ -109,17 +109,17 @@ CANTON_STATUS: dict[str, dict] = {
     "FR": {"access": "public",   "test_group": "rest", "ip_rotation": None,
            "daily_limit": None, "rate_limit": None, "max_test_parcels": 11,
            "blocker": None, "needs": None},
-    "GR": {"access": "public",   "test_group": "rest", "ip_rotation": "deferred",
+    "GR": {"access": "public",   "test_group": "rest", "ip_rotation": "wired",
            "daily_limit": 10,   "rate_limit": "10 req/day/IP", "max_test_parcels": 5,
            "blocker": "10 req/day/IP — full scan needs paid residential proxies",
-           "needs": "paid residential proxies + port GE's proxy plumbing (_make_page(proxy_url) + _load_proxies() reading GR_PROXY_LIST) into scanners/gr.py — currently not wired"},
+           "needs": "paid residential proxies (GR_PROXY_LIST plumbing already wired in scanners/gr.py)"},
     # SH: existing scanner WORKS (passes TIER B regression). FOLLOW-UP (2026-05-18):
     # research agent flagged a Sept 2024 SH portal launch — verify our scanner
     # uses the current endpoint (api.geo.sh.ch confirmed in scanner docstring).
-    "SH": {"access": "public",   "test_group": "rest", "ip_rotation": "deferred",
+    "SH": {"access": "public",   "test_group": "rest", "ip_rotation": "wired",
            "daily_limit": 100,  "rate_limit": "100 req/day/IP", "max_test_parcels": 11,
            "blocker": None,
-           "needs": "paid residential proxies for full scan + port GE's proxy plumbing into scanners/sh.py (reads SH_PROXY_LIST) — currently not wired. Optional: verify scanner uses post-2024-09 endpoints (research agent flagged a new SH portal launch)."},
+           "needs": "paid residential proxies for full scan (SH_PROXY_LIST plumbing already wired in scanners/sh.py). Optional: verify scanner uses post-2024-09 endpoints (research agent flagged a new SH portal launch)."},
     # BS — DUAL-SCANNER ARCHITECTURE (updated 2026-05-19):
     # The BS public REST API exposes ONLY parcel METADATA (area, buildings,
     # land covers, type). Owner data is NOT in any JSON endpoint — only behind

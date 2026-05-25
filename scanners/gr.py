@@ -366,7 +366,6 @@ def scan(limit: int | None = None,
     session = _gr_session(proxies[0] if proxies else None)
 
     scanned = errors = herrenlos = 0
-    rate_wait_until = 0.0
 
     with get_conn() as conn:
         for p in parcels:
@@ -384,11 +383,6 @@ def scan(limit: int | None = None,
                 session = _gr_session(proxies[proxy_idx])
                 queries_on_proxy = 0
                 log.info("GR proactive proxy rotate → proxy #%d", proxy_idx)
-
-            # Daily quota exhausted (no-proxy fallback — belt-and-suspenders)
-            if time.time() < rate_wait_until:
-                log.warning("GR daily quota exhausted — stopping scan.")
-                break
 
             result = check_owner(session, egrid)
             queries_on_proxy += 1

@@ -1,8 +1,9 @@
 .env
-*.db
+# herrenlos.db IS committed (it's the shared scan database).
+# enum.db is gitignored — it's large (~110 MB) and regenerable via WFS.
+enum.db
 *.db-shm
 *.db-wal
 __pycache__/
 *.pyc
-~/.herrenlos_scanner/
 .DS_Store

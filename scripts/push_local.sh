@@ -55,7 +55,7 @@ for attempt in range(3):
 "
 
 # Stage the DB and any dashboard exports.
-git add -f herrenlos.db
+git add herrenlos.db
 git add docs/data/*.json docs/data/*.geojson docs/data/*.csv 2>/dev/null || true
 
 if git diff --staged --quiet; then
@@ -75,7 +75,7 @@ echo "[push_local] Push rejected — rebasing on origin/main..."
 git fetch origin main
 if git show origin/main:herrenlos.db > _origin.db 2>/dev/null; then
     "$PYTHON" scripts/merge_dbs.py _origin.db herrenlos.db
-    git add -f herrenlos.db
+    git add herrenlos.db
     rm -f _origin.db
 fi
 git rebase origin/main -X theirs

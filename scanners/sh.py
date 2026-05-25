@@ -418,7 +418,6 @@ def scan(limit: int | None = None,
         return {"scanned": 0, "herrenlos": 0, "errors": 1}
 
     scanned = errors = herrenlos = 0
-    rate_wait_until = 0.0
 
     with get_conn() as conn:
         for p in parcels:
@@ -447,11 +446,6 @@ def scan(limit: int | None = None,
                 token = fetch_token(session) or token
                 queries_on_proxy = 0
                 log.info("SH proactive proxy rotate → proxy #%d", proxy_idx)
-
-            # Daily quota exhausted (no-proxy fallback — belt-and-suspenders)
-            if time.time() < rate_wait_until:
-                log.warning("SH daily quota exhausted — stopping scan.")
-                break
 
             result = check_owner(session, east, north, token, egrid)
             queries_on_proxy += 1

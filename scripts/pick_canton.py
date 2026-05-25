@@ -24,17 +24,19 @@ Eligibility criteria (all must be true):
   - No interactive login (OAuth / password / reCAPTCHA Enterprise)
   - Scanner can run headless in CI (no Playwright requirement)
 
-Current eligible cantons:
-  ju  — public + OCR-solvable CAPTCHA (ddddocr), no login       (~13k parcels)
-  sz  — public + OCR-solvable CAPTCHA (ddddocr), no login       (~18k parcels)
+Current eligible cantons (set via ELIGIBLE_CANTONS env var in scan.yml):
+  ju  — public + OCR-solvable CAPTCHA (ddddocr), no login       (~14k parcels)
+  sz  — public + OCR-solvable CAPTCHA (ddddocr), no login       (~50k parcels)
+  sh  — pure requests; 100 req/day/IP; rotated via SH_PROXY_LIST (~43k parcels)
+  gr  — pure requests; 10 req/day/IP;  rotated via GR_PROXY_LIST (~226k parcels)
 
 NOT eligible (excluded reasons):
-  fr  — keycloak.fr.ch geo-blocks datacenter IPs; moved to laptop scan loop
+  fr  — keycloak.fr.ch geo-blocks datacenter IPs; laptop scan loop only
+  ne  — sitn.ne.ch blocks datacenter proxies; laptop only (residential IP req.)
   ur  — geo.ur.ch blocks datacenter IPs ("access denied for your country")
   bs  — cmd_bs is metadata-only (no owner names, no Type B detection)
-  ne  — reCAPTCHA Enterprise + ip_rotation deferred
-  ge  — reCAPTCHA Enterprise + ip_rotation deferred
-  so  — Playwright + reCAPTCHA, ip_rotation deferred
+  ge  — Imperva + image CAPTCHA; needs proxies + ANTHROPIC_API_KEY
+  so  — Playwright + reCAPTCHA; needs proxies
   bl  — handwritten cursive CAPTCHA, OCR 0% accuracy
 """
 
@@ -50,7 +52,7 @@ from db import init_db, get_conn   # noqa: E402
 
 # Cantons that work cleanly from a GitHub Actions datacenter IP.
 # Order is the priority for strategy 0 (enumeration) and strategy 2 (fallback).
-ELIGIBLE_DEFAULT = ["ju", "sz"]
+ELIGIBLE_DEFAULT = ["ju", "sz", "sh", "gr"]
 
 # A real enumeration produces at least this many parcel_enum rows.
 # Below this threshold the canton is treated as "not yet enumerated".

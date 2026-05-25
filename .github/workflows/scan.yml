@@ -9,21 +9,17 @@
 # CI-eligible cantons (parcel counts verified via geodienste WFS):
 #   JU  — OCR-solvable image CAPTCHA (ddddocr), no login    (~14k parcels)
 #   SZ  — OCR-solvable image CAPTCHA (ddddocr), no login    (~50k parcels)
-#   SH  — 100 req/day per IP; rotated via WEBSHARE_PROXY_LIST (~43k parcels)
+#   SH  — 100 req/day/IP; rotated via WEBSHARE_PROXY_LIST   (~43k parcels)
 #         10 proxies → 900 parcels/day → ~48 CI runs to complete.
-#   NE  — Playwright + Altcha PoW; 10 proxies × 45 = 450/day  (~86k parcels)
-#         Chromium installed conditionally (only when NE is picked).
-#         ~190 CI runs to complete.
-#   GR  — pure requests; 10 proxies × 9 = 90/day            (~226k parcels)
-#         Slow (~2,500 CI runs) but CI runs even when laptop is off.
+#   GR  — 10 req/day/IP; rotated via WEBSHARE_PROXY_LIST    (~226k parcels)
+#         10 proxies → 90 parcels/day → ~2,500 CI runs (slow but passive).
 #
 # Run locally instead (see main.py for details):
-#   FR          — keycloak.fr.ch geo-blocks datacenter IPs; works from Swiss IP
-#   UR          — geo.ur.ch geo-blocks datacenter IPs; works from Swiss IP
-#   SO          — reCAPTCHA v3 score passes from residential IP, not datacenter
-#   BE, VS      — one-time interactive login; token cached; macOS/laptop only
-#   BL          — needs ANTHROPIC_API_KEY for handwritten CAPTCHA
-#   GE          — Imperva + image CAPTCHA; needs proxies + ANTHROPIC_API_KEY
+#   FR, NE  — sitn.ne.ch / keycloak.fr.ch block datacenter IPs; Swiss IP only
+#   UR      — geo.ur.ch geo-blocks datacenter IPs
+#   BE, VS  — one-time interactive login; token cached; macOS/laptop only
+#   BL      — needs ANTHROPIC_API_KEY for handwritten CAPTCHA
+#   SO, GE  — reCAPTCHA/Imperva; needs proxies (+ ANTHROPIC_API_KEY for GE)
 
 name: scan
 
@@ -51,20 +47,14 @@ jobs:
     timeout-minutes: 350      # 5h50m — fits inside GitHub Actions' 6h hard limit
     env:
       # Cantons eligible for CI scanning.
-      # ur — geo.ur.ch blocks datacenter IPs ("access denied for your country")
-      # bs — cmd_bs is metadata-only (no owner names, no Type B); use bs-public locally
-      # sh — rotated via WEBSHARE_PROXY_LIST (10 proxies × 90 q = 900/day)
-      # gr — pure requests; 10 proxies × 9 q = 90/day (slow but passive)
-      # ne — REMOVED from CI: sitn.ne.ch blocks datacenter proxies; NE can only
-      #       run from a residential IP. Use: python3 main.py ne  (laptop only)
+      # ne — REMOVED: sitn.ne.ch blocks datacenter proxies; laptop only (residential IP)
+      # fr — REMOVED: keycloak.fr.ch geo-blocks datacenter IPs; laptop only
       ELIGIBLE_CANTONS: "ju sz sh gr"
       # Optional: BS needs a free API key (one-time registration at api.geo.bs.ch).
       BS_API_KEY: ${{ secrets.BS_API_KEY }}
-      # Webshare datacenter proxy list for quota-rotating cantons.
-      # Single secret WEBSHARE_PROXY_LIST is forwarded to all three scanners.
+      # Webshare datacenter proxy list for quota-rotating cantons (SH, GR).
       # Add comma-separated host:port:user:pass lines as repo secret WEBSHARE_PROXY_LIST.
       SH_PROXY_LIST: ${{ secrets.WEBSHARE_PROXY_LIST }}
-      NE_PROXY_LIST: ${{ secrets.WEBSHARE_PROXY_LIST }}
       GR_PROXY_LIST: ${{ secrets.WEBSHARE_PROXY_LIST }}
 
     steps:
@@ -131,8 +121,7 @@ jobs:
           set -e
           echo "Scanning $CANTON …"
           # --limit caps parcels per run.  Aim for ~5h of compute.
-          # SH: 900 parcels/day with 10 proxies at delay=1.5s → ~22min per run,
-          # scanner stops naturally when all proxies exhausted for the day.
+          # SH/GR: scanner exits naturally once all proxies are exhausted for the day.
           case "$CANTON" in
             bs) LIMIT=12000 ;;      # BS small (~7k); ~2h
             ur) LIMIT=20000 ;;      # UR ~20k; ~5h
@@ -168,9 +157,7 @@ jobs:
             rm -f _origin.db
           fi
 
-          # Force-add herrenlos.db (gitignored locally so dev DBs don't clutter,
-          # but the cloud-managed DB IS committed here).
-          git add -f herrenlos.db
+          git add herrenlos.db
           # All dashboard data formats. Use 2>/dev/null||true so missing files
           # don't fail the step on a first-run-with-no-results-yet.
           git add docs/data/*.json docs/data/*.geojson docs/data/*.csv 2>/dev/null || true
@@ -189,7 +176,7 @@ jobs:
             # Re-merge: another local commit may have landed since our last fetch.
             if git show origin/main:herrenlos.db > _origin.db 2>/dev/null; then
               python scripts/merge_dbs.py _origin.db herrenlos.db
-              git add -f herrenlos.db
+              git add herrenlos.db
               rm -f _origin.db
             fi
             # Amend the scan commit so the rebase replays the freshly merged DB.

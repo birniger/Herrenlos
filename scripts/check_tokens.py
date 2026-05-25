@@ -17,7 +17,7 @@ CANTONS = {
     "BE": {
         "token_file":   TOKEN_DIR / "be_token.json",
         "token_ep":     "https://sso.be.ch/auth/realms/a51-grudis-public-agov/protocol/openid-connect/token",
-        "client_id":    "a51-grudis-public",
+        "client_id":    "intercapi-public-client",
         "login_hint":   "run:  python3 main.py be\n"
                         "  → browser opens GRUDIS → paste JS snippet in DevTools → token saved",
     },
