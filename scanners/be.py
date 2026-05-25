@@ -534,9 +534,8 @@ def grudis_login() -> dict | None:
 
         time.sleep(3)
 
-    # ── Timeout: move on, but notify so the user can trigger BE manually ──────
-    log.warning("BE login timed out — moving on; sending push notification")
-    _fire_be_login_notification()
+    # ── Timeout: move on; run_local.py sends the push and manages cooldown ─────
+    log.warning("BE login timed out after %ds — skipping BE this rotation", TIMEOUT)
     return None
 
 

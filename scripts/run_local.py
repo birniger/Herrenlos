@@ -609,20 +609,26 @@ def main() -> int:
                 #     parcels (be.py caches quick enum).  If parcel_enum is STILL
                 #     empty after a clean exit, login never completed.
                 elif _is_login_failed(canton, tail):
+                    # Login window expired — send push so the user can tap to
+                    # start BE/VS independently via start_<canton>_scan.command.
+                    # Put the canton in cooldown for 2 h so the loop keeps
+                    # scanning other cantons (VS/FR) without burning 3 min on
+                    # BE every rotation. Canton stays in `ready`; it re-enters
+                    # rotation naturally once the cooldown expires.
                     _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
                     notify(
-                        title=f"Herrenlos — {canton.upper()} login not completed",
-                        message=(f"{canton.upper()} login timed out. "
-                                 f"Tap to open Terminal and try again."),
+                        title=f"Herrenlos — {canton.upper()} login needed",
+                        message=(f"Log in to {canton.upper()} then tap to scan"),
                         sound=True,
                         execute=f"open '{_ln}'" if _ln.exists() else None,
                     )
-                    log.warning("%s login timed out — skipping for this run. "
-                                "Restart scan-loop.sh to try again.", canton.upper())
-                    ready = [c for c in ready if c != canton]
-                    if not ready:
-                        log.error("All cantons skipped — exiting.")
-                        return 3
+                    cooldown_secs = 2 * 3600  # 2 hours
+                    cooldown[canton] = time.time() + cooldown_secs
+                    resume_str = datetime.datetime.fromtimestamp(
+                        cooldown[canton]).strftime("%H:%M")
+                    log.warning("%s login timed out — cooldown until %s. "
+                                "Tap the push notification to scan BE now.",
+                                canton.upper(), resume_str)
                     consecutive_failures = 0
                     continue
 
