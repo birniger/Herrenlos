@@ -332,7 +332,7 @@ def scan(communes: list[str] | None = None,
     log.info("FR communes with multi-sector mergers: %d (e.g. %s)",
              len(multi_sector_bfs), sorted(multi_sector_bfs)[:5])
 
-    # FR has ~120k parcels in 130+ communes. The swisstopo 200m grid scan
+    # FR has ~147k parcels in 130+ communes (verified by WFS).  The swisstopo 200m grid scan
     # only captured 19,428 (24% of canton) and 0% EGRID. WFS finds all of
     # them in ~2 min with 100% EGRID coverage.
     with get_conn() as conn:

@@ -6,16 +6,16 @@
 #
 # Public repo: unlimited minutes. The repo IS the synced database.
 #
-# CI-eligible cantons:
-#   JU  — OCR-solvable image CAPTCHA (ddddocr), no login    (~13k parcels)
-#   SZ  — OCR-solvable image CAPTCHA (ddddocr), no login    (~18k parcels)
-#   SH  — 100 req/day per IP; rotated via WEBSHARE_PROXY_LIST (~9k parcels)
-#         10 proxies → 900 parcels/day → completes in ~10 CI runs
-#   NE  — Playwright + Altcha PoW; 10 proxies × 45 = 450/day  (~50k parcels)
+# CI-eligible cantons (parcel counts verified via geodienste WFS):
+#   JU  — OCR-solvable image CAPTCHA (ddddocr), no login    (~14k parcels)
+#   SZ  — OCR-solvable image CAPTCHA (ddddocr), no login    (~50k parcels)
+#   SH  — 100 req/day per IP; rotated via WEBSHARE_PROXY_LIST (~43k parcels)
+#         10 proxies → 900 parcels/day → ~48 CI runs to complete.
+#   NE  — Playwright + Altcha PoW; 10 proxies × 45 = 450/day  (~86k parcels)
 #         Chromium installed conditionally (only when NE is picked).
-#         ~111 CI runs to complete.
-#   GR  — pure requests; 10 proxies × 9 = 90/day             (~85k parcels)
-#         Slow (~944 CI runs) but CI runs even when laptop is off.
+#         ~190 CI runs to complete.
+#   GR  — pure requests; 10 proxies × 9 = 90/day            (~226k parcels)
+#         Slow (~2,500 CI runs) but CI runs even when laptop is off.
 #
 # Run locally instead (see main.py for details):
 #   FR          — keycloak.fr.ch geo-blocks datacenter IPs; works from Swiss IP
@@ -133,14 +133,14 @@ jobs:
           # SH: 900 parcels/day with 10 proxies at delay=1.5s → ~22min per run,
           # scanner stops naturally when all proxies exhausted for the day.
           case "$CANTON" in
-            bs) LIMIT=12000 ;;      # BS is small (~7k); ~2h
-            ur) LIMIT=20000 ;;      # UR is medium (~20k); ~5h
-            ju) LIMIT=11000 ;;      # ~6.7h full → cap at 5h
-            sz) LIMIT=12000 ;;      # ~7.5h full → cap at 5h
-            fr) LIMIT=18000 ;;      # FR is large (~80k) → many runs needed
-            sh) LIMIT=9000  ;;      # SH is small (~9k); proxy rotation caps actual queries
-            ne) LIMIT=500   ;;      # NE: 10 proxies × 45 = 450/day; scanner exits on quota
-            gr) LIMIT=100   ;;      # GR: 10 proxies × 9 = 90/day; scanner exits on quota
+            bs) LIMIT=12000 ;;      # BS small (~7k); ~2h
+            ur) LIMIT=20000 ;;      # UR ~20k; ~5h
+            ju) LIMIT=11000 ;;      # JU ~14k WFS; full ~6.7h → cap at 5h
+            sz) LIMIT=12000 ;;      # SZ ~50k WFS; many runs needed
+            fr) LIMIT=18000 ;;      # FR ~147k WFS; many runs needed
+            sh) LIMIT=9000  ;;      # SH ~43k WFS; proxy rotation caps actual queries
+            ne) LIMIT=500   ;;      # NE ~86k WFS; 10 proxies × 45 = 450/day; scanner exits on quota
+            gr) LIMIT=100   ;;      # GR ~226k WFS; 10 proxies × 9 = 90/day; scanner exits on quota
             *)  LIMIT=10000 ;;
           esac
           timeout 5h python main.py "$CANTON" --limit "$LIMIT" || echo "Scan timed out or failed — committing partial progress."

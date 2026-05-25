@@ -12,7 +12,7 @@ STATUS (2026-05): WORKING — uses Playwright to handle Altcha v3 widget.
 
 - EGRID enumeration : WFS GetFeature on sitn.ne.ch layer "ms:parcelles"
                       Returns egrid + url_terris_v2 (contains owner UUID).
-                      Paginated, ~50k parcels. Cached in parcel_enum table.
+                      Paginated, ~86k parcels (verified). Cached in enum.parcel_enum.
 - Owner lookup      : Playwright navigates to /owner?uuid={UUID}
                       Altcha widget auto-solves PoW (PBKDF2/SHA-256)
                       POST /owner response intercepted → parsed for owner

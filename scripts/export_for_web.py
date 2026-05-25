@@ -68,16 +68,24 @@ def build_progress() -> dict:
              ORDER BY canton
         """).fetchall()
 
-    # Rough total-parcel estimates from cantonal docs (used as the % denominator
-    # when our parcel_enum table is just a small test seed — for those cantons,
-    # `enumerated` will be tiny but the canton's real size is in the thousands).
+    # Fallback total-parcel estimates from cantonal docs.  Only used when a
+    # canton hasn't been enumerated yet (rare now that WFS enumeration covers
+    # 20 of 26 cantons).  When we DO have enumerated data, the actual count
+    # supersedes these estimates everywhere.
+    #
+    # Verified-from-WFS numbers (updated from the static guesses that this
+    # table held before the WFS rollout):
+    #   BE 426,009    VS 316,772    GR 225,843    FR 147,148
+    #   NE  86,494    GE  69,099    SZ  50,217    SH  43,260    JU 14,156
     CANTON_TOTAL_ESTIMATE = {
-        "BS":   7_000,  "UR":  20_000, "FR":  80_000, "JU":  16_000, "SZ":  18_000,
-        "BL":  70_000,  "SH":  30_000, "GR": 150_000, "NE":  80_000, "GE":  69_000,
-        "BE": 400_000,  "VS": 210_000, "SO":  70_000, "LU": 110_000, "ZH": 450_000,
-        "AG": 130_000,  "TG": 100_000, "SG": 115_000, "TI": 190_000, "VD": 250_000,
-        "AR":  15_000,  "AI":   5_000, "GL":  15_000, "NW":  14_000, "OW":  13_000,
-        "ZG":  30_000,
+        # Verified by WFS enumeration:
+        "BE": 426_000, "VS": 316_000, "GR": 225_000, "FR": 147_000,
+        "NE":  86_000, "GE":  69_000, "SZ":  50_000, "SH":  43_000, "JU": 14_000,
+        # Not enumerated yet (estimates from cantonal cadaster documents):
+        "BS":   7_000, "UR":  20_000, "BL":  70_000, "SO":  70_000, "LU": 110_000,
+        "ZH": 450_000, "AG": 130_000, "TG": 100_000, "SG": 115_000, "TI": 190_000,
+        "VD": 250_000, "AR":  15_000, "AI":   5_000, "GL":  15_000, "NW":  14_000,
+        "OW":  13_000, "ZG":  30_000,
     }
 
     out_cantons = []
@@ -94,6 +102,11 @@ def build_progress() -> dict:
         # when enumeration is a small test seed (heuristic: enum < 100 means seed).
         denom = enumerated if enumerated >= 100 else CANTON_TOTAL_ESTIMATE.get(canton, enumerated or 1)
         pct = round(100 * scanned / denom, 1) if denom else 0.0
+        # `estimated_total` prefers the actual enumerated count (authoritative
+        # — comes from the cantonal AV cadaster via WFS) over the static
+        # estimate.  Falls back to the static estimate only when enumeration
+        # hasn't run yet.
+        est_total = enumerated if enumerated >= 100 else CANTON_TOTAL_ESTIMATE.get(canton)
         out_cantons.append({
             "canton":             canton,
             "enumerated":         enumerated,
@@ -101,7 +114,7 @@ def build_progress() -> dict:
             "herrenlos":          r["herrenlos"] or 0,
             "errors":             r["errors"] or 0,
             "percent":            min(pct, 100.0),
-            "estimated_total":    CANTON_TOTAL_ESTIMATE.get(canton),
+            "estimated_total":    est_total,
             "last_scan_at":       r["last_scan_at"],
             "access":             status.get("access"),
             "test_group":         status.get("test_group"),

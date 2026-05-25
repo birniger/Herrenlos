@@ -421,7 +421,7 @@ def scan(limit: int | None = None,
     """
     init_db()
 
-    # SZ has ~30k parcels in 29 communes. The swisstopo 200m grid scan only
+    # SZ has ~50k parcels in 29 communes (verified by WFS).  The swisstopo 200m grid scan only
     # captured 6,372 (35% of canton). WFS finds all of them in ~30s.
     with get_conn() as conn:
         cached = enum_cached(conn, "SZ")

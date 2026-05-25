@@ -324,8 +324,8 @@ def scan(limit: int | None = None,
     Rate limit: 10 queries/day per IP.
     Set GR_PROXY_LIST in .env (comma/newline-separated proxy URLs or
     Webshare host:port:user:pass format) to rotate IPs automatically.
-    With 10 proxies: 100 queries/day → full 85k scan in ~850 days.
-    With 100 proxies: ~28 days. For faster coverage add more proxies.
+    With 10 proxies: 100 queries/day → full 226k scan in ~6 years.
+    With 100 proxies: ~7 months. For faster coverage add more proxies.
 
     limit         : stop after N queries (None = all)
     skip_existing : skip parcels already in DB
@@ -333,7 +333,7 @@ def scan(limit: int | None = None,
     """
     init_db()
 
-    # GR has ~150k parcels in 100+ communes. The swisstopo 500m grid scan
+    # GR has ~226k parcels in 100+ communes (verified by WFS).  The swisstopo 500m grid scan
     # only found 6,292 (7% of the canton); WFS finds all of them in ~3 min.
     with get_conn() as conn:
         cached = enum_cached(conn, "GR")
