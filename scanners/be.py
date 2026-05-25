@@ -386,25 +386,33 @@ def _validate_token(access_token: str) -> bool:
         return False
 
 
-def _fire_be_login_notification(action_url: str | None = None) -> None:
+def _fire_be_login_notification() -> None:
     """
-    Send a macOS Notification Center alert asking the user to log in to BE.
-    Uses terminal-notifier if available (clickable), falls back to osascript.
+    Send a macOS push notification after the 3-min login window expires.
+
+    With terminal-notifier: tapping the notification opens start_be_scan.command
+    in a new Terminal window, which runs `python main.py be` directly —
+    independent of the main scan loop, for as long as the token stays valid.
+
+    Falls back to a plain osascript banner (no tap action) if terminal-notifier
+    is not installed.
     """
     import shutil, subprocess
-    title   = "Herrenlos Scanner — BE"
-    message = "Log in to GRUDIS within 3 min, then scan resumes automatically"
+
+    proj     = pathlib.Path(__file__).resolve().parent.parent
+    launcher = proj / "scripts" / "start_be_scan.command"
+    title    = "Herrenlos Scanner — BE"
+    message  = "Log in to GRUDIS then tap to scan BE"
 
     tn = shutil.which("terminal-notifier")
-    if tn:
+    if tn and launcher.exists():
         cmd = [
             tn,
-            "-title",   title,
-            "-message", message,
-            "-sound",   "Funk",
+            "-title",    title,
+            "-message",  message,
+            "-sound",    "Funk",
+            "-execute",  f"open '{launcher}'",
         ]
-        if action_url:
-            cmd += ["-open", action_url]
         try:
             subprocess.run(cmd, check=False)
             return
@@ -423,18 +431,21 @@ def grudis_login() -> dict | None:
     Obtain a fresh GRUDIS Bearer token when cached token and refresh both fail.
 
     Flow:
-      1. Opens GRUDIS in Safari ONCE (via webbrowser.open).
-         If the Keycloak session is still valid GRUDIS auto-authenticates.
-         If expired the user must log in with BE-Login credentials.
-      2. Sends a macOS push notification so the user knows login is needed.
-      3. Polls up to 3 minutes for a VALID token via two paths:
+      1. Opens GRUDIS in Safari exactly once.
+         If the Keycloak session is still active, GRUDIS auto-authenticates.
+         If expired the user sees the BE-Login form and logs in manually.
+      2. Polls silently for up to 3 minutes for a VALID token:
            a. AppleScript: reads sessionStorage from the open GRUDIS tab;
-              each candidate is validated with a live API call before accepting.
-           b. Downloads/be_token.json: fallback for manual JS-console paste.
-      4. Returns {access_token, refresh_token, expires_at} or None on timeout.
-
-    Opening the browser only once (not in a loop) prevents the Safari-tab spam
-    that occurred when an expired session caused repeated grudis_login() calls.
+              every candidate is validated with a live API call before accepting
+              (prevents stale tokens from an expired session being silently used).
+           b. ~/Downloads/be_token.json: fallback if the user pastes the JS snippet.
+      3. If login succeeds within 3 min → returns token → scan() proceeds.
+      4. If 3 min expire without a valid token:
+           → sends a push notification ("Log in to GRUDIS — tap to scan BE")
+           → returns None so the main scan loop moves on to VS/FR.
+         Tapping the push opens start_be_scan.command in a new Terminal window
+         which runs `python main.py be` directly, independent of the main loop.
+         BE scans for as long as the token remains valid.
     """
     import platform, webbrowser
 
@@ -444,13 +455,9 @@ def grudis_login() -> dict | None:
     if downloads_token.exists():
         downloads_token.unlink()
 
-    # Open GRUDIS exactly once.
+    # Open GRUDIS exactly once — do NOT call this again inside the poll loop.
     webbrowser.open(GRUDIS_UI)
     log.info("BE: opened GRUDIS in browser — waiting up to 3 min for login")
-
-    # Fire a push notification so the user sees the request even if the
-    # terminal is in the background.
-    _fire_be_login_notification(action_url=GRUDIS_UI)
 
     print()
     print("=" * 70)
@@ -460,12 +467,12 @@ def grudis_login() -> dict | None:
     print()
     if is_mac:
         print("     macOS: the scanner reads the token from Safari automatically")
-        print("     once you are logged in. No paste step needed.")
+        print("     once you are logged in — no paste step needed.")
         print()
-        print("     ONE-TIME SETUP (if this is your first run):")
+        print("     ONE-TIME SETUP (first run only):")
         print("       1. Safari → Settings → Advanced → enable 'Show Develop menu'")
         print("       2. Safari → Develop → check 'Allow JavaScript from Apple Events'")
-        print("       3. macOS will ask 'Allow control of Safari' on first run → Allow.")
+        print("       3. macOS will ask 'Allow control of Safari' → click Allow.")
         print()
         print("     If Safari AppleScript is unavailable, paste this in the console:")
     else:
@@ -474,6 +481,8 @@ def grudis_login() -> dict | None:
     print(f"          {_EXTRACT_JS}")
     print()
     print("     This downloads 'be_token.json' to ~/Downloads — scanner picks it up.")
+    print("     If you miss the 3-minute window you'll get a push notification;")
+    print("     tap it to start BE scanning whenever you're ready.")
     print("=" * 70)
     print()
 
@@ -488,15 +497,15 @@ def grudis_login() -> dict | None:
         if is_mac:
             raw = _extract_token_via_safari_applescript()
             if raw:
-                # Validate before accepting — stale sessions return non-null
-                # tokens that the API rejects with 401. This was the root cause
-                # of the infinite grudis_login() → open-tab loop.
+                # Validate before accepting — stale sessions return non-null tokens
+                # that GRUDIS rejects with 401. This was the root cause of the
+                # infinite open-tab loop (stale token → auth_expired → grudis_login()
+                # again → open new tab → repeat).
                 if _validate_token(raw["access_token"]):
                     _save_token(raw)
                     log.info("BE token loaded from Safari (AppleScript + validated)")
                     return raw
                 else:
-                    # Token present but rejected — user hasn't finished logging in yet.
                     if time.time() - last_applescript_warn > 30:
                         log.info("BE: GRUDIS tab found but token not yet valid "
                                  "— waiting for login (%ds left)", remaining)
@@ -518,15 +527,16 @@ def grudis_login() -> dict | None:
                         log.info("BE token loaded from Downloads/be_token.json (validated)")
                         return data
                     else:
-                        log.warning("be_token.json has a token but API rejected it — "
-                                    "please log in again")
+                        log.warning("be_token.json token rejected by API — log in again")
                         downloads_token.unlink()
             except Exception as exc:
                 log.debug("be_token.json parse error: %s", exc)
 
         time.sleep(3)
 
-    log.warning("BE login timed out after %ds — skipping BE this rotation", TIMEOUT)
+    # ── Timeout: move on, but notify so the user can trigger BE manually ──────
+    log.warning("BE login timed out — moving on; sending push notification")
+    _fire_be_login_notification()
     return None
 
 
