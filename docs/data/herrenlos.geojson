@@ -1,7 +1,513 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-05-25T15:53:39+00:00",
+  "generated_at": "2026-05-25T20:02:13+00:00",
   "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.11042594909668,
+          46.71883773803711
+        ]
+      },
+      "properties": {
+        "egrid": "CH457510829411",
+        "canton": "FR",
+        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
+        "bfs_nr": "2236",
+        "parcel_nr": "160",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:58:38"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.0349860191345215,
+          46.707427978515625
+        ]
+      },
+      "properties": {
+        "egrid": "CH849410777658",
+        "canton": "FR",
+        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
+        "bfs_nr": "2236",
+        "parcel_nr": "280",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:51:49"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.004053115844727,
+          46.759647369384766
+        ]
+      },
+      "properties": {
+        "egrid": "CH607301368548",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "1029",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:45:47"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.004262924194336,
+          46.75625991821289
+        ]
+      },
+      "properties": {
+        "egrid": "CH309294061032",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "14",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:38:50"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.013848781585693,
+          46.76558303833008
+        ]
+      },
+      "properties": {
+        "egrid": "CH331081943684",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "142",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:48:01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.035293102264404,
+          46.77925109863281
+        ]
+      },
+      "properties": {
+        "egrid": "CH659510719418",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "16",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 01:03:49"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.001023292541504,
+          46.754127502441406
+        ]
+      },
+      "properties": {
+        "egrid": "CH749410778385",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "173",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:38:11"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.010861873626709,
+          46.77154541015625
+        ]
+      },
+      "properties": {
+        "egrid": "CH931071946439",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "207",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:39:39"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.996072292327881,
+          46.75699996948242
+        ]
+      },
+      "properties": {
+        "egrid": "CH749410847374",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "216",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:37:03"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.000112056732178,
+          46.756080627441406
+        ]
+      },
+      "properties": {
+        "egrid": "CH538579016406",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "242",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:37:38"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.990737438201904,
+          46.764854431152344
+        ]
+      },
+      "properties": {
+        "egrid": "CH119410109146",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "349",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:36:04"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.9855852127075195,
+          46.761085510253906
+        ]
+      },
+      "properties": {
+        "egrid": "CH768810948928",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "572",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:43:15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.999094486236572,
+          46.762603759765625
+        ]
+      },
+      "properties": {
+        "egrid": "CH428441109445",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "640",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:44:58"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.0042853355407715,
+          46.76962661743164
+        ]
+      },
+      "properties": {
+        "egrid": "CH338577012435",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "677",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:39:01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.011137008666992,
+          46.76808547973633
+        ]
+      },
+      "properties": {
+        "egrid": "CH291084849462",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "683",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:48:03"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.0169758796691895,
+          46.76522445678711
+        ]
+      },
+      "properties": {
+        "egrid": "CH728085109443",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "688",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:50:56"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.010262489318848,
+          46.75782012939453
+        ]
+      },
+      "properties": {
+        "egrid": "CH849410841204",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "701",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:47:04"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.007054328918457,
+          46.75767135620117
+        ]
+      },
+      "properties": {
+        "egrid": "CH808994541090",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "931",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:39:34"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.99600076675415,
+          46.752235412597656
+        ]
+      },
+      "properties": {
+        "egrid": "CH498579830150",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "945",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:44:26"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.988361358642578,
+          46.753944396972656
+        ]
+      },
+      "properties": {
+        "egrid": "CH949410770102",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "952",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:35:34"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.9850358963012695,
+          46.75754165649414
+        ]
+      },
+      "properties": {
+        "egrid": "CH591092059428",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "956",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:34:57"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.983757972717285,
+          46.75241470336914
+        ]
+      },
+      "properties": {
+        "egrid": "CH868310946061",
+        "canton": "FR",
+        "commune": "La Brillaz (secteur Onnens)",
+        "bfs_nr": "2234",
+        "parcel_nr": "960",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:43:01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.026961803436279,
+          46.813480377197266
+        ]
+      },
+      "properties": {
+        "egrid": "CH786885017722",
+        "canton": "FR",
+        "commune": "Prez (secteur Prez-vers-Nor\u00e9az)",
+        "bfs_nr": "2237",
+        "parcel_nr": "269",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-25 00:58:25"
+      }
+    },
     {
       "type": "Feature",
       "geometry": {
