@@ -405,6 +405,12 @@ def scan(communes: list[str] | None = None,
     session, xv1, _ = new_session()
     queries_this_session = 0
     scanned = errors = herrenlos = total = 0
+    # Circuit breaker: if this many consecutive parcels double-fail (original +
+    # retry both return session_exhausted), the daily IP quota is spent — exit
+    # cleanly with "quota exhausted" in the log so run_local.py applies a
+    # midnight cooldown instead of immediately retrying.
+    consecutive_exhausted = 0
+    MAX_CONSECUTIVE_EXHAUSTED = 20
 
     with get_conn() as conn:
         for p in parcels:
@@ -436,6 +442,23 @@ def scan(communes: list[str] | None = None,
                 queries_this_session = 0
                 result = check_owner(session, xv1, selcom, pnr)
                 queries_this_session += 1
+
+                # If the fresh session is ALSO exhausted, the daily IP quota is
+                # gone.  Count consecutive double-failures and bail out early so
+                # we don't hammer the portal for thousands of pointless requests.
+                if result.get("error") == "session_exhausted":
+                    consecutive_exhausted += 1
+                    if consecutive_exhausted >= MAX_CONSECUTIVE_EXHAUSTED:
+                        log.warning(
+                            "FR quota exhausted — %d consecutive double-failures. "
+                            "Exiting early; cooldown until midnight.",
+                            consecutive_exhausted,
+                        )
+                        break
+                else:
+                    consecutive_exhausted = 0
+            else:
+                consecutive_exhausted = 0
 
             # Carry the EGRID through from the enum row (FR scanner doesn't
             # rediscover it from the portal response — but the cantonal WFS
