@@ -25,6 +25,7 @@ from bs4 import BeautifulSoup
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
+from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
 from scanners.utils import is_herrenlos_owner_text, claim_possible_for
 
 log = logging.getLogger("FR")
@@ -175,10 +176,22 @@ def check_owner(session: requests.Session, xv1: str,
                                   Grundbuch (Type 2: never registered)
       is_herrenlos=0            — parcel has a registered owner
     """
+    # Split compound parcel numbers into numeric prefix + suffix index.
+    # The FR portal's form has TWO fields: noIm (numeric) and indexIm (suffix).
+    # Before this split, parcels like "135ba", "29b", "118.00901" were sent
+    # whole as noIm with indexIm="", which the portal rejected as INFORMATION
+    # INTROUVABLE — generating 100% false-positive herrenlos flags for any
+    # compound number.  Splitting matches the portal's expected form layout.
+    m = re.match(r"^(\d+)(.*)$", parcel_nr or "")
+    if m:
+        no_im, index_im = m.group(1), m.group(2)
+    else:
+        no_im, index_im = parcel_nr, ""
+
     try:
         r = session.post(QUERY, data={
-            "xv1": xv1, "selcom": selcom, "noIm": parcel_nr,
-            "indexIm": "", "rue": "", "noass": "", "selImm": "rechercher",
+            "xv1": xv1, "selcom": selcom, "noIm": no_im,
+            "indexIm": index_im, "rue": "", "noass": "", "selImm": "rechercher",
         }, headers={"Referer": COMMUNE}, timeout=20)
 
         raw  = r.text
@@ -286,23 +299,26 @@ def scan(communes: list[str] | None = None,
     else:
         wanted_bfs = None
 
-    # Enumerate real cadaster parcels — use DB cache if available (2.5h one-time cost).
-    # Threshold of 100: test-seeded entries (5–11) are not a real enumeration.
-    # FR has ~80k parcels; any genuine cache will be >> 100.
+    # FR has ~120k parcels in 130+ communes. The swisstopo 200m grid scan
+    # only captured 19,428 (24% of canton) and 0% EGRID. WFS finds all of
+    # them in ~2 min with 100% EGRID coverage.
     with get_conn() as conn:
         cached = enum_cached(conn, "FR")
-    if cached and len(cached) >= 100:
+    if cached and len(cached) >= 80_000:
         log.info("Using cached FR parcel list (%d parcels)", len(cached))
         raw_parcels = cached
     else:
         if cached:
-            log.info("FR cache has only %d entries (test seeds) — re-enumerating …", len(cached))
-        else:
-            log.info("No cache found — enumerating real FR parcels via swisstopo grid (~2.5h) …")
-        raw_parcels = enumerate_parcels_swisstopo()
+            log.info("FR cache incomplete (%d parcels, grid-scan undercount) — "
+                     "re-enumerating via WFS", len(cached))
+            with get_conn() as conn:
+                conn.execute("DELETE FROM parcel_enum WHERE canton='FR'")
+                conn.commit()
+        log.info("Enumerating FR parcels via geodienste WFS (~2 min) …")
+        raw_parcels = wfs_enumerate_canton("FR")
         with get_conn() as conn:
             store_enum(conn, "FR", raw_parcels)
-        log.info("Cached %d FR parcels to DB", len(raw_parcels))
+        log.info("Cached %d FR parcels (WFS, 100%% EGRID)", len(raw_parcels))
 
     # Map to selcom; drop parcels with no matching commune
     parcels = []

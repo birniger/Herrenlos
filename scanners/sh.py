@@ -48,6 +48,7 @@ import sys
 import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
+from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
 from scanners.utils import is_herrenlos_owner_text, claim_possible_for, load_proxies
 
 log = logging.getLogger("SH")
@@ -378,17 +379,24 @@ def scan(limit: int | None = None,
     """
     init_db()
 
+    # SH has ~43k parcels in 26 communes. Use geodienste WFS for full coverage
+    # (the swisstopo grid scan at 500m step only found 857 = 2% of the canton).
     with get_conn() as conn:
         cached = enum_cached(conn, "SH")
-    if cached:
+    if cached and len(cached) >= 30_000:
         log.info("Using cached SH parcel list (%d parcels)", len(cached))
         parcels = cached
     else:
-        log.info("No cache — running swisstopo grid scan (~15min) …")
-        parcels = enumerate_parcels_swisstopo()
+        if cached:
+            log.info("SH cache incomplete (%d parcels) — re-enumerating via WFS", len(cached))
+            with get_conn() as conn:
+                conn.execute("DELETE FROM parcel_enum WHERE canton='SH'")
+                conn.commit()
+        log.info("Enumerating SH parcels via geodienste WFS (~10s) …")
+        parcels = wfs_enumerate_canton("SH")
         with get_conn() as conn:
             store_enum(conn, "SH", parcels)
-        log.info("Cached %d SH parcels", len(parcels))
+        log.info("Cached %d SH parcels (WFS)", len(parcels))
 
     if limit:
         parcels = parcels[:limit]

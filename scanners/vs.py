@@ -53,6 +53,7 @@ import requests
 import sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
+from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
 from scanners.utils import annotate_herrenlos
 
 log = logging.getLogger("VS")
@@ -620,27 +621,26 @@ def scan(
     init_db()
 
     # ── Parcel enumeration ───────────────────────────────────────────────────
+    # VS has ~200k parcels. The swisstopo grid scan took ~2h and undercounted;
+    # WFS finds all of them in ~4 min with 100% EGRID coverage.
     with get_conn() as conn:
         cached = enum_cached(conn, "VS")
-    if cached:
+    if cached and len(cached) >= 100_000:
         log.info("Using cached VS parcel list (%d parcels)", len(cached))
         parcels = cached[:limit] if limit else cached
     else:
-        if limit:
-            # Quick mode: scan just enough grid points to find `limit` parcels.
-            # Result is intentionally NOT cached so a later full run builds the
-            # complete list from scratch.
-            log.info(
-                "No parcel cache — quick scan for first %d VS parcels "
-                "(run without --limit to build full cache)", limit
-            )
-            parcels = enumerate_parcels_swisstopo(max_parcels=limit)
-        else:
-            log.info("No parcel cache — running full swisstopo grid scan (~2 h) …")
-            parcels = enumerate_parcels_swisstopo()
+        if cached:
+            log.info("VS cache incomplete (%d parcels) — re-enumerating via WFS", len(cached))
             with get_conn() as conn:
-                store_enum(conn, "VS", parcels)
-            log.info("Cached %d VS parcels", len(parcels))
+                conn.execute("DELETE FROM parcel_enum WHERE canton='VS'")
+                conn.commit()
+        log.info("Enumerating VS parcels via geodienste WFS (~4 min) …")
+        parcels = wfs_enumerate_canton("VS")
+        with get_conn() as conn:
+            store_enum(conn, "VS", parcels)
+        log.info("Cached %d VS parcels (WFS, 100%% EGRID)", len(parcels))
+        if limit:
+            parcels = parcels[:limit]
 
     # ── Token acquisition ────────────────────────────────────────────────────
     token_data = _load_cached_token()

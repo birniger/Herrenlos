@@ -24,6 +24,7 @@ from bs4 import BeautifulSoup
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum, log_captcha
+from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
 from scanners.utils import is_herrenlos_owner_text, claim_possible_for
 
 log = logging.getLogger("SZ")
@@ -420,22 +421,24 @@ def scan(limit: int | None = None,
     """
     init_db()
 
+    # SZ has ~30k parcels in 29 communes. The swisstopo 200m grid scan only
+    # captured 6,372 (35% of canton). WFS finds all of them in ~30s.
     with get_conn() as conn:
         cached = enum_cached(conn, "SZ")
-    # Threshold of 50: test-seeded entries (5) are not a real enumeration.
-    # SZ has ~18k parcels; any genuine cache will be >> 50.
-    if cached and len(cached) >= 50:
+    if cached and len(cached) >= 20_000:
         log.info("Using cached SZ parcel list (%d parcels)", len(cached))
         parcels = cached
     else:
         if cached:
-            log.info("SZ cache has only %d entries (test seeds) — re-enumerating …", len(cached))
-        else:
-            log.info("No cache — running swisstopo grid scan …")
-        parcels = enumerate_parcels_swisstopo()
+            log.info("SZ cache incomplete (%d parcels) — re-enumerating via WFS", len(cached))
+            with get_conn() as conn:
+                conn.execute("DELETE FROM parcel_enum WHERE canton='SZ'")
+                conn.commit()
+        log.info("Enumerating SZ parcels via geodienste WFS (~30s) …")
+        parcels = wfs_enumerate_canton("SZ")
         with get_conn() as conn:
             store_enum(conn, "SZ", parcels)
-        log.info("Cached %d SZ parcels", len(parcels))
+        log.info("Cached %d SZ parcels (WFS)", len(parcels))
 
     if limit:
         parcels = parcels[:limit]

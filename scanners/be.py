@@ -47,6 +47,7 @@ import requests
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
+from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
 from scanners.utils import is_herrenlos_owner_text, annotate_herrenlos
 
 log = logging.getLogger("BE")
@@ -706,29 +707,27 @@ def scan(limit: int | None = None,
     # Parcel enumeration
     with get_conn() as conn:
         cached = enum_cached(conn, "BE")
-    if cached:
+    # Use WFS bulk enumeration (geodienste.ch) — finds all ~420k BE parcels in
+    # ~8 min with 100% EGRID coverage. Replaces the old swisstopo grid scan
+    # which took 5h and missed ~75% of urban parcels (one point per 200m grid
+    # cell, but dense communes have dozens of parcels per cell).
+    if cached and len(cached) >= 100_000:
         log.info("Using cached BE parcel list (%d parcels)", len(cached))
         parcels = cached[:limit] if limit else cached
     else:
-        if limit:
-            # Quick mode: small grid around Bern.
-            # Result IS cached so the local bulk scanner doesn't keep treating
-            # BE as "unenumerated" and re-picking it every loop iteration.
-            # The cache is partial (~300-500 Bern-area parcels) but better than
-            # nothing.  Run without --limit to build the full 400k canton cache.
-            log.info("No parcel cache — quick scan for first %d BE parcels "
-                     "(result will be cached; run without --limit for full cache)", limit)
-            parcels = enumerate_parcels_swisstopo(max_parcels=limit)
-            if parcels:
-                with get_conn() as conn:
-                    store_enum(conn, "BE", parcels)
-                log.info("Cached %d BE parcels (quick/partial)", len(parcels))
-        else:
-            log.info("No cache — running swisstopo grid scan (~5h) …")
-            parcels = enumerate_parcels_swisstopo()
+        if cached:
+            log.info("BE cache has only %d parcels (partial/stale) — re-enumerating via WFS",
+                     len(cached))
             with get_conn() as conn:
-                store_enum(conn, "BE", parcels)
-            log.info("Cached %d BE parcels", len(parcels))
+                conn.execute("DELETE FROM parcel_enum WHERE canton='BE'")
+                conn.commit()
+        log.info("Enumerating BE parcels via geodienste WFS (~8 min one-time) …")
+        parcels = wfs_enumerate_canton("BE")
+        with get_conn() as conn:
+            store_enum(conn, "BE", parcels)
+        log.info("Cached %d BE parcels (WFS, 100%% EGRID)", len(parcels))
+        if limit:
+            parcels = parcels[:limit]
 
     session = requests.Session()
     session.headers.update({
