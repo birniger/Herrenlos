@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Local bulk scanner — cycles through the cantons that CAN'T run on GitHub Actions
-but CAN run unattended from your laptop on a single Swiss residential IP.
+Local bulk scanner — runs all eligible cantons in parallel, each in its own
+thread with its own subprocess, cooldown, and error handling.
 
 Eligible for bulk scanning from the laptop:
 
@@ -12,10 +12,11 @@ Eligible for bulk scanning from the laptop:
     FR  — no login, no CAPTCHA; needs residential IP (keycloak.fr.ch geo-blocks
           GitHub Actions datacenter IPs). ~80k parcels; ~600-800/hr.
     BL  — needs ANTHROPIC_API_KEY (Claude vision for handwritten CAPTCHA); ~70k parcels
+
 NOT included by design:
   - JU, SZ, SH, NE, GR : handled by GitHub Actions. NE/GR share the same Webshare
                           proxy quota — running them here too would just compete with CI
-                          for the same 90–450 queries/day without adding throughput.
+                          for the same 90-450 queries/day without adding throughput.
   - UR              : daily quota (10/day), geo-blocked from CI; use `python main.py ur`.
   - GE              : Imperva blocks ~30/IP even from residential; needs proxies
                       AND ANTHROPIC_API_KEY. Use `python main.py ge` separately.
@@ -27,31 +28,26 @@ NOT included by design:
                       only after proxies/CAPTCHA service are wired.
   - BS-public, etc. : need proxies / institutional accounts.
 
+Parallel mode: one thread per canton, each running `python main.py <canton>
+--limit ROTATION_LIMIT` in a tight loop. Cantons no longer take turns; FR,
+VS, BE, and BL scan simultaneously and restart as soon as their slice finishes.
+
+Push to GitHub is debounced: at most one push every PUSH_DEBOUNCE_SECONDS
+regardless of how many cantons finish around the same time.
+
 Pre-flight: at startup, checks each eligible canton's prerequisites:
   - BE  : ~/.herrenlos_scanner/be_token.json exists?
   - VS  : ~/.herrenlos_scanner/vs_token.json exists?
   - BL  : ANTHROPIC_API_KEY in env / .env?
-  - SO  : nothing — just needs to be on a Swiss residential IP
-
-For each missing prerequisite you'll be offered:
-  (1) Set it up now (opens the relevant interactive flow), or
-  (2) Skip that canton for this run, or
-  (3) Exit so you can configure manually and rerun.
-
-During the loop: each canton scan runs unattended. If a scan exits with what
-looks like an auth failure (token expired, 401, etc.), a macOS desktop
-notification is fired so you know to re-authenticate. Other failures are
-retried with exponential backoff.
-
-Resumption: every parcel commits to the DB immediately. Crash, Ctrl+C, network
-drop, power loss, and sleep-wake all resume cleanly.
+  - FR  : nothing -- just needs a Swiss residential IP
 
 Configuration:
   LOCAL_ELIGIBLE_CANTONS env var (space-separated) overrides the default list.
+  LOCAL_ROTATION_LIMIT   env var overrides ROTATION_LIMIT (default 3000).
 
 Usage:
   python scripts/run_local.py                 # full default set
-  LOCAL_ELIGIBLE_CANTONS="so bl" python scripts/run_local.py
+  LOCAL_ELIGIBLE_CANTONS="fr bl" python scripts/run_local.py
 
 For auto-restart across crashes / network outages, use the bash wrapper:
   ./scripts/scan-loop.sh
@@ -67,6 +63,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import threading
 import time
 import urllib.parse
 import urllib.request
@@ -96,36 +93,36 @@ if _env_file.exists():
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
-# SO removed 2026-05-23: empirically Google reCAPTCHA v3 degrades the score
-# after ~2 successful queries even from Swiss residential IPs. A 9h overnight
-# run produced 2 results + 497 errors (96% failure rate). SO needs proxies after
-# all — keep so_public.py for when proxies/CAPTCHA service is added, but don't
-# include SO in the laptop bulk loop.
 LOCAL_ELIGIBLE_DEFAULT = ["be", "vs", "fr", "bl"]
 
-# enum_count below this = "not yet enumerated" (test seeds / empty). Strategy 0
-# picks these first so every canton gets bootstrapped before gap comparison.
+# enum_count below this = "not yet enumerated" (test seeds / empty).
 REAL_ENUM_MIN = 100
 
 # Backoff between failures, with a cap so we don't sleep forever.
 RETRY_BASE_SECONDS = 30
 RETRY_MAX_SECONDS  = 600
+
+# Brief pause between consecutive rotation restarts for a given canton.
+# In parallel mode this is only applied per-canton (other cantons aren't waiting).
 INTER_CANTON_DELAY_SECONDS = 5
 
-# Maximum parcels per canton invocation before rotating. Without this, the
-# scanner runs until the canton is fully done — which can be days. Rotation
-# lets us make visible progress on every canton each night.
-# The one-time per-canton enumeration (swisstopo grid scan, ~1-3h) is NOT
-# bounded by this limit — it runs to completion before parcel scanning starts.
-# Override via env var if you want to dedicate a whole night to one canton.
+# Maximum parcels per canton invocation before restarting the subprocess.
+# In parallel mode each canton loops independently so this is just a natural
+# "restart checkpoint" — not a fairness mechanism.
 ROTATION_LIMIT = int(os.environ.get("LOCAL_ROTATION_LIMIT", "3000"))
+
+# Push debounce: even if 3 cantons finish simultaneously, only one push fires.
+# Set low enough that results reach GitHub promptly, high enough to avoid races.
+PUSH_DEBOUNCE_SECONDS = 120  # 2 minutes
+
+# Token keepalive interval: refresh idle tokens during long cooldowns.
+KEEPALIVE_INTERVAL = 900  # 15 min — well within any Keycloak idle timeout
 
 # Token cache (created on first interactive login by BE/VS scanners)
 TOKEN_DIR = pathlib.Path.home() / ".herrenlos_scanner"
 
 # Substrings in scanner output that suggest an authentication failure rather
-# than a transient network/server hiccup. Used only to decide whether to fire a
-# notification — actual retry is the same for both kinds of failures.
+# than a transient network/server hiccup.
 AUTH_FAILURE_KEYWORDS = [
     "401", "unauthorized", "token expired", "refresh failed",
     "login required", "re-authenticate", "auth_failed",
@@ -133,35 +130,52 @@ AUTH_FAILURE_KEYWORDS = [
 ]
 
 # Substrings that indicate the scanner opened a login browser window but the
-# user didn't complete the login within the 3-minute timeout. The scanner
-# exits rc=0 in this case (it just returns early), so we can't rely on the
-# exit code — we detect these keywords in the output instead.
-# Rules: keep ALL keywords ASCII-only (no em-dashes etc.) to avoid encoding
-# surprises when subprocess output is decoded.  Cover every code path that
-# calls grudis_login() / vs_login() and then exits early:
-#   - be.py scan()       → "BE login failed"
-#   - be.py _do_refresh()→ "Re-login failed"    ← was missing before
-#   - grudis_login()     → "Timed out waiting for BE token"
-#   - vs_login()         → similar messages
+# user didn't complete the login within the timeout. The scanner exits rc=0
+# in this case so we can't rely on exit code — detect these keywords instead.
 LOGIN_TIMEOUT_KEYWORDS = [
-    "timed out waiting for be token",   # grudis_login() on 3-min poll timeout
-    "timed out waiting for vs token",   # vs equivalent
-    "be login failed",                  # scan() initial token acquisition
-    "vs login failed",                  # vs equivalent
-    "re-login failed",                  # _do_refresh() path (was missing!)
-    "login not completed",              # grudis_login() message suffix
+    "timed out waiting for be token",
+    "timed out waiting for vs token",
+    "be login failed",
+    "vs login failed",
+    "re-login failed",
+    "login not completed",
     "no token captured",
-    "login failed",                     # catch-all (covers all aborting variants)
+    "login failed",
     "login timed out",
 ]
 
 log = logging.getLogger("local")
 
+# ── Thread-safe subprocess registry (for clean Ctrl+C kill) ──────────────────
+
+_active_procs: dict[str, "subprocess.Popen[bytes]"] = {}
+_active_procs_lock = threading.Lock()
+
+# Lock for stdout so parallel canton prefixes don't interleave mid-line.
+_stdout_lock = threading.Lock()
+
+
+# ── Per-canton token metadata ─────────────────────────────────────────────────
+
+_TOKEN_META: dict[str, tuple[pathlib.Path, str, str]] = {
+    "be": (
+        pathlib.Path.home() / ".herrenlos_scanner" / "be_token.json",
+        "https://sso.be.ch/auth/realms/a51-grudis-public-agov"
+        "/protocol/openid-connect/token",
+        "intercapi-public-client",
+    ),
+    "vs": (
+        pathlib.Path.home() / ".herrenlos_scanner" / "vs_token.json",
+        "https://sso.apps.vs.ch/auth/realms/etatvs"
+        "/protocol/openid-connect/token",
+        "capitastra-public-client",
+    ),
+}
+
 
 # ── Pre-flight: per-canton prerequisite checks ───────────────────────────────
 
 def _check_be() -> tuple[bool, str]:
-    """Returns (ready?, human-readable status)."""
     token = TOKEN_DIR / "be_token.json"
     if token.exists():
         return True, f"BE token found ({token})"
@@ -182,118 +196,58 @@ def _check_bl() -> tuple[bool, str]:
 
 
 def _check_fr() -> tuple[bool, str]:
-    # FR needs no token — just a residential IP. keycloak.fr.ch is geo-blocked
-    # from GitHub Actions datacentres; from a Swiss home IP it works fine.
-    return True, "FR needs no token (residential IP only — no setup required)"
+    return True, "FR needs no token (residential IP only)"
 
 
 def _check_so() -> tuple[bool, str]:
-    # SO needs only a Swiss residential IP — we can't reliably introspect that
-    # without making a real request, so we just optimistically pass and let the
-    # scanner surface the error if the IP fails reCAPTCHA scoring.
     return True, "SO needs a Swiss residential IP (no token / no key required)"
 
 
 PREFLIGHT_CHECKS = {
     "be": {
-        "check":   _check_be,
-        "setup_cmd": [sys.executable, "main.py", "be", "--limit", "1"],
+        "check":      _check_be,
+        "setup_cmd":  [sys.executable, "main.py", "be", "--limit", "1"],
         "setup_note": (
             "BE setup: Safari will open to grudis.apps.be.ch. Log in with your "
-            "AGOV / BE-Login account. The scanner then extracts the token via "
-            "AppleScript (you must have 'Allow JavaScript from Apple Events' "
-            "enabled in Safari → Develop). The token is cached for future runs."
+            "AGOV / BE-Login account. The scanner extracts the token via AppleScript "
+            "('Allow JavaScript from Apple Events' must be enabled in Safari → Develop)."
         ),
     },
     "vs": {
-        "check":   _check_vs,
-        "setup_cmd": [sys.executable, "main.py", "vs", "--limit", "1"],
+        "check":      _check_vs,
+        "setup_cmd":  [sys.executable, "main.py", "vs", "--limit", "1"],
         "setup_note": (
-            "VS setup: a Playwright Chromium window opens. Log in with your "
-            "SwissID account and complete 2FA (app push or SMS). The token "
-            "is then cached automatically."
+            "VS setup: a Playwright Chromium window opens. Log in with your SwissID "
+            "account and complete 2FA. The token is cached automatically."
         ),
     },
     "bl": {
-        "check":   _check_bl,
-        "setup_cmd": None,                   # not interactive — user edits .env
+        "check":      _check_bl,
+        "setup_cmd":  None,
         "setup_note": (
-            "BL setup: get an Anthropic API key at https://console.anthropic.com, "
-            "then add to .env:    ANTHROPIC_API_KEY=sk-ant-...\n"
-            "Then rerun this script."
+            "BL setup: add ANTHROPIC_API_KEY=sk-ant-... to .env, then rerun."
         ),
     },
     "fr": {
-        "check":   _check_fr,
-        "setup_cmd": None,
+        "check":      _check_fr,
+        "setup_cmd":  None,
         "setup_note": "FR needs no setup — just run from a Swiss residential IP.",
     },
     "so": {
-        "check":   _check_so,
-        "setup_cmd": None,
+        "check":      _check_so,
+        "setup_cmd":  None,
         "setup_note": "SO needs no setup — just run from a Swiss residential IP.",
     },
 }
-
-
-# ── Picker (same strategy as scripts/pick_canton.py) ─────────────────────────
-
-def pick_canton(eligible: list[str]) -> str | None:
-    if not eligible:
-        return None
-    init_db()
-    with get_conn() as conn:
-        rows = conn.execute("""
-            SELECT LOWER(pe.canton)                                              AS canton,
-                   COUNT(pe.id)                                                  AS enum_count,
-                   COUNT(pe.id) - COALESCE(SUM(
-                       CASE WHEN p.is_herrenlos IS NOT NULL THEN 1 ELSE 0 END), 0) AS gap
-              FROM enum.parcel_enum pe
-              LEFT JOIN parcels p
-                     ON p.canton = pe.canton
-                    AND p.bfs_nr = pe.bfs_nr
-                    AND p.parcel_nr = pe.parcel_nr
-             GROUP BY LOWER(pe.canton)
-        """).fetchall()
-    enum_count = {r["canton"]: r["enum_count"] for r in rows}
-    by_gap     = {r["canton"]: r["gap"]        for r in rows}
-
-    for c in eligible:
-        if enum_count.get(c, 0) < REAL_ENUM_MIN:
-            log.info("Picking %s — not yet enumerated (enum=%d)",
-                     c.upper(), enum_count.get(c, 0))
-            return c
-
-    best, best_gap = None, 0
-    for c in eligible:
-        gap = by_gap.get(c, 0)
-        if gap > best_gap:
-            best, best_gap = c, gap
-    if best is not None:
-        log.info("Picking %s — largest gap (%d parcels remaining)",
-                 best.upper(), best_gap)
-        return best
-
-    log.info("All gaps zero — rotating to %s", eligible[0].upper())
-    return eligible[0]
 
 
 # ── macOS desktop notifications ──────────────────────────────────────────────
 
 def notify(title: str, message: str, sound: bool = False,
            execute: str | None = None) -> None:
-    """
-    Show a macOS desktop notification. Silently no-ops on other OSes.
-
-    With terminal-notifier installed (brew install terminal-notifier):
-      - *execute* is a shell command run when the user taps the notification.
-      - Typically used to open a Terminal window and restart a scanner.
-    Falls back to a plain osascript banner (no click action) if
-    terminal-notifier is not available.
-    """
+    """Show a macOS desktop notification. Silently no-ops on other OSes."""
     print(f"\n🔔 {title}: {message}\n", flush=True)
 
-    # Prefer terminal-notifier — supports a click action via -execute
     tn = shutil.which("terminal-notifier")
     if tn:
         cmd = [tn, "-title", title, "-message", message]
@@ -307,7 +261,6 @@ def notify(title: str, message: str, sound: bool = False,
         except Exception as e:
             log.debug("terminal-notifier failed: %s", e)
 
-    # Fallback: basic osascript banner (no click action)
     osascript = shutil.which("osascript")
     if not osascript:
         return
@@ -325,11 +278,7 @@ def notify(title: str, message: str, sound: bool = False,
 # ── Pre-flight orchestration ─────────────────────────────────────────────────
 
 def preflight(eligible: list[str]) -> list[str]:
-    """
-    Check prerequisites for every eligible canton. Interactively offer to set
-    up missing ones. Returns the filtered list of cantons that are ready to
-    scan in this run.
-    """
+    """Check prerequisites for every eligible canton. Returns ready cantons."""
     print()
     print("──  Pre-flight checks  ──")
 
@@ -337,7 +286,6 @@ def preflight(eligible: list[str]) -> list[str]:
     for c in eligible:
         cfg = PREFLIGHT_CHECKS.get(c)
         if cfg is None:
-            # Unknown canton — be permissive, let the scanner surface its own error.
             print(f"  ?  {c.upper():<3} — no pre-flight check, will run blind")
             ready.append(c)
             continue
@@ -353,7 +301,6 @@ def preflight(eligible: list[str]) -> list[str]:
         print()
         return ready
 
-    # For each not-ready canton, ask user what to do
     print()
     print("Some cantons need setup before they can scan.")
     for c in not_ready:
@@ -361,7 +308,6 @@ def preflight(eligible: list[str]) -> list[str]:
         print()
         print(f"  {c.upper()}: {cfg['setup_note']}")
         if cfg["setup_cmd"] is None:
-            # User must edit .env manually
             print("  → Skipping this run. Set up the prerequisite, then rerun.")
             continue
         try:
@@ -384,20 +330,18 @@ def preflight(eligible: list[str]) -> list[str]:
     return ready
 
 
-# ── Scan runner with auth-failure detection ──────────────────────────────────
+# ── Canton runner ─────────────────────────────────────────────────────────────
 
 def run_canton(canton: str) -> tuple[int, str]:
     """
-    Run `python main.py <canton>` and stream output to terminal while also
-    capturing it for post-mortem keyword inspection. Returns (rc, tail_output).
-    Only the last 4 KB of output is retained — enough to spot auth failures
-    without holding hundreds of MB for a many-hour scan.
+    Run `python main.py <canton> --limit ROTATION_LIMIT`.
 
-    Uses ROTATION_LIMIT so the loop cycles between cantons rather than getting
-    stuck on the first one for days.
+    Lines are prefixed with [CANTON] so parallel output is readable.
+    The last 4 KB of output is returned for post-mortem keyword inspection.
+    The subprocess is registered in _active_procs so Ctrl+C can kill it.
     """
     cmd = [sys.executable, "main.py", canton, "--limit", str(ROTATION_LIMIT)]
-    log.info("→ Running: %s", " ".join(cmd))
+    prefix = f"[{canton.upper()}] "
     tail = bytearray()
     TAIL_MAX = 4096
     try:
@@ -406,19 +350,28 @@ def run_canton(canton: str) -> tuple[int, str]:
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             bufsize=1,
         )
+        with _active_procs_lock:
+            _active_procs[canton] = proc
         assert proc.stdout is not None
         for raw_line in proc.stdout:
-            sys.stdout.buffer.write(raw_line)
-            sys.stdout.flush()
+            line_str = raw_line.decode("utf-8", errors="replace").rstrip("\n")
+            with _stdout_lock:
+                sys.stdout.write(f"{prefix}{line_str}\n")
+                sys.stdout.flush()
             tail += raw_line
             if len(tail) > TAIL_MAX:
                 tail = tail[-TAIL_MAX:]
         proc.wait()
         return proc.returncode, tail.decode("utf-8", errors="replace")
     except FileNotFoundError as e:
-        log.error("Could not start subprocess: %s", e)
+        log.error("[%s] Could not start subprocess: %s", canton.upper(), e)
         return 127, str(e)
+    finally:
+        with _active_procs_lock:
+            _active_procs.pop(canton, None)
 
+
+# ── Auth / login failure detection ───────────────────────────────────────────
 
 def looks_like_auth_failure(canton: str, output: str) -> bool:
     o = output.lower()
@@ -430,9 +383,6 @@ def looks_like_login_timeout(output: str) -> bool:
     return any(kw in o for kw in LOGIN_TIMEOUT_KEYWORDS)
 
 
-# Cantons that require an interactive token and also populate parcel_enum on
-# every successful run (be.py caches even quick enumerations since 2026-05-24).
-# If a scan exits cleanly BUT parcel_enum is still empty, login failed.
 _LOGIN_REQUIRED = {"be", "vs"}
 
 
@@ -440,16 +390,15 @@ def _is_login_failed(canton: str, tail: str) -> bool:
     """
     Return True if the canton scan appears to have failed at the login step.
 
-    Two complementary signals:
-      1. Keyword detection in the subprocess tail output (fast, no DB query).
-      2. Structural: login-required cantons enumerate parcels on every successful
-         run.  If parcel_enum is still empty after a clean exit, login failed.
+    Two signals:
+      1. Keyword detection in subprocess output (fast).
+      2. Structural: BE/VS enumerate parcels on every successful run. If
+         parcel_enum is still empty after a clean exit, login never completed.
     """
     if looks_like_login_timeout(tail):
         return True
     if canton not in _LOGIN_REQUIRED:
         return False
-    # Structural check: did the scan populate parcel_enum?
     try:
         with get_conn() as conn:
             row = conn.execute(
@@ -457,25 +406,257 @@ def _is_login_failed(canton: str, tail: str) -> bool:
             ).fetchone()
             enum_count = row[0] if row else 0
         if enum_count < REAL_ENUM_MIN:
-            log.debug("%s parcel_enum empty after clean exit (%d rows) — "
-                      "login likely failed (tail snippet: %s)",
-                      canton.upper(), enum_count, tail[-120:].replace("\n", "↵"))
+            log.debug("[%s] parcel_enum empty after clean exit (%d rows) — "
+                      "login likely failed", canton.upper(), enum_count)
             return True
     except Exception as exc:
         log.debug("_is_login_failed DB check error: %s", exc)
     return False
 
 
-# ── Signal handling ──────────────────────────────────────────────────────────
+# ── Timing helpers ────────────────────────────────────────────────────────────
 
-def install_signal_handlers():
-    def _term(signum, frame):
-        log.info("Received signal %d — exiting after current parcel", signum)
-        raise KeyboardInterrupt()
-    signal.signal(signal.SIGTERM, _term)
+def _next_midnight_bern() -> float:
+    tz = zoneinfo.ZoneInfo("Europe/Zurich")
+    tomorrow = datetime.date.today() + datetime.timedelta(days=1)
+    return datetime.datetime(tomorrow.year, tomorrow.month, tomorrow.day,
+                             tzinfo=tz).timestamp()
 
 
-# ── Main loop ────────────────────────────────────────────────────────────────
+def _stop_sleep(stop_event: threading.Event, seconds: float) -> None:
+    """Sleep for *seconds* but wake immediately if stop_event is set."""
+    deadline = time.time() + seconds
+    while not stop_event.is_set():
+        remaining = deadline - time.time()
+        if remaining <= 0:
+            break
+        time.sleep(min(1.0, remaining))
+
+
+# ── Token keepalive ───────────────────────────────────────────────────────────
+
+def _keepalive_token(canton: str) -> None:
+    """Silently refresh the stored token so the session doesn't idle-expire."""
+    meta = _TOKEN_META.get(canton)
+    if not meta:
+        return
+    token_file, token_ep, client_id = meta
+    if not token_file.exists():
+        return
+    try:
+        cached = json.loads(token_file.read_text())
+        refresh_token = cached.get("refresh_token")
+        if not refresh_token:
+            return
+        body = urllib.parse.urlencode({
+            "grant_type":    "refresh_token",
+            "client_id":     client_id,
+            "refresh_token": refresh_token,
+        }).encode()
+        req = urllib.request.Request(token_ep, data=body, method="POST")
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read())
+        if "access_token" not in data:
+            log.warning("[%s] keepalive: refresh failed — %s",
+                        canton.upper(), data.get("error", "unknown"))
+            return
+        cached["access_token"] = data["access_token"]
+        cached["expires_at"]   = time.time() + data.get("expires_in", 300)
+        if "refresh_token" in data:
+            cached["refresh_token"] = data["refresh_token"]
+        token_file.write_text(json.dumps(cached))
+        log.debug("[%s] keepalive: token refreshed OK", canton.upper())
+    except Exception as exc:
+        log.warning("[%s] keepalive: %s", canton.upper(), exc)
+
+
+# ── GitHub push (debounced) ───────────────────────────────────────────────────
+
+def _push_results() -> None:
+    """Push local scan results to GitHub (merge + commit + push)."""
+    try:
+        log.info("Pushing local results to GitHub...")
+        r = subprocess.run(
+            ["bash", "scripts/push_local.sh", "auto"],
+            cwd=PROJECT_ROOT, capture_output=True, text=True,
+        )
+        for line in (r.stdout + r.stderr).splitlines():
+            if line.strip():
+                log.info("  [push] %s", line)
+    except Exception as exc:
+        log.warning("push_local.sh failed: %s", exc)
+
+
+def _push_debounced(push_lock: threading.Lock, last_push: list[float]) -> None:
+    """
+    Push at most once per PUSH_DEBOUNCE_SECONDS across all canton threads.
+
+    The lock is held only long enough to read/update the timestamp; the
+    actual push runs outside the lock so other threads aren't blocked.
+    """
+    with push_lock:
+        now = time.time()
+        since_last = now - last_push[0]
+        if since_last < PUSH_DEBOUNCE_SECONDS:
+            log.debug("Push debounced (last push %.0fs ago)", since_last)
+            return
+        last_push[0] = now
+    # Outside the lock — other threads can proceed
+    _push_results()
+
+
+# ── Per-canton worker thread ──────────────────────────────────────────────────
+
+def _canton_loop(
+    canton: str,
+    stop_event: threading.Event,
+    push_lock: threading.Lock,
+    last_push: list[float],
+) -> None:
+    """
+    Worker thread for one canton. Runs `main.py <canton>` in a tight loop,
+    handling rate-limit cooldowns, login timeouts, auth failures, and
+    transient errors independently of all other canton threads.
+    """
+    cooldown_until = 0.0
+    consecutive_failures = 0
+
+    log.info("[%s] worker started", canton.upper())
+
+    while not stop_event.is_set():
+        # ── Cooldown wait ───────────────────────────────────────────────────
+        while not stop_event.is_set() and time.time() < cooldown_until:
+            # Sleep in KEEPALIVE_INTERVAL chunks, refreshing token each time
+            # so a BE/VS session doesn't idle-expire during an overnight wait.
+            chunk = min(KEEPALIVE_INTERVAL, cooldown_until - time.time())
+            if chunk > 0:
+                remaining_str = datetime.datetime.fromtimestamp(
+                    cooldown_until).strftime("%H:%M")
+                log.debug("[%s] in cooldown — sleeping %.0fs (until %s)",
+                          canton.upper(), chunk, remaining_str)
+                _stop_sleep(stop_event, chunk)
+            _keepalive_token(canton)
+
+        if stop_event.is_set():
+            break
+
+        # ── Run one rotation ────────────────────────────────────────────────
+        rc, tail = run_canton(canton)
+
+        if stop_event.is_set():
+            break
+
+        # ── Handle clean exit (rc=0) ────────────────────────────────────────
+        if rc == 0:
+            # Daily quota exhausted — cool down until midnight Bern time.
+            if ("rate-limiting" in tail
+                    or "consecutive 429" in tail
+                    or "quota exhausted" in tail):
+                cooldown_until = _next_midnight_bern()
+                resume = datetime.datetime.fromtimestamp(
+                    cooldown_until).strftime("%H:%M")
+                log.info("[%s] rate-limited — daily quota exhausted. "
+                         "Cooling down until midnight (%s).",
+                         canton.upper(), resume)
+                consecutive_failures = 0
+
+            # Login window timed out — fire push notification, 2 h cooldown.
+            elif _is_login_failed(canton, tail):
+                _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
+                notify(
+                    title=f"Herrenlos — {canton.upper()} login needed",
+                    message=f"Log in to {canton.upper()} then tap to scan",
+                    sound=True,
+                    execute=f"open '{_ln}'" if _ln.exists() else None,
+                )
+                cooldown_until = time.time() + 2 * 3600
+                resume_str = datetime.datetime.fromtimestamp(
+                    cooldown_until).strftime("%H:%M")
+                log.warning("[%s] login timed out — cooldown until %s. "
+                            "Tap push notification to scan now.",
+                            canton.upper(), resume_str)
+                consecutive_failures = 0
+
+            # Normal clean rotation — push and immediately restart.
+            else:
+                consecutive_failures = 0
+                log.info("[%s] rotation complete — restarting after %ds.",
+                         canton.upper(), INTER_CANTON_DELAY_SECONDS)
+                _push_debounced(push_lock, last_push)
+                _stop_sleep(stop_event, INTER_CANTON_DELAY_SECONDS)
+
+        # ── Handle failure (rc != 0) ────────────────────────────────────────
+        else:
+            consecutive_failures += 1
+            backoff = min(RETRY_BASE_SECONDS * consecutive_failures,
+                          RETRY_MAX_SECONDS)
+
+            if looks_like_auth_failure(canton, tail):
+                # Token expired: notify with sound + 2 h cooldown so the thread
+                # keeps running (and other cantons aren't affected). The user
+                # taps the notification to re-authenticate via the .command file.
+                _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
+                notify(
+                    title="Herrenlos Scanner — re-login needed",
+                    message=(f"{canton.upper()} token expired. "
+                             "Tap to open Terminal and re-authenticate."),
+                    sound=True,
+                    execute=f"open '{_ln}'" if _ln.exists() else None,
+                )
+                cooldown_until = time.time() + 2 * 3600
+                resume_str = datetime.datetime.fromtimestamp(
+                    cooldown_until).strftime("%H:%M")
+                log.warning("[%s] auth failure — cooling down until %s. "
+                            "Tap push notification to re-authenticate.",
+                            canton.upper(), resume_str)
+                consecutive_failures = 0
+
+            else:
+                log.warning("[%s] scan exited rc=%d (failure #%d) — "
+                            "sleeping %ds before retry.",
+                            canton.upper(), rc,
+                            consecutive_failures, backoff)
+                _stop_sleep(stop_event, backoff)
+
+    log.info("[%s] worker stopped.", canton.upper())
+
+
+# ── Canton gap picker (utility — not used in the parallel main loop) ──────────
+
+def pick_canton(eligible: list[str]) -> str | None:
+    """Pick the canton with the most unscanned parcels. Used by external tools."""
+    if not eligible:
+        return None
+    init_db()
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT LOWER(pe.canton)                                              AS canton,
+                   COUNT(pe.id)                                                  AS enum_count,
+                   COUNT(pe.id) - COALESCE(SUM(
+                       CASE WHEN p.is_herrenlos IS NOT NULL THEN 1 ELSE 0 END), 0) AS gap
+              FROM enum.parcel_enum pe
+              LEFT JOIN parcels p
+                     ON p.canton = pe.canton
+                    AND p.bfs_nr = pe.bfs_nr
+                    AND p.parcel_nr = pe.parcel_nr
+             GROUP BY LOWER(pe.canton)
+        """).fetchall()
+    enum_count = {r["canton"]: r["enum_count"] for r in rows}
+    by_gap     = {r["canton"]: r["gap"]        for r in rows}
+
+    for c in eligible:
+        if enum_count.get(c, 0) < REAL_ENUM_MIN:
+            return c
+
+    best, best_gap = None, 0
+    for c in eligible:
+        gap = by_gap.get(c, 0)
+        if gap > best_gap:
+            best, best_gap = c, gap
+    return best if best is not None else eligible[0]
+
+
+# ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> int:
     logging.basicConfig(
@@ -483,242 +664,74 @@ def main() -> int:
         format="%(asctime)s  %(name)-6s  %(levelname)-7s  %(message)s",
         datefmt="%H:%M:%S",
     )
-    install_signal_handlers()
 
     raw = os.environ.get("LOCAL_ELIGIBLE_CANTONS", "")
     eligible = raw.split() if raw.strip() else list(LOCAL_ELIGIBLE_DEFAULT)
     eligible = [c.lower() for c in eligible]
-    print(f"\nHerrenlos local bulk scanner")
-    print(f"  CI cantons (JU, SZ): handled by GitHub Actions — NOT run here.")
-    print(f"  Eligible for this run:   {', '.join(c.upper() for c in eligible)}")
+
+    print(f"\nHerrenlos local bulk scanner  [parallel mode]")
+    print(f"  CI cantons (JU, SZ, SH, NE, GR): handled by GitHub Actions.")
+    print(f"  Eligible for this run: {', '.join(c.upper() for c in eligible)}")
+    print(f"  Rotation limit per canton: {ROTATION_LIMIT:,} parcels")
+    print(f"  Push debounce: {PUSH_DEBOUNCE_SECONDS}s")
 
     ready = preflight(eligible)
     if not ready:
         print("Nothing ready to scan. Set up the prerequisites above and rerun.")
         return 1
-    print(f"Starting scan loop with: {', '.join(c.upper() for c in ready)}")
-    print("Ctrl+C to stop cleanly.\n")
 
-    def _push_results():
-        """Push local scan results to GitHub (merge + commit + push)."""
-        try:
-            log.info("Pushing local results to GitHub...")
-            r = subprocess.run(
-                ["bash", "scripts/push_local.sh", "auto"],
-                cwd=PROJECT_ROOT, capture_output=True, text=True,
-            )
-            for line in (r.stdout + r.stderr).splitlines():
-                if line.strip():
-                    log.info("  [push] %s", line)
-        except Exception as exc:
-            log.warning("push_local.sh failed: %s", exc)
+    init_db()
 
-    consecutive_failures = 0
-    # canton → earliest time it may be picked again (rate-limit cooldown)
-    cooldown: dict[str, float] = {}
+    print(f"\nStarting {len(ready)} parallel scanner(s): "
+          f"{', '.join(c.upper() for c in ready)}")
+    print("Ctrl+C to stop all scanners cleanly.\n")
 
-    def _next_midnight_bern() -> float:
-        tz = zoneinfo.ZoneInfo("Europe/Zurich")
-        tomorrow = datetime.date.today() + datetime.timedelta(days=1)
-        return datetime.datetime(tomorrow.year, tomorrow.month, tomorrow.day,
-                                 tzinfo=tz).timestamp()
+    stop_event = threading.Event()
+    push_lock  = threading.Lock()
+    last_push: list[float] = [0.0]
 
-    # canton → (token_file, token_endpoint, client_id)
-    _TOKEN_META: dict[str, tuple[pathlib.Path, str, str]] = {
-        "be": (
-            pathlib.Path.home() / ".herrenlos_scanner" / "be_token.json",
-            "https://sso.be.ch/auth/realms/a51-grudis-public-agov"
-            "/protocol/openid-connect/token",
-            "intercapi-public-client",
-        ),
-        "vs": (
-            pathlib.Path.home() / ".herrenlos_scanner" / "vs_token.json",
-            "https://sso.apps.vs.ch/auth/realms/etatvs"
-            "/protocol/openid-connect/token",
-            "capitastra-public-client",
-        ),
-    }
+    threads: list[threading.Thread] = []
+    for canton in ready:
+        t = threading.Thread(
+            target=_canton_loop,
+            args=(canton, stop_event, push_lock, last_push),
+            name=f"scanner-{canton.upper()}",
+            daemon=True,
+        )
+        t.start()
+        threads.append(t)
 
-    def _keepalive_token(canton: str) -> None:
-        """Silently refresh the stored token so the session doesn't idle-expire."""
-        meta = _TOKEN_META.get(canton)
-        if not meta:
-            return
-        token_file, token_ep, client_id = meta
-        if not token_file.exists():
-            return
-        try:
-            cached = json.loads(token_file.read_text())
-            refresh_token = cached.get("refresh_token")
-            if not refresh_token:
-                return
-            body = urllib.parse.urlencode({
-                "grant_type":    "refresh_token",
-                "client_id":     client_id,
-                "refresh_token": refresh_token,
-            }).encode()
-            req = urllib.request.Request(token_ep, data=body,
-                                         method="POST")
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                data = json.loads(resp.read())
-            if "access_token" not in data:
-                log.warning("%s keepalive: refresh failed — %s",
-                            canton.upper(), data.get("error", "unknown"))
-                return
-            cached["access_token"] = data["access_token"]
-            cached["expires_at"]   = time.time() + data.get("expires_in", 300)
-            if "refresh_token" in data:
-                cached["refresh_token"] = data["refresh_token"]
-            token_file.write_text(json.dumps(cached))
-            log.debug("%s keepalive: token refreshed OK", canton.upper())
-        except Exception as exc:
-            log.warning("%s keepalive: %s", canton.upper(), exc)
-
-    KEEPALIVE_INTERVAL = 900  # 15 min — well within any Keycloak idle timeout
-
-    while True:
-        try:
-            now = time.time()
-            available = [c for c in ready if now >= cooldown.get(c, 0)]
-            if not available:
-                next_up = min(cooldown.values())
-                wait = int(next_up - now) + 1
-                resume = datetime.datetime.fromtimestamp(next_up).strftime("%H:%M")
-                log.info("All cantons in cooldown — sleeping until %s "
-                         "(keepalive every %ds).", resume, KEEPALIVE_INTERVAL)
-                # Sleep in short chunks, refreshing tokens so sessions don't
-                # idle-expire during the overnight cooldown.
-                deadline = next_up + 1
-                while time.time() < deadline:
-                    chunk = min(KEEPALIVE_INTERVAL, deadline - time.time())
-                    if chunk > 0:
-                        time.sleep(chunk)
-                    for c in cooldown:
-                        _keepalive_token(c)
-                continue
-
-            canton = pick_canton(available)
-            if canton is None:
-                log.error("No eligible cantons remain — exiting.")
-                return 2
-
-            rc, tail = run_canton(canton)
-            if rc == 0:
-                # Detect 429 circuit-breaker exit — impose cooldown so the
-                # loop doesn't immediately re-pick the same blocked canton.
-                if "rate-limiting" in tail or "consecutive 429" in tail or "quota exhausted" in tail:
-                    until = _next_midnight_bern()
-                    cooldown[canton] = until
-                    resume = datetime.datetime.fromtimestamp(until).strftime("%H:%M")
-                    log.info("%s rate-limited — daily quota exhausted. "
-                             "Cooling down until midnight (%s).",
-                             canton.upper(), resume)
-
-                # Detect login-window timeout: scanner opened the browser but
-                # no login happened within 3 min. Scanner exits rc=0 (it just
-                # returns early), so we can't rely on the exit code.
-                # Two complementary guards — both route to the same "skip" action:
-                #  1. Keyword check (tail content).
-                #  2. Structural check: BE/VS require a token → they also enumerate
-                #     parcels (be.py caches quick enum).  If parcel_enum is STILL
-                #     empty after a clean exit, login never completed.
-                elif _is_login_failed(canton, tail):
-                    # Login window expired — send push so the user can tap to
-                    # start BE/VS independently via start_<canton>_scan.command.
-                    # Put the canton in cooldown for 2 h so the loop keeps
-                    # scanning other cantons (VS/FR) without burning 3 min on
-                    # BE every rotation. Canton stays in `ready`; it re-enters
-                    # rotation naturally once the cooldown expires.
-                    _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
-                    notify(
-                        title=f"Herrenlos — {canton.upper()} login needed",
-                        message=(f"Log in to {canton.upper()} then tap to scan"),
-                        sound=True,
-                        execute=f"open '{_ln}'" if _ln.exists() else None,
-                    )
-                    cooldown_secs = 2 * 3600  # 2 hours
-                    cooldown[canton] = time.time() + cooldown_secs
-                    resume_str = datetime.datetime.fromtimestamp(
-                        cooldown[canton]).strftime("%H:%M")
-                    log.warning("%s login timed out — cooldown until %s. "
-                                "Tap the push notification to scan BE now.",
-                                canton.upper(), resume_str)
-                    consecutive_failures = 0
-                    continue
-
-                else:
-                    log.info("%s scan exited cleanly. Sleeping %ds.",
-                             canton.upper(), INTER_CANTON_DELAY_SECONDS)
-                consecutive_failures = 0
-                # Push local results to GitHub after every successful canton
-                # rotation so CI data and local data stay in sync continuously
-                # (not just when scan-loop.sh restarts hours later).
-                _push_results()
-                time.sleep(INTER_CANTON_DELAY_SECONDS)
-                continue
-
-            consecutive_failures += 1
-            backoff = min(RETRY_BASE_SECONDS * consecutive_failures, RETRY_MAX_SECONDS)
-
-            if looks_like_auth_failure(canton, tail):
-                # Token likely expired. Notify the user with sound, then offer
-                # to launch the interactive re-auth flow right now. If they
-                # decline (or there's no TTY), skip this canton for the rest
-                # of this run; preflight will catch it on next startup.
-                _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
-                notify(
-                    title="Herrenlos Scanner — re-login needed",
-                    message=(f"{canton.upper()} token expired. "
-                             f"Tap to open Terminal — log in, scan resumes automatically."),
-                    sound=True,
-                    execute=f"open '{_ln}'" if _ln.exists() else None,
-                )
-                cfg = PREFLIGHT_CHECKS.get(canton, {})
-                setup_cmd = cfg.get("setup_cmd")
-                offered_reauth = False
-                if setup_cmd is not None and sys.stdin.isatty():
+    def _shutdown(signum=None, frame=None) -> None:
+        """Signal handler: stop all threads and terminate active subprocesses."""
+        log.info("Signal received — stopping all scanner threads...")
+        stop_event.set()
+        # Best-effort terminate: if the lock is held, skip rather than deadlock.
+        if _active_procs_lock.acquire(blocking=False):
+            try:
+                for p in list(_active_procs.values()):
                     try:
-                        print()
-                        print(f"  {canton.upper()} appears to need re-authentication.")
-                        print(f"  Setup: {cfg.get('setup_note', '')}")
-                        answer = input(f"  Re-auth {canton.upper()} now? "
-                                       f"[Y/n/skip] ").strip().lower()
-                    except EOFError:
-                        answer = "skip"
-                    if answer in ("", "y", "yes"):
-                        rc2 = subprocess.run(setup_cmd, cwd=PROJECT_ROOT).returncode
-                        ok, msg = cfg["check"]()
-                        offered_reauth = True
-                        if ok:
-                            log.info("%s re-auth complete — %s", canton.upper(), msg)
-                            consecutive_failures = 0
-                            continue   # back to picker; canton still in `ready`
-                        log.warning("%s re-auth attempt failed (rc=%d). Skipping for this run.",
-                                    canton.upper(), rc2)
-                if not offered_reauth:
-                    print(f"\n  Auto-skipping {canton.upper()} (no TTY or user declined).")
-                    print(f"  To re-enable, rerun this script and complete the preflight.\n")
-                # Remove the offender from the eligible set so the loop doesn't
-                # immediately hit the same auth wall again.
-                ready = [c for c in ready if c != canton]
-                if not ready:
-                    log.error("All eligible cantons require re-auth — exiting.")
-                    return 3
-                consecutive_failures = 0
-                continue
+                        p.terminate()
+                    except Exception:
+                        pass
+            finally:
+                _active_procs_lock.release()
 
-            log.warning("%s scan exited rc=%d (failure #%d) — sleeping %ds before next pick",
-                        canton.upper(), rc, consecutive_failures, backoff)
-            time.sleep(backoff)
+    signal.signal(signal.SIGTERM, _shutdown)
 
-        except KeyboardInterrupt:
-            log.info("Interrupted — exiting cleanly.")
-            return 0
-        except Exception as e:
-            consecutive_failures += 1
-            backoff = min(RETRY_BASE_SECONDS * consecutive_failures, RETRY_MAX_SECONDS)
-            log.exception("Loop error: %s — sleeping %ds", e, backoff)
-            time.sleep(backoff)
+    try:
+        # Main thread just monitors. Worker threads do all the work.
+        while not stop_event.is_set() and any(t.is_alive() for t in threads):
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print()
+        _shutdown()
+
+    # Give threads time to notice stop_event and finish their current line
+    for t in threads:
+        t.join(timeout=15)
+
+    log.info("All scanners stopped.")
+    return 0
 
 
 if __name__ == "__main__":
