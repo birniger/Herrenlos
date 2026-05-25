@@ -253,13 +253,23 @@ def upsert_parcel(conn, data: dict):
              :raw_response, :error)
         ON CONFLICT(canton, bfs_nr, parcel_nr) DO UPDATE SET
             egrid           = excluded.egrid,
-            owner           = excluded.owner,
-            owner_address   = excluded.owner_address,
-            is_herrenlos    = excluded.is_herrenlos,
-            herrenlos_type  = excluded.herrenlos_type,
-            claim_possible  = excluded.claim_possible,
-            raw_response    = excluded.raw_response,
-            error           = excluded.error,
+            -- Only overwrite ownership fields when the new scan produced a
+            -- definitive result (is_herrenlos IS NOT NULL).  A session error /
+            -- transient failure (is_herrenlos = NULL) must never erase a
+            -- previously confirmed herrenlos=1 or herrenlos=0 finding.
+            owner           = CASE WHEN excluded.is_herrenlos IS NOT NULL
+                                   THEN excluded.owner          ELSE owner          END,
+            owner_address   = CASE WHEN excluded.is_herrenlos IS NOT NULL
+                                   THEN excluded.owner_address  ELSE owner_address  END,
+            is_herrenlos    = CASE WHEN excluded.is_herrenlos IS NOT NULL
+                                   THEN excluded.is_herrenlos   ELSE is_herrenlos   END,
+            herrenlos_type  = CASE WHEN excluded.is_herrenlos IS NOT NULL
+                                   THEN excluded.herrenlos_type ELSE herrenlos_type END,
+            claim_possible  = CASE WHEN excluded.is_herrenlos IS NOT NULL
+                                   THEN excluded.claim_possible ELSE claim_possible END,
+            raw_response    = CASE WHEN excluded.is_herrenlos IS NOT NULL
+                                   THEN excluded.raw_response   ELSE raw_response   END,
+            error           = excluded.error,   -- always record the latest attempt
             scanned_at      = CURRENT_TIMESTAMP
     """, data)
     conn.commit()
