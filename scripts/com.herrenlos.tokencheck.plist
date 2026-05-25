@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Herrenlos token health-check — managed by install-tokencheck.sh -->
+    <!-- Runs check_tokens.py every morning at 08:57.                    -->
+    <!-- Fires a clickable macOS notification if BE or VS tokens expired. -->
+    <!-- Tapping the notification opens Terminal and starts the scanner.  -->
+
+    <key>Label</key>
+    <string>com.herrenlos.tokencheck</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__PYTHON__</string>
+        <string>__CHECK_TOKENS__</string>
+        <string>--notify</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__PROJECT_DIR__</string>
+
+    <!-- Fire every morning at 08:57 local time -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>8</integer>
+        <key>Minute</key>
+        <integer>57</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/herrenlos-tokencheck.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/herrenlos-tokencheck.err</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>__HOME__</string>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
+    </dict>
+</dict>
+</plist>

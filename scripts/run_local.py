@@ -280,13 +280,37 @@ def pick_canton(eligible: list[str]) -> str | None:
 
 # ── macOS desktop notifications ──────────────────────────────────────────────
 
-def notify(title: str, message: str, sound: bool = False) -> None:
-    """Show a macOS desktop notification. Silently no-ops on other OSes."""
+def notify(title: str, message: str, sound: bool = False,
+           execute: str | None = None) -> None:
+    """
+    Show a macOS desktop notification. Silently no-ops on other OSes.
+
+    With terminal-notifier installed (brew install terminal-notifier):
+      - *execute* is a shell command run when the user taps the notification.
+      - Typically used to open a Terminal window and restart a scanner.
+    Falls back to a plain osascript banner (no click action) if
+    terminal-notifier is not available.
+    """
     print(f"\n🔔 {title}: {message}\n", flush=True)
+
+    # Prefer terminal-notifier — supports a click action via -execute
+    tn = shutil.which("terminal-notifier")
+    if tn:
+        cmd = [tn, "-title", title, "-message", message]
+        if sound:
+            cmd += ["-sound", "Glass"]
+        if execute:
+            cmd += ["-execute", execute]
+        try:
+            subprocess.run(cmd, check=False)
+            return
+        except Exception as e:
+            log.debug("terminal-notifier failed: %s", e)
+
+    # Fallback: basic osascript banner (no click action)
     osascript = shutil.which("osascript")
     if not osascript:
         return
-    # Escape double-quotes in the message
     msg = message.replace('"', '\\"')
     ttl = title.replace('"', '\\"')
     script = f'display notification "{msg}" with title "{ttl}"'
@@ -585,11 +609,13 @@ def main() -> int:
                 #     parcels (be.py caches quick enum).  If parcel_enum is STILL
                 #     empty after a clean exit, login never completed.
                 elif _is_login_failed(canton, tail):
+                    _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
                     notify(
                         title=f"Herrenlos — {canton.upper()} login not completed",
-                        message=(f"{canton.upper()} login window timed out (no login "
-                                 f"within 3 min). Skipping for this run."),
+                        message=(f"{canton.upper()} login timed out. "
+                                 f"Tap to open Terminal and try again."),
                         sound=True,
+                        execute=f"open '{_ln}'" if _ln.exists() else None,
                     )
                     log.warning("%s login timed out — skipping for this run. "
                                 "Restart scan-loop.sh to try again.", canton.upper())
@@ -615,11 +641,13 @@ def main() -> int:
                 # to launch the interactive re-auth flow right now. If they
                 # decline (or there's no TTY), skip this canton for the rest
                 # of this run; preflight will catch it on next startup.
+                _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
                 notify(
                     title="Herrenlos Scanner — re-login needed",
-                    message=(f"{canton.upper()} scan exited with what looks like "
-                             f"an auth failure. Re-authentication needed."),
+                    message=(f"{canton.upper()} token expired. "
+                             f"Tap to open Terminal — log in, scan resumes automatically."),
                     sound=True,
+                    execute=f"open '{_ln}'" if _ln.exists() else None,
                 )
                 cfg = PREFLIGHT_CHECKS.get(canton, {})
                 setup_cmd = cfg.get("setup_cmd")

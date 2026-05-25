@@ -54,9 +54,10 @@ jobs:
       # ur — geo.ur.ch blocks datacenter IPs ("access denied for your country")
       # bs — cmd_bs is metadata-only (no owner names, no Type B); use bs-public locally
       # sh — rotated via WEBSHARE_PROXY_LIST (10 proxies × 90 q = 900/day)
-      # ne — Playwright + Altcha; 10 proxies × 45 q = 450/day
       # gr — pure requests; 10 proxies × 9 q = 90/day (slow but passive)
-      ELIGIBLE_CANTONS: "ju sz sh ne gr"
+      # ne — REMOVED from CI: sitn.ne.ch blocks datacenter proxies; NE can only
+      #       run from a residential IP. Use: python3 main.py ne  (laptop only)
+      ELIGIBLE_CANTONS: "ju sz sh gr"
       # Optional: BS needs a free API key (one-time registration at api.geo.bs.ch).
       BS_API_KEY: ${{ secrets.BS_API_KEY }}
       # Webshare datacenter proxy list for quota-rotating cantons.
