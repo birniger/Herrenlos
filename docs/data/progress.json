@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-05-26T08:18:02+00:00",
+  "generated_at": "2026-05-26T09:25:07+00:00",
   "cantons": [
     {
       "canton": "BE",
       "enumerated": 426009,
-      "scanned": 83,
+      "scanned": 95,
       "herrenlos": 0,
-      "errors": 4,
+      "errors": 11,
       "percent": 0.0,
       "estimated_total": 426009,
-      "last_scan_at": "2026-05-25 20:20:21",
+      "last_scan_at": "2026-05-25 22:04:07",
       "access": "own_account",
       "test_group": "own_login",
       "rate_limit": "per-account (personal AGOV identity) \u2014 CONFIRMED per-account (empirically verified: fresh browser session + new token still returned 429, proving the limit is on the account, not the IP). Limit appears to be on the person/owner-name resolution step (GET /api/gb/person/master), not on parcel lookups. Threshold count unknown. access_token 5min / refresh_token 30min rotating; session alive while running, re-auth after >~30min gap; IP rotation cannot help \u2014 account is the hard constraint"
@@ -17,12 +17,12 @@
     {
       "canton": "FR",
       "enumerated": 147148,
-      "scanned": 440,
+      "scanned": 397,
       "herrenlos": 23,
-      "errors": 5157,
+      "errors": 5149,
       "percent": 0.3,
       "estimated_total": 147148,
-      "last_scan_at": "2026-05-25 20:39:39",
+      "last_scan_at": "2026-05-25 22:15:11",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -45,10 +45,10 @@
       "enumerated": 225843,
       "scanned": 103,
       "herrenlos": 2,
-      "errors": 2447,
+      "errors": 74,
       "percent": 0.0,
       "estimated_total": 225843,
-      "last_scan_at": "2026-05-26 08:18:02",
+      "last_scan_at": "2026-05-26 05:53:26",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "10 req/day/IP"
@@ -107,23 +107,23 @@
     },
     {
       "canton": "VS",
-      "enumerated": 0,
+      "enumerated": 316772,
       "scanned": 21,
       "herrenlos": 0,
-      "errors": 4,
+      "errors": 6,
       "percent": 0.0,
-      "estimated_total": 316000,
-      "last_scan_at": "2026-05-25 19:49:51",
+      "estimated_total": 316772,
+      "last_scan_at": "2026-05-25 22:03:14",
       "access": "own_account",
       "test_group": "own_login",
       "rate_limit": "SwissID session, scan endpoints appear unlimited. VS uses SwissID (login.swissid.ch) \u2014 NOT AGOV; BE and VS use different identity providers. The ICP-extract endpoint is 10/day but the scanner deliberately avoids it. Main scan endpoints (grundstueck + eigentum JSON API) show no per-query quota. IP rotation is irrelevant: SwissID 2FA means any session is bound to a personal account, but there is no quota to route around. access_token ~5min / refresh_token rotating; re-auth needed after any gap >~30min."
     }
   ],
   "totals": {
-    "enumerated": 974615,
-    "scanned": 15458,
+    "enumerated": 1383257,
+    "scanned": 15527,
     "herrenlos": 27,
-    "errors": 8952,
+    "errors": 6480,
     "cantons": 9
   }
 }
