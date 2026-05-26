@@ -10,10 +10,10 @@ STATUS (2026-05-17): THREE BUGS FIXED — scanner is ready to run but needs
   To run:
     1. Set ANTHROPIC_API_KEY in .env  (or export it before running)
     2. Clear the parcel_enum cache first:
-         sqlite3 herrenlos.db "DELETE FROM parcel_enum WHERE canton='BL'"
+         sqlite3 enum.db "DELETE FROM parcel_enum WHERE canton='BL'"
     3. Run:  python main.py bl --limit 10
 
-- EGRID enumeration : swisstopo identify API grid scan (step=200m, ~1h one-time)
+- EGRID enumeration : geodienste.ch WFS (wfs_enum.py) — ~2 min, 100% EGRID coverage.
                       Cached in parcel_enum table — only runs once ever.
 
 - Owner lookup      : GET https://eigentumsauskunft.geo.bl.ch/{EGRID}
@@ -73,76 +73,7 @@ log = logging.getLogger("BL")
 
 BASE_URL           = "https://eigentumsauskunft.geo.bl.ch"
 OWNER_URL          = f"{BASE_URL}/{{egrid}}"
-SWISSTOPO_IDENTIFY = "https://api3.geo.admin.ch/rest/services/api/MapServer/identify"
-UA                 = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
-
-# BL LV95 bounding box (~1,800 km²)
-BL_EMIN, BL_EMAX = 2_600_000, 2_645_000
-BL_NMIN, BL_NMAX = 1_255_000, 1_290_000
-BL_GRID_STEP     = 200   # metres — ~39k grid points, ~1h
-
-
-# ── Parcel enumeration via swisstopo ─────────────────────────────────────────
-
-def enumerate_parcels_swisstopo(
-        emin=BL_EMIN, emax=BL_EMAX,
-        nmin=BL_NMIN, nmax=BL_NMAX,
-        step=BL_GRID_STEP) -> list[dict]:
-    """Grid scan — returns list of {egrid, bfs_nr, parcel_nr, commune} dicts."""
-    seen:    set[str]  = set()
-    parcels: list[dict] = []
-    session = requests.Session()
-    session.headers["User-Agent"] = UA
-
-    e_range = range(emin, emax + 1, step)
-    n_range = range(nmin, nmax + 1, step)
-    total   = len(e_range) * len(n_range)
-    checked = 0
-
-    log.info("BL swisstopo grid scan: %d × %d = %d points at %dm",
-             len(e_range), len(n_range), total, step)
-
-    for e in e_range:
-        for n in n_range:
-            checked += 1
-            try:
-                r = session.get(SWISSTOPO_IDENTIFY, params={
-                    "geometry":       f"{e},{n}",
-                    "geometryType":   "esriGeometryPoint",
-                    "layers":         "all:ch.swisstopo-vd.amtliche-vermessung",
-                    "tolerance":      0,
-                    "mapExtent":      "0,0,1,1",
-                    "imageDisplay":   "1,1,96",
-                    "returnGeometry": "false",
-                    "lang":           "de",
-                    "sr":             2056,
-                }, timeout=10)
-
-                if r.status_code != 200:
-                    continue
-
-                for feat in r.json().get("results", []):
-                    attrs = feat.get("attributes", {})
-                    if attrs.get("ak", "").upper() != "BL":
-                        continue
-                    eg = attrs.get("egris_egrid", "")
-                    if eg and eg not in seen:
-                        seen.add(eg)
-                        parcels.append({
-                            "egrid":     eg,
-                            "bfs_nr":    str(attrs.get("bfsnr", "")),
-                            "parcel_nr": str(attrs.get("number", "")),
-                            "commune":   attrs.get("label", ""),
-                        })
-            except Exception:
-                pass
-
-            if checked % 2000 == 0:
-                log.info("Grid %d/%d  unique BL parcels=%d", checked, total, len(parcels))
-            time.sleep(0.1)
-
-    log.info("Grid scan complete: %d unique BL parcels", len(parcels))
-    return parcels
+UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 
 
 # ── CAPTCHA solving ──────────────────────────────────────────────────────────

@@ -10,8 +10,8 @@ FR scanner — Fribourg
                                 for a parcel that EXISTS in the official cadaster
     Type 1 (dereliktion):      valid full response, table.proprio exists but
                                 no owner name found
-- Rate limit        : 1 query per JSESSIONID → rotate session every query
-- Throughput        : ~600-800 queries/hr (QUERIES_PER_SESSION=3)
+- Rate limit        : session creation rate-limited ~1/12s per IP; rotate every QUERIES_PER_SESSION queries
+- Throughput        : ~1,200 queries/hr (QUERIES_PER_SESSION=3, delay=0.3s)
 
 FR commune codes (selcom) format:  "{bfs_nr} FR{sector_code}"
 Full commune list fetched live from selectCommune.jsp on each session init.
@@ -30,7 +30,7 @@ from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, s
 from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
 from scanners.utils import (
     is_herrenlos_owner_text, claim_possible_for,
-    SWISSTOPO_IDENTIFY, DEFAULT_UA,
+    DEFAULT_UA,
 )
 
 log = logging.getLogger("FR")
@@ -41,94 +41,15 @@ COMMUNE  = f"{BASE}/selectCommune.jsp"
 QUERY    = f"{BASE}/v2TAffImmx01.jsp"
 UA       = DEFAULT_UA  # alias kept for call sites within this file; imported from utils
 
-# FR bounding box (LV95 / EPSG:2056)
-FR_EMIN, FR_EMAX = 2_556_000, 2_617_000
-FR_NMIN, FR_NMAX = 1_153_000, 1_213_000
-FR_GRID_STEP     = 200   # metres — ~93k grid points, one-time enumeration
-
 NOT_FOUND_NEEDLE  = "INFORMATION INTROUVABLE"
 NOT_FOUND_MAX_B   = 800    # bytes; valid response is ~8–10 KB
 RATE_LIMIT_NEEDLE = "dépassement de la limite"
-QUERIES_PER_SESSION = 3    # 3 queries per JSESSIONID → ~2-3x throughput vs 1
-# Observed 2026-05-18: FR portal rate-limits session creation (~1 every 12s).
-# QUERIES_PER_SESSION=1 gave ~300/hr because new_session() overhead (~4 s of
-# HTTP round-trips) was paid for every single parcel. At QPS=3 the overhead
-# is amortised across 3 parcels. ~27% of 2nd/3rd queries get session_exhausted;
-# the scanner retries once with a fresh session. Even with retries this yields
-# ~600-800/hr. Parcels that fail both attempts are stored with is_herrenlos=NULL
-# and error='session_exhausted'; the next run picks them up automatically.
+QUERIES_PER_SESSION = 3    # 3 queries per JSESSIONID — empirically ~2-3 succeed before exhaustion
+# FR portal rate-limits session creation (~1 every 12s per IP).  new_session()
+# takes ~4 s.  ~27% of 2nd/3rd queries return session_exhausted; scanner retries
+# once with a fresh session.  Parcels that fail both attempts are stored with
+# is_herrenlos=NULL and error='session_exhausted'; next run picks them up.
 # 2-3 scan passes converge to ~100% coverage.
-
-
-# ── Parcel enumeration via swisstopo ─────────────────────────────────────────
-
-def enumerate_parcels_swisstopo(
-        emin=FR_EMIN, emax=FR_EMAX,
-        nmin=FR_NMIN, nmax=FR_NMAX,
-        step=FR_GRID_STEP) -> list[dict]:
-    """
-    Grid scan using swisstopo federal identify API to enumerate real FR parcels.
-    Returns list of {bfs_nr, parcel_nr, commune} dicts (only parcels that
-    actually exist in the official cadaster).
-
-    One-time cost: ~93k requests at 200m step ≈ 2.5h.
-    Results are stored in the DB so subsequent runs skip already-scanned parcels.
-    """
-    seen:    set[tuple] = set()
-    parcels: list[dict] = []
-    session = requests.Session()
-
-    e_range = range(emin, emax + 1, step)
-    n_range = range(nmin, nmax + 1, step)
-    total   = len(e_range) * len(n_range)
-    checked = 0
-
-    log.info("FR swisstopo grid scan: %d × %d = %d points at %dm step",
-             len(e_range), len(n_range), total, step)
-
-    for e in e_range:
-        for n in n_range:
-            checked += 1
-            try:
-                r = session.get(SWISSTOPO_IDENTIFY, params={
-                    "geometry":      f"{e},{n}",
-                    "geometryType":  "esriGeometryPoint",
-                    "layers":        "all:ch.swisstopo-vd.amtliche-vermessung",
-                    "tolerance":     0,
-                    "mapExtent":     "0,0,1,1",
-                    "imageDisplay":  "1,1,96",
-                    "returnGeometry": "false",
-                    "lang":          "de",
-                    "sr":            2056,
-                }, timeout=10)
-
-                if r.status_code != 200:
-                    continue
-
-                for feat in r.json().get("results", []):
-                    attrs = feat.get("attributes", {})
-                    if attrs.get("ak", "").upper() != "FR":
-                        continue
-                    key = (str(attrs.get("bfsnr", "")), str(attrs.get("number", "")))
-                    if key not in seen:
-                        seen.add(key)
-                        parcels.append({
-                            "bfs_nr":    str(attrs.get("bfsnr", "")),
-                            "parcel_nr": str(attrs.get("number", "")),
-                            "commune":   attrs.get("label", ""),
-                            # Capture EGRID so herrenlos parcels can be geocoded
-                            # for the website map (otherwise lat/lng are NULL).
-                            "egrid":     attrs.get("egris_egrid", ""),
-                        })
-            except Exception:
-                pass
-
-            if checked % 2000 == 0:
-                log.info("Grid %d/%d  unique FR parcels=%d", checked, total, len(parcels))
-            time.sleep(0.1)   # swisstopo fair-use
-
-    log.info("Grid scan complete: %d unique FR parcels found", len(parcels))
-    return parcels
 
 
 # ── Session management ───────────────────────────────────────────────────────
@@ -269,16 +190,17 @@ def check_owner(session: requests.Session, xv1: str,
 def scan(communes: list[str] | None = None,
          limit: int | None = None,
          skip_existing: bool = True,
-         delay: float = 1.5):
+         delay: float = 0.3):
     """
     Scan FR parcels for herrenlos detection.
 
-    Enumeration: swisstopo identify API grid scan (real cadaster parcels only).
-    This replaces sequential number guessing and eliminates false positives.
+    Enumeration: geodienste.ch WFS (wfs_enum.py) — ~2 min, 100% EGRID coverage.
+    Cached in parcel_enum; subsequent runs skip re-enumeration.
 
     communes  : list of selcom values to restrict scan (None = all FR communes)
     limit     : stop after N queries
-    delay     : seconds between queries
+    delay     : seconds between queries (0.3s optimises throughput; session
+                creation rate-limit dominates, not per-query delay)
     """
     init_db()
 
