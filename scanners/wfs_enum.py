@@ -56,6 +56,20 @@ _PATTERNS = {
 _MEMBER_RE  = re.compile(r"<wfs:member>(.*?)</wfs:member>", re.DOTALL)
 _MATCHED_RE = re.compile(r'numberMatched="([^"]+)"')
 _RETURN_RE  = re.compile(r'numberReturned="([^"]+)"')
+_POS_LIST_RE = re.compile(r'<gml:posList[^>]*>([^<]+)</gml:posList>')
+
+
+def _centroid_lv95(pos_str: str) -> tuple[int, int] | None:
+    """Return (east, north) centroid in LV95 integers from a gml:posList string."""
+    try:
+        nums = [float(x) for x in pos_str.split()]
+        if len(nums) < 2:
+            return None
+        easts  = nums[0::2]
+        norths = nums[1::2]
+        return (round(sum(easts) / len(easts)), round(sum(norths) / len(norths)))
+    except Exception:
+        return None
 
 
 def _canton_filter(canton: str) -> str:
@@ -73,7 +87,7 @@ def _canton_filter(canton: str) -> str:
 
 
 def _parse_features(xml: str) -> Iterator[dict]:
-    """Yield {bfs_nr, parcel_nr, egrid, commune, flaeche} dicts from one WFS page."""
+    """Yield {bfs_nr, parcel_nr, egrid, commune, flaeche, extra} dicts from one WFS page."""
     for member in _MEMBER_RE.finditer(xml):
         body = member.group(1)
         bfs    = _PATTERNS["bfs"].search(body)
@@ -83,12 +97,15 @@ def _parse_features(xml: str) -> Iterator[dict]:
         flaeche = _PATTERNS["flaeche"].search(body)
         if not (bfs and nummer):
             continue   # malformed; skip
+        pos_m = _POS_LIST_RE.search(body)
+        coords = _centroid_lv95(pos_m.group(1)) if pos_m else None
         yield {
             "bfs_nr":    bfs.group(1),
             "parcel_nr": nummer.group(1),
             "commune":   ident.group(1) if ident else "",
             "egrid":     egrid.group(1) if egrid else "",
             "flaeche":   flaeche.group(1) if flaeche else None,
+            "extra":     {"east": coords[0], "north": coords[1]} if coords else None,
         }
 
 

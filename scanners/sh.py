@@ -1,9 +1,9 @@
 """
 SH scanner — Schaffhausen
 ==========================
-- EGRID enumeration : swisstopo identify API grid scan (step=500m, ~15min one-time).
-                      Each parcel's hit coordinate is cached in parcel_enum.extra
-                      as {"east": E, "north": N} — needed for the owner lookup.
+- EGRID enumeration : geodienste.ch WFS (wfs_enum.py) — includes LV95 centroid coords
+                      needed for owner API. Cached in parcel_enum.extra as
+                      {"east": E, "north": N}.
 
 - Token             : POST https://api.geo.sh.ch/token
                       grant_type=client_credentials with fresh random UUID client_id
@@ -51,7 +51,7 @@ from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, s
 from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
 from scanners.utils import (
     is_herrenlos_owner_text, claim_possible_for, load_proxies,
-    SWISSTOPO_IDENTIFY, DEFAULT_UA,
+    DEFAULT_UA,
 )
 
 log = logging.getLogger("SH")
@@ -80,81 +80,6 @@ PERSON_UUID_LOOKUP_URL = (
 )
 
 UA = DEFAULT_UA  # alias kept for call sites within this file; imported from utils
-
-# SH LV95 bounding box (298 km², northernmost Swiss canton)
-SH_EMIN, SH_EMAX = 2_668_000, 2_715_000
-SH_NMIN, SH_NMAX = 1_274_000, 1_306_000
-SH_GRID_STEP = 500   # metres → ~94×64 = ~6000 grid points, one-time ~15min
-
-
-# ── Parcel enumeration via swisstopo ─────────────────────────────────────────
-
-def enumerate_parcels_swisstopo(
-        emin=SH_EMIN, emax=SH_EMAX,
-        nmin=SH_NMIN, nmax=SH_NMAX,
-        step=SH_GRID_STEP) -> list[dict]:
-    """
-    Grid scan using swisstopo federal identify API.
-    Returns list of {egrid, bfs_nr, parcel_nr, commune, extra} dicts.
-    extra = {"east": E, "north": N} — the grid point that hit the parcel,
-    required for the SH coordinate-based owner lookup.
-    One-time cost (~15min). Results cached in parcel_enum DB table.
-    """
-    seen:    set[str]  = set()
-    parcels: list[dict] = []
-    session = requests.Session()
-    session.headers["User-Agent"] = UA
-
-    e_range = range(emin, emax + 1, step)
-    n_range = range(nmin, nmax + 1, step)
-    total   = len(e_range) * len(n_range)
-    checked = 0
-
-    log.info("SH swisstopo grid scan: %d × %d = %d points at %dm step",
-             len(e_range), len(n_range), total, step)
-
-    for e in e_range:
-        for n in n_range:
-            checked += 1
-            try:
-                r = session.get(SWISSTOPO_IDENTIFY, params={
-                    "geometry":       f"{e},{n}",
-                    "geometryType":   "esriGeometryPoint",
-                    "layers":         "all:ch.swisstopo-vd.amtliche-vermessung",
-                    "tolerance":      0,
-                    "mapExtent":      "0,0,1,1",
-                    "imageDisplay":   "1,1,96",
-                    "returnGeometry": "false",
-                    "lang":           "de",
-                    "sr":             2056,
-                }, timeout=10)
-
-                if r.status_code != 200:
-                    continue
-
-                for feat in r.json().get("results", []):
-                    attrs = feat.get("attributes", {})
-                    if attrs.get("ak", "").upper() != "SH":
-                        continue
-                    eg = attrs.get("egris_egrid", "")
-                    if eg and eg not in seen:
-                        seen.add(eg)
-                        parcels.append({
-                            "egrid":     eg,
-                            "bfs_nr":    str(attrs.get("bfsnr", "")),
-                            "parcel_nr": str(attrs.get("number", "")),
-                            "commune":   attrs.get("label", ""),
-                            "extra":     {"east": e, "north": n},
-                        })
-            except Exception:
-                pass
-
-            if checked % 1000 == 0:
-                log.info("Grid %d/%d  unique SH parcels=%d", checked, total, len(parcels))
-            time.sleep(0.1)   # swisstopo fair-use
-
-    log.info("Grid scan complete: %d unique SH parcels", len(parcels))
-    return parcels
 
 
 # ── Token management ─────────────────────────────────────────────────────────
@@ -367,7 +292,8 @@ def scan(limit: int | None = None,
     """
     Scan SH parcels for herrenlos detection.
 
-    First run: ~15min swisstopo grid scan to enumerate ~9,000 parcels (cached).
+    First run: ~3 min WFS enumeration via geodienste.ch (wfs_enum.py), including
+    LV95 centroid coordinates required for the owner API.
     Subsequent runs: use cached list directly.
 
     Rate limit: 100 step-1 queries/day per IP (server-enforced 429).

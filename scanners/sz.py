@@ -1,7 +1,7 @@
 """
 SZ scanner — Schwyz
 ====================
-- EGRID enumeration : swisstopo identify API grid scan (confirmed working for SZ)
+- EGRID enumeration : geodienste.ch WFS (wfs_enum.py)
                       Cached in parcel_enum table — only runs once ever.
 - Owner lookup      : GET  https://service2.geo.sz.ch/ownership/captcha/access/{EGRID}.html
                       → Django simple_captcha form
@@ -28,7 +28,7 @@ from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, s
 from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
 from scanners.utils import (
     is_herrenlos_owner_text, claim_possible_for,
-    SWISSTOPO_IDENTIFY, DEFAULT_UA,
+    DEFAULT_UA,
 )
 
 log = logging.getLogger("SZ")
@@ -37,11 +37,6 @@ BASE_URL        = "https://service2.geo.sz.ch"
 OWNER_URL       = f"{BASE_URL}/ownership/captcha/access/{{egrid}}.html"
 CAPTCHA_IMG_URL = f"{BASE_URL}/dokumente/c/service/image/{{hash}}/"
 UA              = DEFAULT_UA  # alias kept for call sites within this file
-
-# SZ LV95 bounding box
-SZ_EMIN, SZ_EMAX = 2_676_000, 2_720_000
-SZ_NMIN, SZ_NMAX = 1_203_000, 1_237_000
-SZ_GRID_STEP     = 200  # metres — ~49k grid points, one-time
 
 
 # ── CAPTCHA solvers ───────────────────────────────────────────────────────────
@@ -123,73 +118,6 @@ def _solve_tesseract(png_bytes: bytes) -> str | None:
 
 def _solve_captcha(png_bytes: bytes) -> str | None:
     return _solve_ddddocr(png_bytes) or _solve_tesseract(png_bytes)
-
-
-# ── Parcel enumeration ────────────────────────────────────────────────────────
-
-def enumerate_parcels_swisstopo(
-        emin=SZ_EMIN, emax=SZ_EMAX,
-        nmin=SZ_NMIN, nmax=SZ_NMAX,
-        step=SZ_GRID_STEP) -> list[dict]:
-    """
-    Grid scan using swisstopo federal identify API.
-    SZ parcels are in the federal cadastral layer (confirmed: CH807740942289 found).
-    Returns list of {egrid, bfs_nr, parcel_nr, commune} dicts.
-    """
-    seen:    set[str]  = set()
-    parcels: list[dict] = []
-    session = requests.Session()
-    session.headers["User-Agent"] = UA
-
-    e_range = range(emin, emax + 1, step)
-    n_range = range(nmin, nmax + 1, step)
-    total   = len(e_range) * len(n_range)
-    checked = 0
-
-    log.info("SZ swisstopo grid scan: %d × %d = %d points at %dm step",
-             len(e_range), len(n_range), total, step)
-
-    for e in e_range:
-        for n in n_range:
-            checked += 1
-            try:
-                r = session.get(SWISSTOPO_IDENTIFY, params={
-                    "geometry":       f"{e},{n}",
-                    "geometryType":   "esriGeometryPoint",
-                    "layers":         "all:ch.swisstopo-vd.amtliche-vermessung",
-                    "tolerance":      0,
-                    "mapExtent":      "0,0,1,1",
-                    "imageDisplay":   "1,1,96",
-                    "returnGeometry": "false",
-                    "lang":           "de",
-                    "sr":             2056,
-                }, timeout=10)
-
-                if r.status_code != 200:
-                    continue
-
-                for feat in r.json().get("results", []):
-                    attrs = feat.get("attributes", {})
-                    if attrs.get("ak", "").upper() != "SZ":
-                        continue
-                    eg = attrs.get("egris_egrid", "")
-                    if eg and eg not in seen:
-                        seen.add(eg)
-                        parcels.append({
-                            "egrid":     eg,
-                            "bfs_nr":    str(attrs.get("bfsnr", "")),
-                            "parcel_nr": str(attrs.get("number", "")),
-                            "commune":   attrs.get("label", ""),
-                        })
-            except Exception:
-                pass
-
-            if checked % 5000 == 0:
-                log.info("Grid %d/%d  unique SZ parcels=%d", checked, total, len(parcels))
-            time.sleep(0.1)
-
-    log.info("Grid scan complete: %d unique SZ parcels", len(parcels))
-    return parcels
 
 
 # ── Owner check ───────────────────────────────────────────────────────────────
@@ -413,7 +341,7 @@ def scan(limit: int | None = None,
     """
     Scan SZ parcels for herrenlos detection.
 
-    First run: ~30min swisstopo grid scan to enumerate parcels (cached to DB).
+    First run: ~3 min WFS enumeration via geodienste.ch (wfs_enum.py).
     Subsequent runs: use cached list directly.
 
     limit               : stop after N owner queries (None = all)

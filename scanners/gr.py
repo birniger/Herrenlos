@@ -1,7 +1,7 @@
 """
 GR scanner — Graubünden
 ========================
-- EGRID enumeration : swisstopo identify API grid scan (step=500m, ~2h one-time)
+- EGRID enumeration : geodienste.ch WFS (wfs_enum.py)
                       Cached in parcel_enum table — only runs once ever.
 - Owner lookup      : GET https://lkgr.geogr.ch/terravis/egrid/{EGRID}
                       Returns JSON with owner data.
@@ -26,85 +26,13 @@ from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, s
 from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
 from scanners.utils import (
     is_herrenlos_owner_text, claim_possible_for, load_proxies,
-    SWISSTOPO_IDENTIFY, DEFAULT_UA,
+    DEFAULT_UA,
 )
 
 log = logging.getLogger("GR")
 
 TERRAVIS_URL = "https://lkgr.geogr.ch/terravis/egrid/{egrid}"
 UA           = DEFAULT_UA  # alias kept for call sites within this file
-
-# GR LV95 bounding box — largest Swiss canton
-GR_EMIN, GR_EMAX = 2_682_000, 2_834_000
-GR_NMIN, GR_NMAX = 1_111_000, 1_219_000
-GR_GRID_STEP     = 500   # metres — ~65k grid points, one-time ≈2h
-
-
-# ── Parcel enumeration via swisstopo ─────────────────────────────────────────
-
-def enumerate_parcels_swisstopo(
-        emin=GR_EMIN, emax=GR_EMAX,
-        nmin=GR_NMIN, nmax=GR_NMAX,
-        step=GR_GRID_STEP) -> list[dict]:
-    """
-    Grid scan using swisstopo federal identify API.
-    Returns list of {egrid, bfs_nr, parcel_nr, commune} dicts.
-    One-time cost (~2h). Results cached in parcel_enum DB table.
-    """
-    seen:    set[str]  = set()
-    parcels: list[dict] = []
-    session = requests.Session()
-    session.headers["User-Agent"] = UA
-
-    e_range = range(emin, emax + 1, step)
-    n_range = range(nmin, nmax + 1, step)
-    total   = len(e_range) * len(n_range)
-    checked = 0
-
-    log.info("GR swisstopo grid scan: %d × %d = %d points at %dm step",
-             len(e_range), len(n_range), total, step)
-
-    for e in e_range:
-        for n in n_range:
-            checked += 1
-            try:
-                r = session.get(SWISSTOPO_IDENTIFY, params={
-                    "geometry":       f"{e},{n}",
-                    "geometryType":   "esriGeometryPoint",
-                    "layers":         "all:ch.swisstopo-vd.amtliche-vermessung",
-                    "tolerance":      0,
-                    "mapExtent":      "0,0,1,1",
-                    "imageDisplay":   "1,1,96",
-                    "returnGeometry": "false",
-                    "lang":           "de",
-                    "sr":             2056,
-                }, timeout=10)
-
-                if r.status_code != 200:
-                    continue
-
-                for feat in r.json().get("results", []):
-                    attrs = feat.get("attributes", {})
-                    if attrs.get("ak", "").upper() != "GR":
-                        continue
-                    eg = attrs.get("egris_egrid", "")
-                    if eg and eg not in seen:
-                        seen.add(eg)
-                        parcels.append({
-                            "egrid":     eg,
-                            "bfs_nr":    str(attrs.get("bfsnr", "")),
-                            "parcel_nr": str(attrs.get("number", "")),
-                            "commune":   attrs.get("label", ""),
-                        })
-            except Exception:
-                pass
-
-            if checked % 5000 == 0:
-                log.info("Grid %d/%d  unique GR parcels=%d", checked, total, len(parcels))
-            time.sleep(0.1)   # swisstopo fair-use
-
-    log.info("Grid scan complete: %d unique GR parcels", len(parcels))
-    return parcels
 
 
 # ── Owner check ─────────────────────────────────────────────────────────────
@@ -324,7 +252,7 @@ def scan(limit: int | None = None,
     """
     Scan GR parcels for herrenlos detection.
 
-    First run: ~2h swisstopo grid scan to enumerate parcels (cached to DB).
+    First run: ~3 min WFS enumeration via geodienste.ch (wfs_enum.py).
     Subsequent runs: use cached list directly.
 
     Rate limit: 10 queries/day per IP.
