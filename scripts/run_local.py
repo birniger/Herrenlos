@@ -59,6 +59,7 @@ import json
 import logging
 import os
 import pathlib
+import re
 import shutil
 import signal
 import subprocess
@@ -461,6 +462,85 @@ def _next_midnight_bern() -> float:
                              tzinfo=tz).timestamp()
 
 
+# ── FR adaptive rate-limit backoff ────────────────────────────────────────────
+# The FR portal rate-limits session creation with a rolling window, not a hard
+# daily quota.  We discover the actual reset period automatically instead of
+# always waiting until midnight:
+#
+#   After quota exhaustion, parse how many parcels were scanned:
+#     • scanned >= FR_MIN_PRODUCTIVE  → portal was ready, we just hit the cap.
+#       Keep the same backoff — it converged on the real window.
+#     • scanned <  FR_MIN_PRODUCTIVE  → retried too soon, portal not ready yet.
+#       Double the backoff (exponential back-off).
+#   After a normal clean rotation (no quota hit) → reset backoff to minimum.
+#   Always cap at next midnight so we never sleep past the guaranteed daily reset.
+#
+# Convergence example (30 min base, real window = 90 min):
+#   Run 1 → 0 parcels → backoff 30→60 min
+#   Run 2 → 3 parcels → backoff 60→120 min
+#   Run 3 → 180 parcels → backoff stays 120 min  ← converged
+#   Run 4 → 175 parcels → backoff stays 120 min  ← stable
+
+_FR_BACKOFF_BASE      = 30 * 60    # 30 min starting point
+_FR_BACKOFF_MAX       = 4 * 3600   # 4 h hard cap (midnight takes over if sooner)
+_FR_MIN_PRODUCTIVE    = 50         # parcels scanned; below this = "retried too soon"
+_FR_BACKOFF_STATE_KEY = "fr_backoff_secs"
+
+
+def _fr_load_backoff() -> float:
+    """Load the persisted FR adaptive backoff (seconds). Defaults to base."""
+    try:
+        with _cooldown_file_lock:
+            if not _COOLDOWN_FILE.exists():
+                return _FR_BACKOFF_BASE
+            data = json.loads(_COOLDOWN_FILE.read_text())
+        return float(data.get(_FR_BACKOFF_STATE_KEY, _FR_BACKOFF_BASE))
+    except Exception:
+        return _FR_BACKOFF_BASE
+
+
+def _fr_save_backoff(secs: float) -> None:
+    """Persist the current FR adaptive backoff duration."""
+    try:
+        TOKEN_DIR.mkdir(parents=True, exist_ok=True)
+        with _cooldown_file_lock:
+            data: dict = {}
+            if _COOLDOWN_FILE.exists():
+                try:
+                    data = json.loads(_COOLDOWN_FILE.read_text())
+                except Exception:
+                    data = {}
+            data[_FR_BACKOFF_STATE_KEY] = round(secs)
+            _COOLDOWN_FILE.write_text(json.dumps(data, indent=2))
+    except Exception as exc:
+        log.debug("_fr_save_backoff failed: %s", exc)
+
+
+def _fr_adaptive_cooldown(tail: str) -> tuple[float, float]:
+    """
+    Compute the next FR cooldown timestamp using adaptive backoff.
+
+    Parses 'scanned=N' from the scan tail to decide whether to keep or
+    double the current backoff.  Returns (cooldown_until, backoff_secs_used).
+    """
+    m = re.search(r"scanned=(\d+)", tail)
+    last_scanned = int(m.group(1)) if m else 0
+
+    current_backoff = _fr_load_backoff()
+
+    if last_scanned >= _FR_MIN_PRODUCTIVE:
+        # Productive run — portal was ready.  Keep backoff (it's calibrated).
+        new_backoff = current_backoff
+    else:
+        # Unproductive — retried too soon.  Double the wait.
+        new_backoff = min(current_backoff * 2, _FR_BACKOFF_MAX)
+
+    _fr_save_backoff(new_backoff)
+
+    cooldown_until = min(time.time() + new_backoff, _next_midnight_bern())
+    return cooldown_until, new_backoff
+
+
 def _stop_sleep(stop_event: threading.Event, seconds: float) -> None:
     """Sleep for *seconds* but wake immediately if stop_event is set."""
     deadline = time.time() + seconds
@@ -636,17 +716,27 @@ def _canton_loop(
                          "Sleeping until midnight.", canton.upper())
                 consecutive_failures = 0
 
-            # Daily quota exhausted — cool down until midnight Bern time.
+            # Rate-limited / quota exhausted.
+            # FR uses adaptive backoff (discovers the real reset window).
+            # Other cantons have hard daily quotas → always wait until midnight.
             elif ("rate-limiting" in tail
                     or "consecutive 429" in tail
                     or "quota exhausted" in tail):
-                cooldown_until = _next_midnight_bern()
-                _save_cooldown(canton, cooldown_until)
-                resume = datetime.datetime.fromtimestamp(
-                    cooldown_until).strftime("%H:%M")
-                log.info("[%s] rate-limited — daily quota exhausted. "
-                         "Cooling down until midnight (%s).",
-                         canton.upper(), resume)
+                if canton.lower() == "fr":
+                    cooldown_until, backoff = _fr_adaptive_cooldown(tail)
+                    _save_cooldown(canton, cooldown_until)
+                    resume = datetime.datetime.fromtimestamp(
+                        cooldown_until).strftime("%H:%M")
+                    log.info("[FR] rate-limited — adaptive backoff %.0f min → "
+                             "retry at %s.", backoff / 60, resume)
+                else:
+                    cooldown_until = _next_midnight_bern()
+                    _save_cooldown(canton, cooldown_until)
+                    resume = datetime.datetime.fromtimestamp(
+                        cooldown_until).strftime("%H:%M")
+                    log.info("[%s] rate-limited — daily quota exhausted. "
+                             "Cooling down until midnight (%s).",
+                             canton.upper(), resume)
                 consecutive_failures = 0
 
             # Login window timed out — fire push notification, 2 h cooldown.
@@ -669,6 +759,13 @@ def _canton_loop(
 
             # Normal clean rotation — push and immediately restart.
             else:
+                if canton.lower() == "fr":
+                    # Clean run with no quota hit: portal capacity wasn't
+                    # the bottleneck (e.g. rotation limit reached first).
+                    # Reset backoff so the next quota-exhaustion starts fresh.
+                    _fr_save_backoff(_FR_BACKOFF_BASE)
+                    log.debug("[FR] clean rotation — backoff reset to %.0f min.",
+                              _FR_BACKOFF_BASE / 60)
                 consecutive_failures = 0
                 log.info("[%s] rotation complete — restarting after %ds.",
                          canton.upper(), INTER_CANTON_DELAY_SECONDS)
