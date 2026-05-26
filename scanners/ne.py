@@ -12,13 +12,13 @@ STATUS (2026-05): WORKING — uses Playwright to handle Altcha v3 widget.
 
 - EGRID enumeration : WFS GetFeature on sitn.ne.ch layer "ms:parcelles"
                       Returns egrid + url_terris_v2 (contains owner UUID).
-                      Paginated, ~86k parcels (verified). Cached in enum.parcel_enum.
+                      Paginated, ~91k parcels (verified 2026-05). Cached in enum.parcel_enum.
 - Owner lookup      : Playwright navigates to /owner?uuid={UUID}
                       Altcha widget auto-solves PoW (PBKDF2/SHA-256)
                       POST /owner response intercepted → parsed for owner
 - Rate limit        : ~50 queries/day per IP (anonymous). Altcha CPU ~3-30s/query.
 - Herrenlos signal  : Empty "Propriétaire" cell, "sans propriétaire", or 404
-- Parcels           : ~50,000
+- Parcels           : ~91,000 (verified by WFS 2026-05)
 - Note              : NE is NOT in the federal swisstopo cadastral layer —
                       EGRIDs must be enumerated from sitn.ne.ch WFS directly.
 

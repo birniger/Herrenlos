@@ -12,7 +12,7 @@ SZ scanner — Schwyz
                       Solved with ddddocr (primary) → tesseract (fallback)
 - Rate limit        : No documented limit; 1–2 s delay is polite
 - Herrenlos signal  : No "Eigentümer" row in response table, OR empty owner cell
-- Parcels           : ~18,000
+- Parcels           : ~50,000 (verified by WFS)
 """
 
 import re

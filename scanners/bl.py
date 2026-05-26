@@ -486,7 +486,7 @@ def scan(limit: int | None = None,
     """
     Scan BL parcels for herrenlos detection.
 
-    First run: ~1h swisstopo grid scan (cached to DB).
+    First run: ~2 min WFS enumeration via geodienste.ch (wfs_enum.py), cached to DB.
     Each query requires solving an image CAPTCHA (OCR or Claude vision).
 
     limit         : stop after N parcels

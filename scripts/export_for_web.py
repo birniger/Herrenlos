@@ -33,8 +33,6 @@ HERRENLOS_GEOJSON = DATA_DIR / "herrenlos.geojson"   # opens in QGIS / Mapbox / 
 HERRENLOS_CSV   = DATA_DIR / "herrenlos.csv"          # opens in Excel / Numbers / pandas
 COORDS_CACHE    = DATA_DIR / "coords_cache.json"
 
-# Federal swisstopo cadastral parcel identify endpoint — returns geometry.
-SWISSTOPO_IDENTIFY = "https://api3.geo.admin.ch/rest/services/api/MapServer/identify"
 UA = "herrenlos-scanner-export"
 
 

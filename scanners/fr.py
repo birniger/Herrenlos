@@ -1,8 +1,9 @@
 """
 FR scanner — Fribourg
 =====================
-- EGRID enumeration : swisstopo identify API grid scan over FR bounding box
-                      (replaces broken sequential numbering — real parcels only)
+- EGRID enumeration : geodienste.ch WFS (wfs_enum.py) — all ~147k FR parcels in
+                      ~2 min, 100% EGRID coverage. Cached in parcel_enum table.
+                      (Old swisstopo 200m grid scan only found 19k of 147k; WFS replaced it.)
 - Owner lookup      : POST  keycloak.fr.ch/rfpublic/v2TAffImmx01.jsp
 - Herrenlos signals:
     Type 2 (not in Grundbuch): "INFORMATION INTROUVABLE" or response < 800 B
