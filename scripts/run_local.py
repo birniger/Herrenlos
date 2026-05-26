@@ -462,45 +462,61 @@ def _next_midnight_bern() -> float:
                              tzinfo=tz).timestamp()
 
 
-# ── FR adaptive rate-limit backoff ────────────────────────────────────────────
-# The FR portal rate-limits session creation with a rolling window, not a hard
-# daily quota.  We discover the actual reset period automatically instead of
-# always waiting until midnight:
+# ── FR adaptive rate-limit window discovery (binary search) ───────────────────
+# The FR portal uses a rolling rate-limit window, not a hard daily quota.
+# We find the actual reset period to the minute using binary search on a
+# [lo, hi] bracket of elapsed seconds since the last exhaustion:
 #
-#   After quota exhaustion, parse how many parcels were scanned:
-#     • scanned >= FR_MIN_PRODUCTIVE  → portal was ready, we just hit the cap.
-#       Keep the same backoff — it converged on the real window.
-#     • scanned <  FR_MIN_PRODUCTIVE  → retried too soon, portal not ready yet.
-#       Double the backoff (exponential back-off).
-#   After a normal clean rotation (no quota hit) → reset backoff to minimum.
-#   Always cap at next midnight so we never sleep past the guaranteed daily reset.
+#   Each time the circuit breaker fires we know:
+#     • How long has elapsed since the previous exhaustion  (= actual_elapsed)
+#     • How many parcels were scanned                        (= last_scanned)
 #
-# Convergence example (30 min base, real window = 90 min):
-#   Run 1 → 0 parcels → backoff 30→60 min
-#   Run 2 → 3 parcels → backoff 60→120 min
-#   Run 3 → 180 parcels → backoff stays 120 min  ← converged
-#   Run 4 → 175 parcels → backoff stays 120 min  ← stable
+#   Update the bracket:
+#     scanned >= _FR_MIN_PRODUCTIVE  → portal was ready at actual_elapsed
+#                                      → hi = min(hi, actual_elapsed)
+#     scanned <  _FR_MIN_PRODUCTIVE  → portal was NOT ready at actual_elapsed
+#                                      → lo = max(lo, actual_elapsed)
+#
+#   Next wait = midpoint(lo, hi), clamped to [_FR_MIN_WAIT, midnight].
+#
+# Convergence to ±1 min from a [0, 4h] range takes ≈ log2(240) ≈ 8 runs.
+# In practice it converges much faster because the first productive run
+# immediately collapses hi from 4h to the observed elapsed time.
+#
+# Example trace  (real reset window = 25 min):
+#   Exhausted at T=0.
+#   lo=0  hi=240  → wait 120 min  → elapsed=120  scanned=160  → hi=120
+#   lo=0  hi=120  → wait  60 min  → elapsed= 60  scanned=140  → hi= 60
+#   lo=0  hi= 60  → wait  30 min  → elapsed= 30  scanned=110  → hi= 30
+#   lo=0  hi= 30  → wait  15 min  → elapsed= 15  scanned=  4  → lo= 15
+#   lo=15 hi= 30  → wait  22 min  → elapsed= 22  scanned= 90  → hi= 22
+#   lo=15 hi= 22  → wait  18 min  → elapsed= 18  scanned= 10  → lo= 18
+#   lo=18 hi= 22  → wait  20 min  → elapsed= 20  scanned=115  → hi= 20
+#   lo=18 hi= 20  → wait  19 min  ← converged to ±1 min
 
-_FR_BACKOFF_BASE      = 30 * 60    # 30 min starting point
-_FR_BACKOFF_MAX       = 4 * 3600   # 4 h hard cap (midnight takes over if sooner)
-_FR_MIN_PRODUCTIVE    = 50         # parcels scanned; below this = "retried too soon"
-_FR_BACKOFF_STATE_KEY = "fr_backoff_secs"
+_FR_MIN_PRODUCTIVE  = 50          # parcels scanned; below → "portal not ready"
+_FR_MIN_WAIT        = 5 * 60      # never retry faster than 5 min (avoid hammering)
+_FR_WINDOW_HI_INIT  = 4 * 3600   # conservative initial upper bound (4 h)
+
+# Keys stored inside cooldowns.json alongside the per-canton cooldown timestamps.
+_FR_KEY_LO           = "fr_window_lo"       # longest elapsed that was insufficient
+_FR_KEY_HI           = "fr_window_hi"       # shortest elapsed that was sufficient
+_FR_KEY_EXHAUSTED_AT = "fr_exhausted_at"    # when the last circuit breaker fired
 
 
-def _fr_load_backoff() -> float:
-    """Load the persisted FR adaptive backoff (seconds). Defaults to base."""
+def _fr_load_state() -> dict:
+    """Load the full cooldowns dict from disk (all keys, not just canton stamps)."""
     try:
         with _cooldown_file_lock:
             if not _COOLDOWN_FILE.exists():
-                return _FR_BACKOFF_BASE
-            data = json.loads(_COOLDOWN_FILE.read_text())
-        return float(data.get(_FR_BACKOFF_STATE_KEY, _FR_BACKOFF_BASE))
+                return {}
+            return json.loads(_COOLDOWN_FILE.read_text())
     except Exception:
-        return _FR_BACKOFF_BASE
+        return {}
 
 
-def _fr_save_backoff(secs: float) -> None:
-    """Persist the current FR adaptive backoff duration."""
+def _fr_save_state(updates: dict) -> None:
+    """Merge *updates* into the cooldowns file atomically."""
     try:
         TOKEN_DIR.mkdir(parents=True, exist_ok=True)
         with _cooldown_file_lock:
@@ -510,35 +526,61 @@ def _fr_save_backoff(secs: float) -> None:
                     data = json.loads(_COOLDOWN_FILE.read_text())
                 except Exception:
                     data = {}
-            data[_FR_BACKOFF_STATE_KEY] = round(secs)
+            data.update(updates)
             _COOLDOWN_FILE.write_text(json.dumps(data, indent=2))
     except Exception as exc:
-        log.debug("_fr_save_backoff failed: %s", exc)
+        log.debug("_fr_save_state failed: %s", exc)
 
 
 def _fr_adaptive_cooldown(tail: str) -> tuple[float, float]:
     """
-    Compute the next FR cooldown timestamp using adaptive backoff.
+    Binary-search the FR portal's rate-limit reset window.
 
-    Parses 'scanned=N' from the scan tail to decide whether to keep or
-    double the current backoff.  Returns (cooldown_until, backoff_secs_used).
+    Reads elapsed time since the last exhaustion, updates the [lo, hi]
+    bracket, and returns (cooldown_until, next_wait_secs).
     """
     m = re.search(r"scanned=(\d+)", tail)
     last_scanned = int(m.group(1)) if m else 0
 
-    current_backoff = _fr_load_backoff()
+    now   = time.time()
+    state = _fr_load_state()
+
+    lo           = float(state.get(_FR_KEY_LO, 0))
+    hi           = float(state.get(_FR_KEY_HI, _FR_WINDOW_HI_INIT))
+    last_exhausted = float(state.get(_FR_KEY_EXHAUSTED_AT, 0))
+
+    # How long did we actually wait since the last exhaustion?
+    # Falls back to hi/2 on the very first run (no prior exhaustion recorded).
+    elapsed = (now - last_exhausted) if last_exhausted > 0 else (hi / 2)
 
     if last_scanned >= _FR_MIN_PRODUCTIVE:
-        # Productive run — portal was ready.  Keep backoff (it's calibrated).
-        new_backoff = current_backoff
+        # Portal was ready after `elapsed` seconds → tighten upper bound.
+        hi = min(hi, elapsed)
+        verdict = f"productive ({last_scanned} parcels) → hi={hi/60:.1f} min"
     else:
-        # Unproductive — retried too soon.  Double the wait.
-        new_backoff = min(current_backoff * 2, _FR_BACKOFF_MAX)
+        # Portal was NOT ready after `elapsed` seconds → tighten lower bound.
+        lo = max(lo, elapsed)
+        verdict = f"unproductive ({last_scanned} parcels) → lo={lo/60:.1f} min"
 
-    _fr_save_backoff(new_backoff)
+    # Guard: if bounds crossed (shouldn't happen), reset.
+    if lo >= hi:
+        log.warning("[FR] window bracket inverted (lo=%.0fs hi=%.0fs) — resetting.",
+                    lo, hi)
+        lo, hi = 0, _FR_WINDOW_HI_INIT
 
-    cooldown_until = min(time.time() + new_backoff, _next_midnight_bern())
-    return cooldown_until, new_backoff
+    next_wait      = max((lo + hi) / 2, _FR_MIN_WAIT)
+    cooldown_until = min(now + next_wait, _next_midnight_bern())
+
+    _fr_save_state({
+        _FR_KEY_LO:           round(lo),
+        _FR_KEY_HI:           round(hi),
+        _FR_KEY_EXHAUSTED_AT: round(now),
+    })
+
+    log.info("[FR] window [%.0f–%.0f min] | %s | next wait %.0f min",
+             lo / 60, hi / 60, verdict, next_wait / 60)
+
+    return cooldown_until, next_wait
 
 
 def _stop_sleep(stop_event: threading.Event, seconds: float) -> None:
@@ -759,13 +801,6 @@ def _canton_loop(
 
             # Normal clean rotation — push and immediately restart.
             else:
-                if canton.lower() == "fr":
-                    # Clean run with no quota hit: portal capacity wasn't
-                    # the bottleneck (e.g. rotation limit reached first).
-                    # Reset backoff so the next quota-exhaustion starts fresh.
-                    _fr_save_backoff(_FR_BACKOFF_BASE)
-                    log.debug("[FR] clean rotation — backoff reset to %.0f min.",
-                              _FR_BACKOFF_BASE / 60)
                 consecutive_failures = 0
                 log.info("[%s] rotation complete — restarting after %ds.",
                          canton.upper(), INTER_CANTON_DELAY_SECONDS)
