@@ -376,65 +376,6 @@ def scan(limit: int | None = None,
             else:
                 consecutive_429 = 0
 
-            # ── Verify herrenlos candidates before committing ────────────────
-            # A single transient response (stale "missing" list, momentarily
-            # empty parcels[], network hiccup) can produce a false positive.
-            # Re-query the EGRID once before committing is_herrenlos=1.
-            # Both queries must agree; if the second query finds an owner the
-            # first result is discarded.  If the second query errors out the
-            # parcel is deferred (left NULL) to be retried on the next run.
-            if result.get("is_herrenlos") == 1:
-                log.info("GR verifying herrenlos candidate EGRID=%s (%s) …",
-                         egrid, result.get("herrenlos_type"))
-                time.sleep(3)   # brief pause before verification query
-                verify = check_owner(session, egrid)
-                queries_on_proxy += 1
-
-                if verify.get("error") == "rate_limited":
-                    if proxies:
-                        proxy_idx = (proxy_idx + 1) % len(proxies)
-                        session = _gr_session(proxies[proxy_idx])
-                        queries_on_proxy = 0
-                        log.warning("GR rate limit during verification — rotated to proxy #%d",
-                                    proxy_idx)
-                        verify = check_owner(session, egrid)
-                        queries_on_proxy += 1
-                    if verify.get("error") == "rate_limited":
-                        consecutive_429 += 1
-                        if consecutive_429 >= MAX_CONSECUTIVE_429:
-                            log.warning(
-                                "GR all proxies exhausted during verification — "
-                                "%d consecutive 429s.", consecutive_429)
-                            break
-                        # Can't verify — defer this parcel to the next scan cycle.
-                        log.warning(
-                            "GR herrenlos verification for %s hit rate limit — "
-                            "deferring to next scan cycle.", egrid)
-                        scanned += 1
-                        time.sleep(delay)
-                        continue
-
-                if verify.get("error") is not None:
-                    # Network / parse error on verification — defer safely.
-                    log.warning(
-                        "GR herrenlos verification failed for EGRID=%s "
-                        "(error=%s) — deferring to next scan cycle.",
-                        egrid, verify.get("error"))
-                    scanned += 1
-                    time.sleep(delay)
-                    continue
-
-                if verify.get("is_herrenlos") != 1:
-                    log.warning(
-                        "GR FALSE POSITIVE AVERTED: EGRID=%s  "
-                        "first=herrenlos(%s) but second=owned(owner=%r) — "
-                        "using verified (owned) result.",
-                        egrid, result.get("herrenlos_type"), verify.get("owner"))
-                    result = verify
-                else:
-                    log.info("GR herrenlos CONFIRMED by second check: EGRID=%s (%s)",
-                             egrid, result.get("herrenlos_type"))
-
             upsert_parcel(conn, {
                 "egrid":       egrid,
                 "canton":      "GR",

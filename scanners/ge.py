@@ -547,7 +547,7 @@ def _parse_rapport(soup: BeautifulSoup, text: str, egrid: str) -> dict:
         return {"owner": None, "owner_address": None, "is_herrenlos": 1,
                 "herrenlos_type": "dereliktion",
                 "claim_possible": claim_possible_for("GE", "dereliktion"),
-                "raw_response": text[:300], "error": None}
+                "raw_response": text, "error": None}
 
     # Look for Propriétaire section
     has_section = bool(re.search(r"propri[eé]taire", text, re.I))
@@ -591,14 +591,14 @@ def _parse_rapport(soup: BeautifulSoup, text: str, egrid: str) -> dict:
         return {"owner": None, "owner_address": None, "is_herrenlos": 1,
                 "herrenlos_type": "dereliktion",
                 "claim_possible": claim_possible_for("GE", "dereliktion"),
-                "raw_response": text[:300], "error": None}
+                "raw_response": text, "error": None}
 
     # Parcel not in RF at all (page shows nothing useful)
     if not has_section and "immeuble" not in text.lower():
         return {"owner": None, "owner_address": None, "is_herrenlos": 1,
                 "herrenlos_type": "not_in_grundbuch",
                 "claim_possible": claim_possible_for("GE", "not_in_grundbuch"),
-                "raw_response": text[:300], "error": None}
+                "raw_response": text, "error": None}
 
     if not has_section:
         return {"owner": None, "owner_address": None, "is_herrenlos": None,

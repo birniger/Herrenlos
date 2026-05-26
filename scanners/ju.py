@@ -416,7 +416,7 @@ def _parse_owner_html(html: str, egrid: str, nocompar: str) -> dict:
             "is_herrenlos": 1,
             "herrenlos_type": "not_in_grundbuch",
             "claim_possible": 0,
-            "raw_response": text[:200].replace("\n", " "), "error": None,
+            "raw_response": text.replace("\n", " "), "error": None,
         }
 
     # ── PPE base parcel: ownership lives in sub-units, no owner table rendered ──
@@ -494,7 +494,7 @@ def _parse_owner_html(html: str, egrid: str, nocompar: str) -> dict:
         "is_herrenlos":   0 if owner else 1,
         "herrenlos_type": h_type,
         "claim_possible": claim_possible_for("JU", h_type) if h_type else None,
-        "raw_response":   text[:300].replace("\n", " ") if owner is None else None,
+        "raw_response":   text if owner is None else None,
         "error":          None,
     }
 

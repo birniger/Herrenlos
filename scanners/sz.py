@@ -316,7 +316,7 @@ def _parse_owner_html(html: str, egrid: str) -> dict:
         return {"owner": None, "owner_address": None,
                 "is_herrenlos": 1,
                 "herrenlos_type": "not_in_grundbuch", "claim_possible": 0,
-                "raw_response": html[:300], "error": None}
+                "raw_response": html, "error": None}
 
     if owner is None:
         log.info("No owner found in response (EGRID=%s) — potential herrenlos", egrid)
@@ -327,7 +327,7 @@ def _parse_owner_html(html: str, egrid: str) -> dict:
         "is_herrenlos":   0 if owner else 1,
         "herrenlos_type": None if owner else "dereliktion",
         "claim_possible": None if owner else claim_possible_for("SZ", "dereliktion"),
-        "raw_response":   html[:300] if owner is None else None,
+        "raw_response":   html if owner is None else None,
         "error":          None,
     }
 

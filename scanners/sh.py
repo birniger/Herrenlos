@@ -265,7 +265,7 @@ def check_owner(session: requests.Session, east: int, north: int,
         "is_herrenlos":   0 if owner else 1,
         "herrenlos_type": h_type,
         "claim_possible": claim_possible_for("SH", h_type) if h_type else None,
-        "raw_response":   str(data2)[:300] if owner is None else None,
+        "raw_response":   str(data2) if owner is None else None,
         "error":          None,
     }
 

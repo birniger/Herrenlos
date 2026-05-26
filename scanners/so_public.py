@@ -328,7 +328,7 @@ def _parse_owner(data: dict) -> dict:
         "is_herrenlos":   is_herrenlos,
         "herrenlos_type": herrenlos_type,
         "claim_possible": claim_possible,
-        "raw_response":   json.dumps(data)[:400] if not owner else None,
+        "raw_response":   json.dumps(data) if not owner else None,
         "error":          None,
     }
 

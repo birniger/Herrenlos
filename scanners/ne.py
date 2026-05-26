@@ -604,7 +604,7 @@ def _parse_owner_html(html: str, egrid: str, uuid: str) -> dict:
                 "is_herrenlos": 1,
                 "herrenlos_type": "not_in_grundbuch",
                 "claim_possible": 0,
-                "raw_response": html[:400], "error": None}
+                "raw_response": html, "error": None}
 
     not_found_signals = ("introuvable", "aucun résultat", "pas de résultat",
                          "not found", "no result", "nicht gefunden")
@@ -613,7 +613,7 @@ def _parse_owner_html(html: str, egrid: str, uuid: str) -> dict:
                 "is_herrenlos": 1,
                 "herrenlos_type": "not_in_grundbuch",
                 "claim_possible": 0,
-                "raw_response": html[:400], "error": None}
+                "raw_response": html, "error": None}
 
     if owner is None:
         log.info("No owner found (EGRID=%s UUID=%s) — potential dereliktion", egrid, uuid)
@@ -627,7 +627,7 @@ def _parse_owner_html(html: str, egrid: str, uuid: str) -> dict:
         "is_herrenlos":   0 if owner else 1,
         "herrenlos_type": h_type,
         "claim_possible": claim_possible_for("NE", h_type) if h_type else None,
-        "raw_response":   html[:400] if owner is None else None,
+        "raw_response":   html if owner is None else None,
         "error":          None,
     }
 

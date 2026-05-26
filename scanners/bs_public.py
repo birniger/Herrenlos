@@ -320,7 +320,7 @@ def _parse_owner(data: dict) -> dict:
         "is_herrenlos":   1,
         "herrenlos_type": "dereliktion",
         "claim_possible": claim_possible_for("BS", "dereliktion"),
-        "raw_response":   json.dumps(data)[:300],
+        "raw_response":   json.dumps(data),
         "error":          None,
     }
 

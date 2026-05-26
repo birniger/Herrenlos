@@ -201,7 +201,7 @@ def _parse_eigentum(html: str, egrid: str) -> dict:
         return {"owner": None, "owner_address": None, "is_herrenlos": 1,
                 "herrenlos_type": "dereliktion",
                 "claim_possible": claim_possible_for("ZG", "dereliktion"),
-                "raw_response": text[:300], "error": None}
+                "raw_response": text, "error": None}
 
     # Find owner names next to "Eigentümer" labels
     names: list[str] = []
@@ -218,7 +218,7 @@ def _parse_eigentum(html: str, egrid: str) -> dict:
                 return {"owner": None, "owner_address": None, "is_herrenlos": 1,
                         "herrenlos_type": "dereliktion",
                         "claim_possible": claim_possible_for("ZG", "dereliktion"),
-                        "raw_response": text[:300], "error": None}
+                        "raw_response": text, "error": None}
 
     has_section = bool(re.search(r"eigentümer|eigentuemer|eigentum", text, re.I))
 
@@ -227,7 +227,7 @@ def _parse_eigentum(html: str, egrid: str) -> dict:
         return {"owner": None, "owner_address": None, "is_herrenlos": 1,
                 "herrenlos_type": "dereliktion",
                 "claim_possible": claim_possible_for("ZG", "dereliktion"),
-                "raw_response": text[:300], "error": None}
+                "raw_response": text, "error": None}
 
     if not has_section:
         return {"owner": None, "owner_address": None, "is_herrenlos": None,

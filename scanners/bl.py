@@ -244,7 +244,7 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                 "is_herrenlos":   0 if names else 1,
                 "herrenlos_type": None if names else "dereliktion",
                 "claim_possible": None if names else claim_possible_for("BL", "dereliktion"),
-                "raw_response":   html1[:300] if not names else None,
+                "raw_response":   html1 if not names else None,
                 "error":          None,
             }
 
@@ -354,7 +354,7 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                 "is_herrenlos":   0 if names else 1,
                 "herrenlos_type": None if names else "dereliktion",
                 "claim_possible": None if names else claim_possible_for("BL", "dereliktion"),
-                "raw_response":   r2.text[:300] if not names else None,
+                "raw_response":   r2.text if not names else None,
                 "error":          None,
             }
 

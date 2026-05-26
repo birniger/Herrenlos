@@ -284,7 +284,7 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                 "is_herrenlos": 1,
                 "herrenlos_type": "not_in_grundbuch",
                 "claim_possible": 0,
-                "raw_response": None, "error": None}
+                "raw_response": r1.text or None, "error": None}
 
     if r1.status_code == 429:
         return {"error": "rate_limited", "is_herrenlos": None,
@@ -352,7 +352,7 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                 "is_herrenlos": 1,
                 "herrenlos_type": "dereliktion",
                 "claim_possible": 0,   # VS: no private Aneignung under cantonal law
-                "raw_response": None, "error": None}
+                "raw_response": r2.text or None, "error": None}
 
     if r2.status_code == 429:
         return {"error": "rate_limited", "is_herrenlos": None,
@@ -425,7 +425,7 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
         "is_herrenlos":   0 if has_owner else 1,
         "herrenlos_type": None if has_owner else "dereliktion",
         "claim_possible": None if has_owner else 0,
-        "raw_response":   None,
+        "raw_response":   None if has_owner else str(ei_data),
         "error":          None,
     }
 

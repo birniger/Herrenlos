@@ -492,7 +492,7 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                     "is_herrenlos": 1,
                     "herrenlos_type": "not_in_grundbuch",
                     "claim_possible": 0,
-                    "raw_response": None, "error": None}
+                    "raw_response": r.text or None, "error": None}
 
         if r.status_code != 200:
             try:
@@ -547,7 +547,7 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                     "is_herrenlos": 1,
                     "herrenlos_type": "not_in_grundbuch",
                     "claim_possible": 0,
-                    "raw_response": None, "error": None}
+                    "raw_response": r2.text or None, "error": None}
         if r2.status_code != 200:
             return {"error": f"eigentum_{r2.status_code}", "is_herrenlos": None,
                     "owner": None, "owner_address": None,
@@ -569,7 +569,7 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                 "is_herrenlos":   1,
                 "herrenlos_type": "dereliktion",
                 "claim_possible": None,
-                "raw_response":   None,
+                "raw_response":   str(ei_data),
                 "error":          None,
             }
 
@@ -624,7 +624,7 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                 "is_herrenlos":   1,
                 "herrenlos_type": "dereliktion",
                 "claim_possible": None,   # BE EG ZGB consultation 2026 — see project memory
-                "raw_response":   None,
+                "raw_response":   str(ei_data),
                 "error":          None,
             }
 

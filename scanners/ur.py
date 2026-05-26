@@ -91,7 +91,7 @@ def check_owner(session: requests.Session, bfs_nr: str, parcel_nr: str) -> dict:
                         size = len(raw.encode())
                         if HERRENLOS_NEEDLE in raw or size < HERRENLOS_MAX_B:
                             return {"owner": None, "owner_address": None,
-                                    "is_herrenlos": 1, "raw_response": raw[:300], "error": None}
+                                    "is_herrenlos": 1, "raw_response": raw, "error": None}
                         # Continue to owner parsing by re-entering logic
                         return check_owner(session, bfs_nr, parcel_nr)
             retry = int(float(r.headers.get("retry-after", r.headers.get("x-ratelimit-reset", "3600"))))
@@ -124,7 +124,7 @@ def check_owner(session: requests.Session, bfs_nr: str, parcel_nr: str) -> dict:
                 "is_herrenlos": 1,
                 "herrenlos_type": h_type,
                 "claim_possible": claim_possible_for("UR", h_type),
-                "raw_response": raw[:300],
+                "raw_response": raw,
                 "error": None,
             }
 
@@ -189,7 +189,7 @@ def check_owner(session: requests.Session, bfs_nr: str, parcel_nr: str) -> dict:
             "is_herrenlos":   0 if owner else 1,
             "herrenlos_type": h_type,
             "claim_possible": claim_possible_for("UR", h_type) if h_type else None,
-            "raw_response":   raw[:400] if owner is None else None,
+            "raw_response":   raw if owner is None else None,
             "error":          None,
         }
 
