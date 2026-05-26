@@ -84,17 +84,11 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
 
-      - name: Restore enum.db cache
-        # enum.db is gitignored (regenerable, ~110 MB — too large for the 100 MB
-        # GitHub file limit).  Use the Actions cache so we don't re-enumerate
-        # every canton on every run.  Cache key is per-day so daily rebuilds
-        # pick up new parcels but intra-day runs reuse the cache.
-        uses: actions/cache@v4
-        with:
-          path: enum.db
-          key: enum-db-${{ runner.os }}-v1-${{ github.run_id }}
-          restore-keys: |
-            enum-db-${{ runner.os }}-v1-
+      # enum.db is tracked in Git LFS (see .gitattributes) and already present
+      # after the checkout step above.  The old actions/cache step was removed
+      # because it restored stale cached versions that overwrote the LFS copy,
+      # producing wrong "enumerated" counts in progress.json (e.g. SH=857 instead
+      # of 43k, VS=0 instead of 317k).  LFS is the canonical source — no cache needed.
 
       - name: Initialise database (if not committed yet)
         run: python -c "from db import init_db; init_db()"
