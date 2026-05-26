@@ -47,6 +47,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 350      # 5h50m — fits inside GitHub Actions' 6h hard limit
     env:
+      # Opt into Node.js 24 for all JS actions (checkout, cache, setup-python,
+      # upload-artifact). Mandatory from 2026-06-02; setting it now avoids the
+      # deprecation warning and ensures compatibility before the forced cutover.
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       # Cantons eligible for CI scanning.
       # ne — REMOVED: sitn.ne.ch blocks datacenter proxies; laptop only (residential IP)
       # fr — REMOVED: keycloak.fr.ch geo-blocks datacenter IPs; laptop only
