@@ -4,8 +4,8 @@ BE scanner — Bern
 Platform : grudis-public.apps.be.ch (Keycloak OIDC PKCE via sso.be.ch / AGOV)
 Canton   : BE
 
-- EGRID enumeration : swisstopo identify API grid scan (step=300m, ~3h one-time)
-                      Cached in parcel_enum table.
+- EGRID enumeration : geodienste.ch WFS (ms:RESF) — all ~420k BE parcels in
+                      ~8 min, 100% EGRID coverage. Cached in parcel_enum table.
 - Owner lookup      : GET /api/gb/eigentum/sicht/grundstueck?mode=BELASTET
                         entries = ownership records (Eigentum) for this parcel
                         entries[].berechtigtePersonen = the owner(s)
@@ -44,7 +44,8 @@ import time
 import logging
 import requests
 
-import sys, pathlib
+import sys
+import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
 from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
@@ -52,133 +53,19 @@ from scanners.utils import is_herrenlos_owner_text, annotate_herrenlos
 
 log = logging.getLogger("BE")
 
-GRUDIS_BASE        = "https://grudis-public.apps.be.ch/grudis-public"
-GRUDIS_UI          = f"{GRUDIS_BASE}/ui/"
-GRUDIS_API         = f"{GRUDIS_BASE}/api/gb/grundstueck"
-SWISSTOPO_IDENTIFY = "https://api3.geo.admin.ch/rest/services/api/MapServer/identify"
-UA                 = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+GRUDIS_BASE     = "https://grudis-public.apps.be.ch/grudis-public"
+GRUDIS_UI       = f"{GRUDIS_BASE}/ui/"
+GRUDIS_API      = f"{GRUDIS_BASE}/api/gb/grundstueck"
+UA              = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 
-KEYCLOAK_ISSUER    = "https://sso.be.ch/auth/realms/a51-grudis-public-agov"
-KEYCLOAK_CLIENT    = "intercapi-public-client"
-KEYCLOAK_TOKEN_EP  = f"{KEYCLOAK_ISSUER}/protocol/openid-connect/token"
+KEYCLOAK_ISSUER = "https://sso.be.ch/auth/realms/a51-grudis-public-agov"
+KEYCLOAK_CLIENT = "intercapi-public-client"
+KEYCLOAK_TOKEN_EP = f"{KEYCLOAK_ISSUER}/protocol/openid-connect/token"
 
-GRUNDSTUECK_EP     = f"{GRUDIS_API}"  # GET ?egrid=...&historisiert=OHNE_HIST
-EIGENTUM_EP        = f"{GRUDIS_BASE}/api/gb/eigentum/sicht/grundstueck"
+EIGENTUM_EP     = f"{GRUDIS_BASE}/api/gb/eigentum/sicht/grundstueck"
 
 # Where to cache GRUDIS Bearer token between runs
 TOKEN_CACHE = pathlib.Path.home() / ".herrenlos_scanner" / "be_token.json"
-
-# BE LV95 bounding box (~5,959 km²)
-BE_EMIN, BE_EMAX = 2_548_000, 2_700_000
-BE_NMIN, BE_NMAX = 1_120_000, 1_250_000
-BE_GRID_STEP     = 300   # metres — ~170k grid points, ~5h one-time
-
-# Centre of Bern city — used for quick test scans
-BE_BERN_E, BE_BERN_N = 2_600_000, 1_200_000
-
-
-# ── Parcel enumeration via swisstopo ─────────────────────────────────────────
-
-def enumerate_parcels_swisstopo(
-        emin=BE_EMIN, emax=BE_EMAX,
-        nmin=BE_NMIN, nmax=BE_NMAX,
-        step=BE_GRID_STEP,
-        max_parcels: int | None = None) -> list[dict]:
-    """
-    Grid scan — returns {egrid, bfs_nr, parcel_nr, commune} dicts.
-    max_parcels: stop early (quick-test mode, result not cached).
-    """
-    seen:    set[str]  = set()
-    parcels: list[dict] = []
-    session = requests.Session()
-    session.headers["User-Agent"] = UA
-
-    if max_parcels:
-        # Quick mode: 4 km × 4 km grid centred on Bern at 200 m steps
-        log.info("BE quick scan: 4 km grid around Bern, stopping after %d parcels",
-                 max_parcels)
-        for e in range(BE_BERN_E - 2_000, BE_BERN_E + 2_001, 200):
-            for n in range(BE_BERN_N - 2_000, BE_BERN_N + 2_001, 200):
-                try:
-                    r = session.get(SWISSTOPO_IDENTIFY, params={
-                        "geometry": f"{e},{n}", "geometryType": "esriGeometryPoint",
-                        "layers": "all:ch.swisstopo-vd.amtliche-vermessung",
-                        "tolerance": 0, "mapExtent": "0,0,1,1", "imageDisplay": "1,1,96",
-                        "returnGeometry": "false", "lang": "de", "sr": 2056,
-                    }, timeout=12)
-                    if r.status_code == 200:
-                        for feat in r.json().get("results", []):
-                            attrs = feat.get("attributes", {})
-                            if attrs.get("ak", "").upper() != "BE":
-                                continue
-                            eg = attrs.get("egris_egrid", "")
-                            if eg and eg not in seen:
-                                seen.add(eg)
-                                parcels.append({
-                                    "egrid":     eg,
-                                    "bfs_nr":    str(attrs.get("bfsnr", "")),
-                                    "parcel_nr": str(attrs.get("number", "")),
-                                    "commune":   attrs.get("label", ""),
-                                })
-                except Exception:
-                    pass
-                import time as _t; _t.sleep(0.1)
-                if len(parcels) >= max_parcels:
-                    break
-            if len(parcels) >= max_parcels:
-                break
-        log.info("Quick scan: %d BE parcels found", len(parcels))
-        return parcels
-
-    e_range = range(emin, emax + 1, step)
-    n_range = range(nmin, nmax + 1, step)
-    total   = len(e_range) * len(n_range)
-    checked = 0
-
-    log.info("BE swisstopo grid scan: %d × %d = %d points at %dm",
-             len(e_range), len(n_range), total, step)
-
-    for e in e_range:
-        for n in n_range:
-            checked += 1
-            try:
-                r = session.get(SWISSTOPO_IDENTIFY, params={
-                    "geometry":       f"{e},{n}",
-                    "geometryType":   "esriGeometryPoint",
-                    "layers":         "all:ch.swisstopo-vd.amtliche-vermessung",
-                    "tolerance":      0,
-                    "mapExtent":      "0,0,1,1",
-                    "imageDisplay":   "1,1,96",
-                    "returnGeometry": "false",
-                    "lang":           "de",
-                    "sr":             2056,
-                }, timeout=10)
-
-                if r.status_code != 200:
-                    continue
-
-                for feat in r.json().get("results", []):
-                    attrs = feat.get("attributes", {})
-                    if attrs.get("ak", "").upper() != "BE":
-                        continue
-                    eg = attrs.get("egris_egrid", "")
-                    if eg and eg not in seen:
-                        seen.add(eg)
-                        parcels.append({
-                            "egrid":     eg,
-                            "bfs_nr":    str(attrs.get("bfsnr", "")),
-                            "parcel_nr": str(attrs.get("number", "")),
-                            "commune":   attrs.get("label", ""),
-                        })
-            except Exception:
-                pass
-
-            if checked % 5000 == 0:
-                log.info("Grid %d/%d  unique BE parcels=%d", checked, total, len(parcels))
-            time.sleep(0.1)
-
-    log.info("Grid scan complete: %d unique BE parcels", len(parcels))
-    return parcels
 
 
 # ── Token cache helpers ───────────────────────────────────────────────────────
@@ -202,10 +89,11 @@ def _load_cached_token() -> dict | None:
 
 
 def _save_token(token_data: dict):
-    """Persist token data to disk."""
+    """Persist token data to disk with owner-only permissions (0o600)."""
     try:
         TOKEN_CACHE.parent.mkdir(parents=True, exist_ok=True)
         TOKEN_CACHE.write_text(json.dumps(token_data, indent=2))
+        os.chmod(TOKEN_CACHE, 0o600)  # security: token file must not be world-readable
         log.info("Cached BE Bearer token to %s", TOKEN_CACHE)
     except Exception as exc:
         log.debug("Token cache save error: %s", exc)
@@ -811,7 +699,7 @@ def scan(limit: int | None = None,
             log.info("BE cache has only %d parcels (partial/stale) — re-enumerating via WFS",
                      len(cached))
             with get_conn() as conn:
-                conn.execute("DELETE FROM parcel_enum WHERE canton='BE'")
+                conn.execute("DELETE FROM enum.parcel_enum WHERE canton='BE'")  # MED-7 fix: must qualify with 'enum.' schema
                 conn.commit()
         log.info("Enumerating BE parcels via geodienste WFS (~8 min one-time) …")
         parcels = wfs_enumerate_canton("BE")

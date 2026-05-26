@@ -19,17 +19,20 @@ import time
 import logging
 import requests
 
-import sys, pathlib
+import sys
+import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
 from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
-from scanners.utils import is_herrenlos_owner_text, claim_possible_for, load_proxies
+from scanners.utils import (
+    is_herrenlos_owner_text, claim_possible_for, load_proxies,
+    SWISSTOPO_IDENTIFY, DEFAULT_UA,
+)
 
 log = logging.getLogger("GR")
 
-TERRAVIS_URL       = "https://lkgr.geogr.ch/terravis/egrid/{egrid}"
-SWISSTOPO_IDENTIFY = "https://api3.geo.admin.ch/rest/services/api/MapServer/identify"
-UA                 = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+TERRAVIS_URL = "https://lkgr.geogr.ch/terravis/egrid/{egrid}"
+UA           = DEFAULT_UA  # alias kept for call sites within this file
 
 # GR LV95 bounding box — largest Swiss canton
 GR_EMIN, GR_EMAX = 2_682_000, 2_834_000
@@ -165,7 +168,10 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
 
         # ── Type 2 herrenlos: EGRID listed in Terravis "missing" list ────────
         missing = data.get("missing") or []
-        if missing and egrid in str(missing):
+        # MED-8 fix: use list membership (`in missing`) not substring search
+        # (`in str(missing)`) — the latter would false-match any EGRID whose
+        # digits appear in another EGRID's string representation.
+        if missing and egrid in missing:
             return {"owner": None, "owner_address": None,
                     "is_herrenlos": 1,
                     "herrenlos_type": "not_in_grundbuch",
@@ -344,7 +350,7 @@ def scan(limit: int | None = None,
         if cached:
             log.info("GR cache incomplete (%d parcels) — re-enumerating via WFS", len(cached))
             with get_conn() as conn:
-                conn.execute("DELETE FROM parcel_enum WHERE canton='GR'")
+                conn.execute("DELETE FROM enum.parcel_enum WHERE canton='GR'")  # MED-7 fix: must qualify with 'enum.' schema
                 conn.commit()
         log.info("Enumerating GR parcels via geodienste WFS (~3 min) …")
         parcels = wfs_enumerate_canton("GR")
@@ -394,13 +400,11 @@ def scan(limit: int | None = None,
             queries_on_proxy += 1
 
             if result.get("error") == "rate_limited":
-                consecutive_429 += 1
-                if consecutive_429 >= MAX_CONSECUTIVE_429:
-                    log.warning(
-                        "GR all proxies exhausted — %d consecutive 429s. "
-                        "Daily quota fully used.", consecutive_429
-                    )
-                    break
+                # HIGH-2 fix: count ONE consecutive 429 per parcel, not two.
+                # Original code incremented both on the initial 429 AND on a
+                # failed retry, causing the circuit breaker to fire at half the
+                # intended threshold (N proxies instead of N*2).
+                # New logic: rotate + retry first; if retry also 429, count once.
                 if proxies:
                     proxy_idx = (proxy_idx + 1) % len(proxies)
                     session = _gr_session(proxies[proxy_idx])
@@ -411,6 +415,14 @@ def scan(limit: int | None = None,
                     queries_on_proxy += 1
                     if result.get("error") == "rate_limited":
                         consecutive_429 += 1
+                        if consecutive_429 >= MAX_CONSECUTIVE_429:
+                            log.warning(
+                                "GR all proxies exhausted — %d consecutive 429s. "
+                                "Daily quota fully used.", consecutive_429
+                            )
+                            break
+                    else:
+                        consecutive_429 = 0
                 else:
                     log.warning(
                         "GR rate limit hit with no proxies — stopping scan for today. "

@@ -47,17 +47,27 @@ trap 'echo; echo "[scan-loop] interrupted, exiting."; exit 0' INT TERM
 # the now-empty shm/wal files.
 if [ -f "herrenlos.db-wal" ]; then
     echo "[scan-loop] stale WAL detected — checkpointing before startup"
-    "$PYTHON" -c "
+    # CRIT-1 fix: only remove WAL files if the checkpoint fully succeeded.
+    # Blindly deleting herrenlos.db-wal without a successful TRUNCATE checkpoint
+    # loses committed rows that haven't been flushed to the main DB file yet.
+    if "$PYTHON" -c "
 import sqlite3, sys
 try:
     c = sqlite3.connect('herrenlos.db', timeout=10)
     wal_pages, checkpointed = c.execute('PRAGMA wal_checkpoint(TRUNCATE)').fetchone()[1:]
     c.close()
     print(f'[scan-loop] WAL checkpoint: {checkpointed}/{wal_pages} pages flushed')
+    if wal_pages > 0 and checkpointed < wal_pages:
+        print(f'[scan-loop] WARNING: WAL not fully checkpointed ({checkpointed}/{wal_pages}) — NOT removing WAL files', file=sys.stderr)
+        sys.exit(1)
 except Exception as e:
     print(f'[scan-loop] WAL checkpoint failed: {e}', file=sys.stderr)
-" 2>&1
-    rm -f herrenlos.db-wal herrenlos.db-shm
+    sys.exit(1)
+" 2>&1; then
+        rm -f herrenlos.db-wal herrenlos.db-shm
+    else
+        echo "[scan-loop] WAL checkpoint failed or incomplete — NOT removing WAL files; data is safe" >&2
+    fi
 fi
 
 RESTART_DELAY=60

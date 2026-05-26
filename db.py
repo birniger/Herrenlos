@@ -1,5 +1,12 @@
+import json
 import sqlite3
 from pathlib import Path
+
+# Module-level guards to avoid repeated PRAGMA calls per upsert/enum operation.
+# These are set to True the first time the migration check runs; after that
+# we skip the PRAGMA table_info() round-trips entirely.
+_parcels_migrated: bool = False
+_parcel_enum_migrated: bool = False
 
 DB_PATH      = Path(__file__).parent / "herrenlos.db"
 ENUM_DB_PATH = Path(__file__).parent / "enum.db"
@@ -104,6 +111,10 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_canton          ON parcels(canton);
             CREATE INDEX IF NOT EXISTS idx_herrenlos       ON parcels(is_herrenlos);
             CREATE INDEX IF NOT EXISTS idx_egrid           ON parcels(egrid);
+            -- NOTE: no explicit (canton, bfs_nr, parcel_nr) index needed here.
+            -- The UNIQUE constraint already creates sqlite_autoindex_parcels_1 on
+            -- those columns; EXPLAIN QUERY PLAN confirms SQLite uses it for every
+            -- already_scanned() lookup and ON CONFLICT resolution.
             CREATE INDEX IF NOT EXISTS idx_captcha_canton  ON captcha_stats(canton);
             CREATE INDEX IF NOT EXISTS idx_testruns_canton ON test_runs(canton);
             CREATE INDEX IF NOT EXISTS idx_testruns_runat  ON test_runs(run_at);
@@ -151,28 +162,39 @@ def init_db():
     # lost_and_found (90 k rows) from a pre-migration CI DB, bloating herrenlos.db
     # past GitHub's 100 MB hard limit.  Running this guard on every init_db()
     # call prevents that from ever sticking.
+    # CRIT-4 fix: wrap both DROPs in an explicit transaction so they are atomic.
+    # In Python's sqlite3, DDL statements cause an implicit COMMIT of any pending
+    # transaction, then run in autocommit mode — so without BEGIN/COMMIT the two
+    # drops are NOT atomic (a crash between them leaves a half-dropped state).
     with get_conn() as conn:
         tables = {r[0] for r in conn.execute(
             "SELECT name FROM main.sqlite_master WHERE type='table'"
         ).fetchall()}
-        dropped = []
-        for _legacy in ("parcel_enum", "lost_and_found"):
-            if _legacy in tables:
+        to_drop = [t for t in ("parcel_enum", "lost_and_found") if t in tables]
+        if to_drop:
+            conn.execute("BEGIN EXCLUSIVE")
+            for _legacy in to_drop:
                 conn.execute(f"DROP TABLE IF EXISTS main.{_legacy}")
-                dropped.append(_legacy)
-        if dropped:
             conn.commit()
-            print(f"[db] Dropped legacy tables from herrenlos.db: {', '.join(dropped)}")
+            print(f"[db] Dropped legacy tables from herrenlos.db: {', '.join(to_drop)}")
 
 
 def _migrate_parcel_enum(conn):
-    """Add egrid / extra columns to parcel_enum if they don't exist yet (one-time migration)."""
+    """Add egrid / extra columns to parcel_enum if they don't exist yet (one-time migration).
+
+    Uses a module-level guard so the PRAGMA table_info() round-trip only happens
+    once per process lifetime — not on every enum_cached() / store_enum() call.
+    """
+    global _parcel_enum_migrated
+    if _parcel_enum_migrated:
+        return
     existing = {row[1] for row in conn.execute("PRAGMA enum.table_info(parcel_enum)").fetchall()}
     if "egrid" not in existing:
         conn.execute("ALTER TABLE enum.parcel_enum ADD COLUMN egrid TEXT")
     if "extra" not in existing:
         conn.execute("ALTER TABLE enum.parcel_enum ADD COLUMN extra TEXT")
     conn.commit()
+    _parcel_enum_migrated = True
 
 
 def enum_cached(conn, canton: str) -> list[dict] | None:
@@ -195,8 +217,7 @@ def enum_cached(conn, canton: str) -> list[dict] | None:
         # Decode extra JSON blob into a nested dict if present
         if d.get("extra"):
             try:
-                import json as _json
-                d["extra"] = _json.loads(d["extra"])
+                d["extra"] = json.loads(d["extra"])
             except Exception:
                 pass
         result.append(d)
@@ -209,16 +230,15 @@ def store_enum(conn, canton: str, parcels: list[dict]):
     Each dict must have bfs_nr, parcel_nr, commune keys.
     Optional keys: egrid, extra (dict or str; dicts are JSON-serialised).
     """
-    import json as _json
     _migrate_parcel_enum(conn)
     rows = []
     for p in parcels:
         extra = p.get("extra")
         if isinstance(extra, dict):
-            extra = _json.dumps(extra, separators=(",", ":"))
+            extra = json.dumps(extra, separators=(",", ":"))
         # If the parcel has a uuid field (NE-style), pack it into extra
         if extra is None and p.get("uuid"):
-            extra = _json.dumps({"uuid": p["uuid"]}, separators=(",", ":"))
+            extra = json.dumps({"uuid": p["uuid"]}, separators=(",", ":"))
         rows.append({
             "canton":    canton,
             "bfs_nr":    p.get("bfs_nr", ""),
@@ -243,12 +263,16 @@ def already_scanned(conn, canton: str, bfs_nr: str, parcel_nr: str) -> bool:
 
 
 def upsert_parcel(conn, data: dict):
-    # Migrate: add herrenlos_type and claim_possible columns if missing
-    existing_cols = {r[1] for r in conn.execute("PRAGMA table_info(parcels)").fetchall()}
-    if "herrenlos_type" not in existing_cols:
-        conn.execute("ALTER TABLE parcels ADD COLUMN herrenlos_type TEXT")
-    if "claim_possible" not in existing_cols:
-        conn.execute("ALTER TABLE parcels ADD COLUMN claim_possible INTEGER")
+    # Migrate: add herrenlos_type and claim_possible columns if missing.
+    # Use module-level guard to avoid PRAGMA table_info() on every call.
+    global _parcels_migrated
+    if not _parcels_migrated:
+        existing_cols = {r[1] for r in conn.execute("PRAGMA table_info(parcels)").fetchall()}
+        if "herrenlos_type" not in existing_cols:
+            conn.execute("ALTER TABLE parcels ADD COLUMN herrenlos_type TEXT")
+        if "claim_possible" not in existing_cols:
+            conn.execute("ALTER TABLE parcels ADD COLUMN claim_possible INTEGER")
+        _parcels_migrated = True
 
     # Provide defaults for new fields if caller didn't set them
     data.setdefault("herrenlos_type", None)
@@ -346,13 +370,17 @@ def requests_today(canton: str) -> int:
     failed scan still counted as a request server-side) which is the safe side.
     """
     with get_conn() as conn:
+        # MED-5 fix: scanned_at is stored as UTC (CURRENT_TIMESTAMP).
+        # Use DATE(scanned_at, 'localtime') to convert to local time before
+        # comparing — without this, scans done after midnight UTC but before
+        # midnight Europe/Zurich are counted in the wrong day.
         scanned = conn.execute("""
             SELECT COUNT(*) FROM parcels
-             WHERE canton=? AND DATE(scanned_at) = DATE('now', 'localtime')
+             WHERE canton=? AND DATE(scanned_at, 'localtime') = DATE('now', 'localtime')
         """, (canton.upper(),)).fetchone()[0]
         tested = conn.execute("""
             SELECT COALESCE(SUM(parcels_attempted), 0) FROM test_runs
-             WHERE canton=? AND DATE(run_at) = DATE('now', 'localtime')
+             WHERE canton=? AND DATE(run_at, 'localtime') = DATE('now', 'localtime')
         """, (canton.upper(),)).fetchone()[0]
     return int(scanned) + int(tested)
 

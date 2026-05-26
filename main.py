@@ -6,10 +6,12 @@ Detects ownerless Swiss land parcels (herrenlos under ZGB Art. 658/664/964)
 across Swiss cantons using public geo portals.
 
 ── CI (GitHub Actions) ─────────────────────────────────────────────────────
-    python main.py fr           # FR scan (~80k parcels; keycloak public session)
     python main.py ju           # JU scan (~13k parcels; OCR-solvable CAPTCHA per query)
     python main.py sz           # SZ scan (~18k parcels; OCR-solvable CAPTCHA per query)
-    All three are auto-scheduled every 6h; pick_canton.py selects by gap size.
+    python main.py sh           # SH scan (~50k parcels); 100 req/day/IP — proxied in CI
+    python main.py gr           # GR scan (~85k parcels); 10 req/day/IP — proxied in CI
+    All four are auto-scheduled every 6h; pick_canton.py selects by gap size.
+    (FR removed: keycloak.fr.ch geo-blocks datacenter IPs.)
 
 ── Laptop — true bulk-capable (single IP completes the whole canton) ──────
     These are what scripts/run_local.py runs automatically in a loop.
@@ -277,31 +279,16 @@ def cmd_test(args):
 
 
 def cmd_stats(args):
-    print_stats()
-    print_stats("UR")
-    print_stats("FR")
-    print_stats("SO")
-    print_stats("BS")
-    print_stats("GR")
-    print_stats("BL")
-    print_stats("BE")
-    print_stats("SH")
-    print_stats("JU")
-    print_stats("VS")
-    print_stats("NE")
-    print_stats("SZ")
-    print_stats("AR")
-    print_stats("AI")
-    print_stats("AG")
-    print_stats("TG")
-    print_stats("SG")
-    print_stats("ZG")
-    print_stats("GL")
-    print_stats("NW")
-    print_stats("OW")
-    print_stats("TI")
-    print_stats("VD")
-    print_stats("GE")
+    # Print per-canton rows dynamically from the DB, then an ALL total.
+    # Using the DB's own canton list avoids a hardcoded list that goes stale
+    # every time a new canton is added.
+    with get_conn() as conn:
+        cantons = [r[0] for r in conn.execute(
+            "SELECT DISTINCT canton FROM parcels ORDER BY canton"
+        ).fetchall()]
+    for c in cantons:
+        print_stats(c)
+    print_stats()  # ALL total as footer
 
 
 def print_herrenlos():

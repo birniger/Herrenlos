@@ -161,10 +161,24 @@ def enumerate_canton(canton: str, max_pages: int | None = None) -> list[dict]:
             time.sleep(REQ_DELAY)
 
         except Exception as e:
-            log.error("WFS error at offset %d: %s", start_index, e)
+            log.error("WFS error at offset %d: %s — retrying once", start_index, e)
             time.sleep(2.0)
-            # one retry, then give up the page
-            continue
+            try:
+                r2 = session.get(WFS_URL, params=params, timeout=60)
+                if r2.status_code == 200:
+                    for feat in _parse_features(r2.text):
+                        key = (feat["bfs_nr"], feat["parcel_nr"])
+                        if key not in seen:
+                            seen.add(key)
+                            parcels.append(feat)
+                    page += 1
+                    start_index += PAGE_SIZE
+                    time.sleep(REQ_DELAY)
+                    continue
+            except Exception as e2:
+                log.error("WFS retry also failed at offset %d: %s — skipping page", start_index, e2)
+            # Give up this page; advance to avoid infinite loop
+            start_index += PAGE_SIZE
 
     log.info("WFS enumeration complete: %d unique %s parcels", len(parcels), canton)
     return parcels

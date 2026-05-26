@@ -171,7 +171,11 @@ def _load_coords_cache() -> dict:
 
 
 def _save_coords_cache(cache: dict) -> None:
-    COORDS_CACHE.write_text(json.dumps(cache, separators=(",", ":")))
+    # Write atomically via a temp file + rename so a mid-write crash cannot
+    # corrupt the existing cache file.  os.replace() is atomic on POSIX.
+    tmp = COORDS_CACHE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(cache, separators=(",", ":")))
+    tmp.replace(COORDS_CACHE)
 
 
 def _lookup_wgs84(egrid: str) -> tuple[float, float] | None:

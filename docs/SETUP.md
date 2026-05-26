@@ -7,11 +7,12 @@ This kit gives you:
 Public repos get unlimited free Actions minutes; private repos get 2000 min / month.
 
 The cloud workflow handles cantons that work from GitHub Actions datacenter IPs:
-**FR, JU, SZ** (no auth, no rotation, no CAPTCHA service required).
+**JU, SZ** (OCR-solvable CAPTCHA) and **SH, GR** (daily-quota cantons, proxy-rotated).
+FR was removed: keycloak.fr.ch geo-blocks datacenter IPs.
 
 Other cantons stay on your laptop:
 - **UR** — geo-blocked from datacenter IPs (Swiss IP only)
-- **SH, NE, GR** — daily quotas; rotation needed only for full-scale completion
+- **NE** — daily quotas; rotation needed only for full-scale completion
 - **SO** — reCAPTCHA v3 score fails from datacenter; passes from residential IP
 - **BE, VS** — interactive login (Safari/Playwright on macOS), token cached after first run
 - **BL** — needs `ANTHROPIC_API_KEY` for handwritten CAPTCHA
@@ -44,9 +45,10 @@ Within a minute your dashboard is live at
 
 ### 3. (Optional) Configure secrets
 
-The current CI cantons (FR, JU, SZ) need no secrets at all. The workflow
-forwards a few optional secrets if you've set them — useful only if you
-later expand `ELIGIBLE_CANTONS` in `.github/workflows/scan.yml`:
+The current CI cantons (JU, SZ, SH, GR) need no secrets beyond a proxy list
+for the rate-limited cantons. The workflow forwards a few optional secrets if
+you've set them — useful only if you later expand `ELIGIBLE_CANTONS` in
+`.github/workflows/scan.yml`:
 
 **Settings → Secrets and variables → Actions → New repository secret**
 - `BS_API_KEY` — only needed if you re-enable BS in CI (free key at <https://api.geo.bs.ch/>)
@@ -106,11 +108,12 @@ CI cantons only — laptop work is unbounded:
 |--------|---------:|-------------:|-----------------------:|
 | JU     | 16,000   |  7h          | 2 |
 | SZ     | 18,000   |  8h          | 2 |
-| FR     | 80,000   | 30h          | 6 |
-| **Total** | ~114k | **~45h** | **~10 runs ≈ 2.5 days at 4 runs/day** |
+| SH     | 50,000   | several days | ~50 (100 req/day/IP)   |
+| GR     | 85,000   | many months  | ~425 (10 req/day/IP)   |
 
-After ~3 days of cron firing every 6 hours, the CI cantons are done.
-The rest are laptop-only (see laptop scan loop in README).
+SH and GR are bounded by proxy capacity, not compute. With a WEBSHARE proxy
+pool at 900 req/day (SH) or 90 req/day (GR), pick_canton.py rotates the pool
+automatically. The rest are laptop-only (see laptop scan loop in README).
 
 ---
 

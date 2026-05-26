@@ -24,6 +24,25 @@ import re
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# SHARED CONSTANTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Federal swisstopo cadastral identify endpoint.  Used by scanners that need
+# to reverse-geocode a coordinate to a parcel EGRID via the national WMS.
+# Import this from utils rather than redefining it in each scanner module.
+SWISSTOPO_IDENTIFY = "https://api3.geo.admin.ch/rest/services/api/MapServer/identify"
+
+# Default User-Agent string used by all scanners.  Some portals reject requests
+# without a plausible browser UA; using a consistent value also makes it easier
+# to recognise scanner traffic in portal access logs.
+DEFAULT_UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/131.0.0.0 Safari/537.36"
+)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # PROXY UTILITIES
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -54,7 +73,7 @@ def load_proxies(env_key: str) -> list[str]:
                         if line.startswith("#") or "=" not in line:
                             continue
                         k, _, v = line.partition("=")
-                        k = k.strip().lstrip("export").strip()
+                        k = k.strip().removeprefix("export").strip()
                         if k == env_key:
                             raw = v.strip().strip('"').strip("'")
                             break

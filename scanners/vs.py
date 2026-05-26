@@ -1,8 +1,8 @@
 """
 VS scanner — Valais / Wallis
 ==============================
-- EGRID enumeration : swisstopo identify API grid scan (step=400 m, ~2 h one-time)
-                      Cached in parcel_enum table.
+- EGRID enumeration : geodienste.ch WFS (ms:RESF) — all ~210k VS parcels in
+                      ~4 min, 100% EGRID coverage. Cached in parcel_enum table.
 - Owner lookup      : capweb-public.apps.vs.ch/capweb-public/api/gb/
                         GET /gb/grundstueck?egrid={EGRID}&historisiert=OHNE_HIST
                         → internal grundstueckId
@@ -80,8 +80,6 @@ KEYCLOAK_TOKEN_EP  = f"{KEYCLOAK_ISSUER}/protocol/openid-connect/token"
 CALLBACK_PORT      = 8765
 CALLBACK_URI       = f"http://localhost:{CALLBACK_PORT}/callback"
 
-SWISSTOPO_IDENTIFY = "https://api3.geo.admin.ch/rest/services/api/MapServer/identify"
-
 UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -91,134 +89,6 @@ UA = (
 # No credentials needed — login happens via the browser (see oidc_login_browser)
 
 TOKEN_CACHE = pathlib.Path.home() / ".herrenlos_scanner" / "vs_token.json"
-
-# VS LV95 bounding box (tight — starts inside VS territory)
-VS_EMIN, VS_EMAX = 2_548_000, 2_682_000   # Monthey → Simplon
-VS_NMIN, VS_NMAX = 1_082_000, 1_165_000   # southern Alps → Bernese border
-VS_GRID_STEP     = 400   # metres — ~73k points for a large mountainous canton
-
-# Centre of Sion/Sitten — used as the starting point for quick scans
-VS_SION_E, VS_SION_N = 2_594_000, 1_119_000
-
-
-# ── Parcel enumeration via swisstopo ─────────────────────────────────────────
-
-def enumerate_parcels_swisstopo(
-        emin=VS_EMIN, emax=VS_EMAX,
-        nmin=VS_NMIN, nmax=VS_NMAX,
-        step=VS_GRID_STEP,
-        max_parcels: int | None = None) -> list[dict]:
-    """
-    Grid scan — returns {egrid, bfs_nr, parcel_nr, commune} dicts.
-
-    max_parcels: stop as soon as this many unique parcels are found.
-                 Used for quick tests; result is NOT cached when set.
-    """
-    seen:    set[str]  = set()
-    parcels: list[dict] = []
-    session = requests.Session()
-    session.headers["User-Agent"] = UA
-
-    e_range = range(emin, emax + 1, step)
-    n_range = range(nmin, nmax + 1, step)
-    total   = len(e_range) * len(n_range)
-    checked = 0
-
-    if max_parcels:
-        # Quick mode: scan a small 4 km × 4 km grid centred on Sion at 200 m steps.
-        # Sion is the VS capital — guaranteed dense parcel coverage.
-        log.info(
-            "VS swisstopo quick scan: 4 km grid around Sion, stopping after %d parcels",
-            max_parcels,
-        )
-        for e in range(VS_SION_E - 2_000, VS_SION_E + 2_001, 200):
-            for n in range(VS_SION_N - 2_000, VS_SION_N + 2_001, 200):
-                checked += 1
-                try:
-                    r = session.get(SWISSTOPO_IDENTIFY, params={
-                        "geometry":       f"{e},{n}",
-                        "geometryType":   "esriGeometryPoint",
-                        "layers":         "all:ch.swisstopo-vd.amtliche-vermessung",
-                        "tolerance":      0,
-                        "mapExtent":      "0,0,1,1",
-                        "imageDisplay":   "1,1,96",
-                        "returnGeometry": "false",
-                        "lang":           "de",
-                        "sr":             2056,
-                    }, timeout=12)
-                    if r.status_code == 200:
-                        for feat in r.json().get("results", []):
-                            attrs = feat.get("attributes", {})
-                            if attrs.get("ak", "").upper() != "VS":
-                                continue
-                            eg = attrs.get("egris_egrid", "")
-                            if eg and eg not in seen:
-                                seen.add(eg)
-                                parcels.append({
-                                    "egrid":     eg,
-                                    "bfs_nr":    str(attrs.get("bfsnr", "")),
-                                    "parcel_nr": str(attrs.get("number", "")),
-                                    "commune":   attrs.get("label", ""),
-                                })
-                except Exception:
-                    pass
-                time.sleep(0.1)
-                if len(parcels) >= max_parcels:
-                    break
-            if len(parcels) >= max_parcels:
-                break
-        log.info("Quick scan complete: %d VS parcels found (%d points checked)",
-                 len(parcels), checked)
-        return parcels
-
-    # Full grid scan
-    log.info(
-        "VS swisstopo grid scan: %d × %d = %d points at %d m",
-        len(e_range), len(n_range), total, step,
-    )
-    for e in e_range:
-        for n in n_range:
-            checked += 1
-            try:
-                r = session.get(SWISSTOPO_IDENTIFY, params={
-                    "geometry":       f"{e},{n}",
-                    "geometryType":   "esriGeometryPoint",
-                    "layers":         "all:ch.swisstopo-vd.amtliche-vermessung",
-                    "tolerance":      0,
-                    "mapExtent":      "0,0,1,1",
-                    "imageDisplay":   "1,1,96",
-                    "returnGeometry": "false",
-                    "lang":           "de",
-                    "sr":             2056,
-                }, timeout=12)
-
-                if r.status_code != 200:
-                    continue
-
-                for feat in r.json().get("results", []):
-                    attrs = feat.get("attributes", {})
-                    if attrs.get("ak", "").upper() != "VS":
-                        continue
-                    eg = attrs.get("egris_egrid", "")
-                    if eg and eg not in seen:
-                        seen.add(eg)
-                        parcels.append({
-                            "egrid":     eg,
-                            "bfs_nr":    str(attrs.get("bfsnr", "")),
-                            "parcel_nr": str(attrs.get("number", "")),
-                            "commune":   attrs.get("label", ""),
-                        })
-            except Exception:
-                pass
-
-            if checked % 5000 == 0:
-                log.info(
-                    "Grid %d/%d  unique VS parcels=%d", checked, total, len(parcels)
-                )
-            time.sleep(0.1)
-
-    log.info("Grid scan complete: %d unique VS parcels found", len(parcels))
-    return parcels
 
 
 # ── Token cache helpers ───────────────────────────────────────────────────────
@@ -242,10 +112,11 @@ def _load_cached_token() -> dict | None:
 
 
 def _save_token(token_data: dict):
-    """Persist token data to disk."""
+    """Persist token data to disk with owner-only permissions (0o600)."""
     try:
         TOKEN_CACHE.parent.mkdir(parents=True, exist_ok=True)
         TOKEN_CACHE.write_text(json.dumps(token_data, indent=2))
+        os.chmod(TOKEN_CACHE, 0o600)  # security: token file must not be world-readable
         log.info("Cached VS Bearer token to %s", TOKEN_CACHE)
     except Exception as exc:
         log.debug("Token cache save error: %s", exc)
@@ -405,9 +276,15 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                 "owner": None, "owner_address": None, "raw_response": None}
 
     if r1.status_code == 404:
-        # No Grundbuch entry (Type 2 herrenlos)
+        # No Grundbuch entry → Art. 664 ZGB: Type 2 (not_in_grundbuch).
+        # LOW-5 fix: include herrenlos_type and claim_possible so the record is
+        # fully typed (previously these fields were NULL, making it look like an
+        # unknown-type herrenlos rather than a definitively non-claimable one).
         return {"owner": None, "owner_address": None,
-                "is_herrenlos": 1, "raw_response": None, "error": None}
+                "is_herrenlos": 1,
+                "herrenlos_type": "not_in_grundbuch",
+                "claim_possible": 0,
+                "raw_response": None, "error": None}
 
     if r1.status_code == 429:
         return {"error": "rate_limited", "is_herrenlos": None,
@@ -469,9 +346,13 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                 "owner": None, "owner_address": None, "raw_response": r2.text[:300]}
 
     if r2.status_code == 404:
-        # Eigentum entry missing — treat as herrenlos Type 2
+        # Eigentum entry missing — grundstueck exists in GB but has no ownership
+        # record → dereliktion (Art. 964 ZGB, Type 1). LOW-5 fix: set type fields.
         return {"owner": None, "owner_address": None,
-                "is_herrenlos": 1, "raw_response": None, "error": None}
+                "is_herrenlos": 1,
+                "herrenlos_type": "dereliktion",
+                "claim_possible": 0,   # VS: no private Aneignung under cantonal law
+                "raw_response": None, "error": None}
 
     if r2.status_code == 429:
         return {"error": "rate_limited", "is_herrenlos": None,
@@ -535,12 +416,17 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
         else:
             owner_str = "registered"   # API didn't return names (likely 403)
 
+    # When no entries: parcel IS in Grundbuch but has no ownership records →
+    # dereliktion (Art. 964 ZGB).  VS: Art. 162 EGZGB VS gives municipality
+    # priority; private Aneignung blocked in practice → claim_possible=0.
     return {
-        "owner":         owner_str,
-        "owner_address": None,
-        "is_herrenlos":  0 if has_owner else 1,
-        "raw_response":  None,
-        "error":         None,
+        "owner":          owner_str,
+        "owner_address":  None,
+        "is_herrenlos":   0 if has_owner else 1,
+        "herrenlos_type": None if has_owner else "dereliktion",
+        "claim_possible": None if has_owner else 0,
+        "raw_response":   None,
+        "error":          None,
     }
 
 
@@ -611,7 +497,7 @@ def scan(
     No credentials needed up front — login opens your default browser.
     Log in with SwissID using whatever method you prefer (passkey, SMS, password).
 
-    First run: ~2 h swisstopo grid scan (cached).
+    First run: ~4 min WFS enumeration (geodienste.ch, cached).
     Then SwissID browser login + CAPWEB API queries.
 
     limit         : stop after N parcels
@@ -632,7 +518,7 @@ def scan(
         if cached:
             log.info("VS cache incomplete (%d parcels) — re-enumerating via WFS", len(cached))
             with get_conn() as conn:
-                conn.execute("DELETE FROM parcel_enum WHERE canton='VS'")
+                conn.execute("DELETE FROM enum.parcel_enum WHERE canton='VS'")  # MED-7 fix: must qualify with 'enum.' schema
                 conn.commit()
         log.info("Enumerating VS parcels via geodienste WFS (~4 min) …")
         parcels = wfs_enumerate_canton("VS")

@@ -21,20 +21,22 @@ import logging
 import requests
 from bs4 import BeautifulSoup
 
-import sys, pathlib
+import sys
+import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum, log_captcha
 from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
-from scanners.utils import is_herrenlos_owner_text, claim_possible_for
+from scanners.utils import (
+    is_herrenlos_owner_text, claim_possible_for,
+    SWISSTOPO_IDENTIFY, DEFAULT_UA,
+)
 
 log = logging.getLogger("SZ")
 
 BASE_URL        = "https://service2.geo.sz.ch"
 OWNER_URL       = f"{BASE_URL}/ownership/captcha/access/{{egrid}}.html"
 CAPTCHA_IMG_URL = f"{BASE_URL}/dokumente/c/service/image/{{hash}}/"
-UA              = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
-
-SWISSTOPO_IDENTIFY = "https://api3.geo.admin.ch/rest/services/api/MapServer/identify"
+UA              = DEFAULT_UA  # alias kept for call sites within this file
 
 # SZ LV95 bounding box
 SZ_EMIN, SZ_EMAX = 2_676_000, 2_720_000
@@ -432,7 +434,7 @@ def scan(limit: int | None = None,
         if cached:
             log.info("SZ cache incomplete (%d parcels) — re-enumerating via WFS", len(cached))
             with get_conn() as conn:
-                conn.execute("DELETE FROM parcel_enum WHERE canton='SZ'")
+                conn.execute("DELETE FROM enum.parcel_enum WHERE canton='SZ'")  # MED-7: must qualify with 'enum.' schema
                 conn.commit()
         log.info("Enumerating SZ parcels via geodienste WFS (~30s) …")
         parcels = wfs_enumerate_canton("SZ")

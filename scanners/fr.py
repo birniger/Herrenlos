@@ -22,11 +22,15 @@ import logging
 import requests
 from bs4 import BeautifulSoup
 
-import sys, pathlib
+import sys
+import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
 from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
-from scanners.utils import is_herrenlos_owner_text, claim_possible_for
+from scanners.utils import (
+    is_herrenlos_owner_text, claim_possible_for,
+    SWISSTOPO_IDENTIFY, DEFAULT_UA,
+)
 
 log = logging.getLogger("FR")
 
@@ -34,14 +38,12 @@ BASE     = "https://keycloak.fr.ch/rfpublic"
 INDEX    = f"{BASE}/indexD.html"
 COMMUNE  = f"{BASE}/selectCommune.jsp"
 QUERY    = f"{BASE}/v2TAffImmx01.jsp"
-UA       = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+UA       = DEFAULT_UA  # alias kept for call sites within this file; imported from utils
 
 # FR bounding box (LV95 / EPSG:2056)
 FR_EMIN, FR_EMAX = 2_556_000, 2_617_000
 FR_NMIN, FR_NMAX = 1_153_000, 1_213_000
 FR_GRID_STEP     = 200   # metres — ~93k grid points, one-time enumeration
-
-SWISSTOPO_IDENTIFY = "https://api3.geo.admin.ch/rest/services/api/MapServer/identify"
 
 NOT_FOUND_NEEDLE  = "INFORMATION INTROUVABLE"
 NOT_FOUND_MAX_B   = 800    # bytes; valid response is ~8–10 KB
@@ -223,11 +225,10 @@ def check_owner(session: requests.Session, xv1: str,
         soup = BeautifulSoup(raw, "lxml")
         proprio = soup.find("table", class_="proprio")
         owner = None
-        herrenlos_texts: list = []   # initialised here so the reference below is safe
+        herrenlos_texts: list = []
         if proprio:
             rows = proprio.find_all("tr")
             owner_names = []
-            herrenlos_texts = []
             skip = {"propriété", "miteigentum", "gesamteigentum",
                     "informations sur la propriété:", "angaben zur liegenschaft:"}
             for row in rows:
@@ -346,7 +347,7 @@ def scan(communes: list[str] | None = None,
             log.info("FR cache incomplete (%d parcels, grid-scan undercount) — "
                      "re-enumerating via WFS", len(cached))
             with get_conn() as conn:
-                conn.execute("DELETE FROM parcel_enum WHERE canton='FR'")
+                conn.execute("DELETE FROM enum.parcel_enum WHERE canton='FR'")  # MED-7 fix: must qualify with 'enum.' schema
                 conn.commit()
         log.info("Enumerating FR parcels via geodienste WFS (~2 min) …")
         raw_parcels = wfs_enumerate_canton("FR")
@@ -455,9 +456,13 @@ def scan(communes: list[str] | None = None,
                             consecutive_exhausted,
                         )
                         break
-                else:
-                    consecutive_exhausted = 0
+                # HIGH-6 fix: do NOT reset consecutive_exhausted when the RETRY
+                # succeeds.  If the quota is near-exhausted, ~1-in-20 retries may
+                # succeed by luck — resetting the counter on those lucky retries
+                # prevents the circuit breaker from ever firing.
+                # Only reset when the INITIAL request succeeds (else branch below).
             else:
+                # Clean initial success: no quota pressure, reset the counter.
                 consecutive_exhausted = 0
 
             # Carry the EGRID through from the enum row (FR scanner doesn't

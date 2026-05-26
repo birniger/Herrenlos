@@ -40,14 +40,18 @@ fi
 # Without this, rows written since the last checkpoint sit in herrenlos.db-wal
 # and are invisible to git (which reads the raw file, not SQLite's WAL view).
 # PASSIVE: checkpoints all frames it can without blocking active writers.
+# CRIT-3 fix: warn if checkpoint is incomplete (active writers still holding WAL frames).
 "$PYTHON" -c "
-import sqlite3, time
+import sqlite3, sys, time
 for attempt in range(3):
     try:
         c = sqlite3.connect('herrenlos.db', timeout=10)
         wal_pages, checkpointed = c.execute('PRAGMA wal_checkpoint(PASSIVE)').fetchone()[1:]
         c.close()
         print(f'[push_local] WAL checkpoint: {checkpointed}/{wal_pages} pages flushed')
+        if wal_pages > 0 and checkpointed < wal_pages:
+            print(f'[push_local] WARNING: {wal_pages - checkpointed} WAL pages not flushed '
+                  f'(active writers present) — DB snapshot may be slightly stale', file=sys.stderr)
         break
     except Exception as e:
         print(f'[push_local] WAL checkpoint attempt {attempt+1} failed: {e}')
@@ -78,6 +82,10 @@ if git show origin/main:herrenlos.db > _origin.db 2>/dev/null; then
     git add herrenlos.db
     rm -f _origin.db
 fi
-git rebase origin/main -X theirs
+# CRIT-2 fix: amend the scan commit with the freshly-merged DB BEFORE rebasing.
+# Without this, `git rebase -X theirs` replays the pre-merge DB content from the
+# commit object, discarding the merge_dbs.py result computed just above.
+git commit --amend --no-edit
+git rebase origin/main -X theirs || git rebase --abort
 git push
 echo "[push_local] Pushed OK (after rebase)."

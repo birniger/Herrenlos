@@ -49,7 +49,10 @@ import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
 from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
-from scanners.utils import is_herrenlos_owner_text, claim_possible_for, load_proxies
+from scanners.utils import (
+    is_herrenlos_owner_text, claim_possible_for, load_proxies,
+    SWISSTOPO_IDENTIFY, DEFAULT_UA,
+)
 
 log = logging.getLogger("SH")
 
@@ -76,8 +79,7 @@ PERSON_UUID_LOOKUP_URL = (
     "/json/"
 )
 
-SWISSTOPO_IDENTIFY = "https://api3.geo.admin.ch/rest/services/api/MapServer/identify"
-UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+UA = DEFAULT_UA  # alias kept for call sites within this file; imported from utils
 
 # SH LV95 bounding box (298 km², northernmost Swiss canton)
 SH_EMIN, SH_EMAX = 2_668_000, 2_715_000
@@ -390,7 +392,7 @@ def scan(limit: int | None = None,
         if cached:
             log.info("SH cache incomplete (%d parcels) — re-enumerating via WFS", len(cached))
             with get_conn() as conn:
-                conn.execute("DELETE FROM parcel_enum WHERE canton='SH'")
+                conn.execute("DELETE FROM enum.parcel_enum WHERE canton='SH'")  # MED-7 fix: must qualify with 'enum.' schema
                 conn.commit()
         log.info("Enumerating SH parcels via geodienste WFS (~10s) …")
         parcels = wfs_enumerate_canton("SH")
@@ -464,14 +466,10 @@ def scan(limit: int | None = None,
                     result = _err("token_refresh_failed")
 
             # Rate limited → rotate proxy; circuit-break when all are spent
+            # HIGH-3 fix: count ONE consecutive 429 per parcel (same bug as GR).
+            # Original code double-incremented (initial + retry), halving the
+            # effective threshold. Rotate + retry first; count only if both fail.
             if result.get("error") == "rate_limited":
-                consecutive_429 += 1
-                if consecutive_429 >= MAX_CONSECUTIVE_429:
-                    log.warning(
-                        "SH all proxies exhausted — %d consecutive 429s. "
-                        "Daily quota fully used.", consecutive_429
-                    )
-                    break
                 if proxies:
                     proxy_idx = (proxy_idx + 1) % len(proxies)
                     session = _sh_session(proxies[proxy_idx])
@@ -483,6 +481,14 @@ def scan(limit: int | None = None,
                     queries_on_proxy += 1
                     if result.get("error") == "rate_limited":
                         consecutive_429 += 1
+                        if consecutive_429 >= MAX_CONSECUTIVE_429:
+                            log.warning(
+                                "SH all proxies exhausted — %d consecutive 429s. "
+                                "Daily quota fully used.", consecutive_429
+                            )
+                            break
+                    else:
+                        consecutive_429 = 0
                 else:
                     log.warning(
                         "SH rate limit hit (100/day) with no proxies — stopping scan for today. "

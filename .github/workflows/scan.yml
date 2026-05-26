@@ -15,8 +15,9 @@
 #         10 proxies → 90 parcels/day → ~2,500 CI runs (slow but passive).
 #
 # Run locally instead (see main.py for details):
-#   FR, NE  — sitn.ne.ch / keycloak.fr.ch block datacenter IPs; Swiss IP only
-#   UR      — geo.ur.ch geo-blocks datacenter IPs
+#   FR  — keycloak.fr.ch geo-blocks datacenter IPs; Swiss residential IP only
+#   NE  — sitn.ne.ch blocks datacenter proxies; Swiss residential IP only
+#   UR  — geo.ur.ch geo-blocks datacenter IPs
 #   BE, VS  — one-time interactive login; token cached; macOS/laptop only
 #   BL      — needs ANTHROPIC_API_KEY for handwritten CAPTCHA
 #   SO, GE  — reCAPTCHA/Imperva; needs proxies (+ ANTHROPIC_API_KEY for GE)
@@ -217,6 +218,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: herrenlos-db-after-${{ steps.pick.outputs.canton }}
+          name: herrenlos-db-after-${{ steps.scan_loop.outputs.cantons }}
           path: herrenlos.db
           retention-days: 14

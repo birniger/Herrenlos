@@ -62,7 +62,8 @@ import logging
 import requests
 from bs4 import BeautifulSoup
 
-import sys, pathlib
+import sys
+import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum, log_captcha
 from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton

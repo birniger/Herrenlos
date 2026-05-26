@@ -199,10 +199,6 @@ def _check_fr() -> tuple[bool, str]:
     return True, "FR needs no token (residential IP only)"
 
 
-def _check_so() -> tuple[bool, str]:
-    return True, "SO needs a Swiss residential IP (no token / no key required)"
-
-
 PREFLIGHT_CHECKS = {
     "be": {
         "check":      _check_be,
@@ -232,11 +228,6 @@ PREFLIGHT_CHECKS = {
         "check":      _check_fr,
         "setup_cmd":  None,
         "setup_note": "FR needs no setup — just run from a Swiss residential IP.",
-    },
-    "so": {
-        "check":      _check_so,
-        "setup_cmd":  None,
-        "setup_note": "SO needs no setup — just run from a Swiss residential IP.",
     },
 }
 
@@ -275,11 +266,14 @@ def _save_cooldown(canton: str, until: float) -> None:
                     data = json.loads(_COOLDOWN_FILE.read_text())
                 except Exception:
                     data = {}
-            data[canton.lower()] = until
-            # Prune expired entries while we're here
+            # Prune expired entries while we're here.
+            # HIGH-1 fix: only re-add the entry if the new cooldown is in the
+            # future.  Without this guard, calling _save_cooldown(canton, 0) or
+            # a past timestamp would prune-then-re-add a stale entry to the file.
             now = time.time()
             data = {k: v for k, v in data.items() if v > now}
-            data[canton.lower()] = until  # re-add (might have been pruned if 0)
+            if until > now:
+                data[canton.lower()] = until
             _COOLDOWN_FILE.write_text(json.dumps(data, indent=2))
     except Exception as exc:
         log.debug("_save_cooldown failed: %s", exc)
