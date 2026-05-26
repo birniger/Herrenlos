@@ -64,7 +64,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 1 }
+        with:
+          fetch-depth: 1
+          lfs: true        # enum.db is in Git LFS; lfs:true downloads the real file
 
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: "pip" }
@@ -83,6 +85,7 @@ jobs:
         run: |
           git fetch origin main
           git reset --hard origin/main
+          git lfs pull   # re-download enum.db after reset (lfs:true only runs at initial checkout)
 
       # enum.db is tracked in Git LFS (see .gitattributes) and already present
       # after the checkout step above.  The old actions/cache step was removed
