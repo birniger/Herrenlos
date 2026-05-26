@@ -1,7 +1,6 @@
 canton,commune,bfs_nr,parcel_nr,egrid,owner,owner_address,herrenlos_type,claim_possible,lat,lng,scanned_at
 FR,Gibloux (secteur Vuisternens-en-Ogoz),2236,160,CH457510829411,,,not_in_grundbuch,0,46.71883773803711,7.11042594909668,2026-05-25 00:58:38
 FR,Gibloux (secteur Vuisternens-en-Ogoz),2236,280,CH849410777658,,,not_in_grundbuch,0,46.707427978515625,7.0349860191345215,2026-05-25 00:51:49
-FR,Gletterens,2022,811,CH128502109483,,,dereliktion,0,46.895965576171875,6.937401294708252,2026-05-26 17:14:26
 FR,La Brillaz (secteur Onnens),2234,1029,CH607301368548,,,not_in_grundbuch,0,46.759647369384766,7.004053115844727,2026-05-25 00:45:47
 FR,La Brillaz (secteur Onnens),2234,14,CH309294061032,,,not_in_grundbuch,0,46.75625991821289,7.004262924194336,2026-05-25 00:38:50
 FR,La Brillaz (secteur Onnens),2234,142,CH331081943684,,,not_in_grundbuch,0,46.76558303833008,7.013848781585693,2026-05-25 00:48:01

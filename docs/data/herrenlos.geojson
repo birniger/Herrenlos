@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-05-26T21:12:48+00:00",
+  "generated_at": "2026-05-26T21:26:37+00:00",
   "features": [
     {
       "type": "Feature",
@@ -44,28 +44,6 @@
         "herrenlos_type": "not_in_grundbuch",
         "claim_possible": 0,
         "scanned_at": "2026-05-25 00:51:49"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          6.937401294708252,
-          46.895965576171875
-        ]
-      },
-      "properties": {
-        "egrid": "CH128502109483",
-        "canton": "FR",
-        "commune": "Gletterens",
-        "bfs_nr": "2022",
-        "parcel_nr": "811",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "dereliktion",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-26 17:14:26"
       }
     },
     {
