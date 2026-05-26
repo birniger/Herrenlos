@@ -267,12 +267,15 @@ def _save_cooldown(canton: str, until: float) -> None:
                     data = json.loads(_COOLDOWN_FILE.read_text())
                 except Exception:
                     data = {}
-            # Prune expired entries while we're here.
+            # Prune expired canton cooldown timestamps while we're here, but
+            # preserve metadata keys (those starting with "fr_") which store
+            # window-search state (durations / past timestamps, not future ones).
             # HIGH-1 fix: only re-add the entry if the new cooldown is in the
             # future.  Without this guard, calling _save_cooldown(canton, 0) or
             # a past timestamp would prune-then-re-add a stale entry to the file.
             now = time.time()
-            data = {k: v for k, v in data.items() if v > now}
+            data = {k: v for k, v in data.items()
+                    if k.startswith("fr_") or v > now}
             if until > now:
                 data[canton.lower()] = until
             _COOLDOWN_FILE.write_text(json.dumps(data, indent=2))
