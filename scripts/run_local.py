@@ -539,12 +539,14 @@ def _fr_adaptive_cooldown(tail: str) -> tuple[float, float]:
     """
     Binary-search the FR portal's rate-limit reset window.
 
-    Uses the PLANNED wait (how long we actually waited before resuming,
-    i.e. cooldown_until - last_exhausted_at) as the measurement, NOT the
-    total wall-clock elapsed since the last exhaustion.  The distinction
-    matters because elapsed includes the scan run-time AFTER resuming,
-    which can be many hours and would cause the bracket to invert on the
-    first measurement.
+    Uses the PLANNED wait (cooldown_until - last_exhausted_at from the
+    previous circuit-breaker) as the measurement signal, so the bracket
+    converges on the actual portal reset window rather than total elapsed
+    time (which includes the scan run-time and inflates the measurement).
+
+    No midnight cap — the portal resets in minutes, not hours.  Capping
+    to midnight would inflate planned_wait on the next measurement and
+    cause bracket inversion.
 
     Returns (cooldown_until, next_wait_secs).
     """
@@ -558,17 +560,23 @@ def _fr_adaptive_cooldown(tail: str) -> tuple[float, float]:
     hi             = float(state.get(_FR_KEY_HI, _FR_WINDOW_HI_INIT))
     last_exhausted = float(state.get(_FR_KEY_EXHAUSTED_AT, 0))
 
-    # Planned wait = how long we told the worker to sleep after the previous
-    # circuit-breaker before resuming.  state['fr'] holds the cooldown_until
-    # timestamp set by the PREVIOUS call to _fr_adaptive_cooldown.
-    # Falls back to hi/2 on the very first run (no prior exhaustion recorded).
+    # planned_wait = how long we slept after the previous circuit-breaker.
+    # state['fr'] holds the cooldown_until set by the previous adaptive call.
+    # Falls back to hi/2 on the very first run (no prior state).
     prev_cooldown_until = float(state.get("fr", 0))
     if last_exhausted > 0 and prev_cooldown_until > last_exhausted:
         planned_wait = prev_cooldown_until - last_exhausted
     else:
         planned_wait = hi / 2
 
-    if last_scanned >= _FR_MIN_PRODUCTIVE:
+    # Guard: if planned_wait was inflated (e.g. by a midnight-capped cooldown
+    # from old code or an unusually long sleep), the measurement is noise —
+    # skip the bracket update and just use the midpoint of the current window.
+    # Threshold: more than 2× hi means the wait far exceeded our estimate.
+    if planned_wait > hi * 2:
+        verdict = (f"skip measurement — planned_wait={planned_wait/60:.0f} min "
+                   f"exceeds 2×hi={hi/60:.0f} min (likely inflated)")
+    elif last_scanned >= _FR_MIN_PRODUCTIVE:
         # Portal was ready after planned_wait seconds → tighten upper bound.
         hi = min(hi, planned_wait)
         verdict = f"productive ({last_scanned} parcels) → hi={hi/60:.1f} min"
@@ -577,15 +585,16 @@ def _fr_adaptive_cooldown(tail: str) -> tuple[float, float]:
         lo = max(lo, planned_wait)
         verdict = f"unproductive ({last_scanned} parcels) → lo={lo/60:.1f} min"
 
-    # Guard: if bounds crossed (shouldn't happen with planned_wait fix, but
-    # keep for safety), reset.
+    # Guard: if bounds crossed (shouldn't happen), reset.
     if lo >= hi:
         log.warning("[FR] window bracket inverted (lo=%.0fs hi=%.0fs) — resetting.",
                     lo, hi)
         lo, hi = 0, _FR_WINDOW_HI_INIT
 
     next_wait      = max((lo + hi) / 2, _FR_MIN_WAIT)
-    cooldown_until = min(now + next_wait, _next_midnight_bern())
+    # No midnight cap — portal resets in minutes; capping to midnight would
+    # inflate planned_wait on the next measurement and invert the bracket.
+    cooldown_until = now + next_wait
 
     _fr_save_state({
         _FR_KEY_LO:           round(lo),
