@@ -58,7 +58,9 @@ for attempt in range(3):
         time.sleep(2)
 "
 
-# Stage the DB and any dashboard exports.
+# Regenerate dashboard exports, then stage everything.
+"$PYTHON" scripts/export_for_web.py 2>/dev/null || true
+
 git add herrenlos.db
 git add docs/data/*.json docs/data/*.geojson docs/data/*.csv 2>/dev/null || true
 
