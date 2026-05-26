@@ -14,7 +14,9 @@ FR scanner — Fribourg
 - Throughput        : ~1,200 queries/hr (QUERIES_PER_SESSION=3, delay=0.3s)
 
 FR commune codes (selcom) format:  "{bfs_nr} FR{sector_code}"
-Full commune list fetched live from selectCommune.jsp on each session init.
+Full commune list fetched live: portal uses 7 districts (BRF=10..16 via selectDistrict.jsp).
+Default GET of selectCommune.jsp only returns Saane/Sarine (40 selcoms, ~28k parcels).
+new_session() now POSTs each BRF to fetch all 183 selcoms → ~147k parcel coverage.
 """
 
 import re
@@ -59,12 +61,23 @@ def new_session() -> tuple[requests.Session, str, list[tuple]]:
     Create a fresh JSESSIONID session and return:
       (session, xv1_token, commune_options)
     commune_options: list of (selcom_value, label)
+
+    The FR portal uses frames: selectDistrict.jsp lists 7 districts (BRF=10..16),
+    and POSTing BRF to selectCommune.jsp loads that district's communes.  The
+    default GET of selectCommune.jsp only shows Saane/Sarine (BRF=10, ~40 options).
+    We must iterate over all 7 districts to get the full 183-selcom list that
+    covers all 147k enum parcels (vs 28k with Saane only).
     """
+    # BRF district codes: 10=Saane, 11=Greyerz, 12=Sense, 13=Broye,
+    #                     14=See, 15=Vivisbach, 16=Glane
+    DISTRICT_BRF = [10, 11, 12, 13, 14, 15, 16]
+
     s = requests.Session()
     s.headers["User-Agent"] = UA
 
     s.get(INDEX, timeout=15)
 
+    # First request establishes JSESSIONID and fetches Saane communes (default).
     r = s.get(COMMUNE, timeout=15)
     soup = BeautifulSoup(r.text, "lxml")
 
@@ -75,12 +88,26 @@ def new_session() -> tuple[requests.Session, str, list[tuple]]:
     else:
         xv1 = xv1_tag.get("value", "")
 
-    options = [
-        (opt["value"], re.sub(r'\s+', ' ', opt.get_text(strip=True)).strip())
-        for opt in soup.select("select[name='selcom'] option")
-        if opt.get("value", "").strip()
-    ]
-    log.debug("New FR session — %d communes, xv1=%s…", len(options), xv1[:8])
+    def _parse_options(html: str) -> list[tuple[str, str]]:
+        sp = BeautifulSoup(html, "lxml")
+        return [
+            (opt["value"], re.sub(r'\s+', ' ', opt.get_text(strip=True)).strip())
+            for opt in sp.select("select[name='selcom'] option")
+            if opt.get("value", "").strip()
+        ]
+
+    options: list[tuple[str, str]] = _parse_options(r.text)  # BRF=10 Saane
+
+    # Fetch remaining 6 districts and merge.
+    for brf in DISTRICT_BRF[1:]:
+        try:
+            r2 = s.post(COMMUNE, data={"BRF": brf}, timeout=15)
+            options.extend(_parse_options(r2.text))
+        except Exception as exc:
+            log.warning("FR new_session: district BRF=%d fetch failed: %s", brf, exc)
+
+    log.debug("New FR session — %d selcoms across all districts, xv1=%s…",
+              len(options), xv1[:8])
     return s, xv1, options
 
 
