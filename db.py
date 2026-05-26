@@ -12,19 +12,64 @@ DB_PATH      = Path(__file__).parent / "herrenlos.db"
 ENUM_DB_PATH = Path(__file__).parent / "enum.db"
 
 
+import logging as _logging
+_db_log = _logging.getLogger("db")
+
+
+def _open_conn() -> sqlite3.Connection:
+    """Raw connection setup — called by get_conn(), which adds self-healing."""
+    conn = sqlite3.connect(DB_PATH, timeout=30.0)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=30000")     # 30s waits for locks
+    conn.execute("PRAGMA synchronous=NORMAL")     # WAL-safe, faster than FULL
+    conn.execute("PRAGMA wal_autocheckpoint=1000")  # checkpoint every 1000 pages
+    # Attach the enumeration cache as a separate database (enum.db).
+    # parcel_enum lives there (~150 MB for all enumerated cantons).
+    # enum.db is tracked via Git LFS (see .gitattributes).
+    conn.execute(f"ATTACH DATABASE '{ENUM_DB_PATH}' AS enum")
+    conn.execute("PRAGMA enum.journal_mode=WAL")
+    conn.execute("PRAGMA enum.busy_timeout=30000")
+    conn.execute("PRAGMA enum.synchronous=NORMAL")
+    return conn
+
+
+def _discard_wal(db_path: Path) -> None:
+    """
+    Delete the WAL and SHM sidecar files for `db_path`.
+
+    Used when SQLite reports 'database disk image is malformed' — the most
+    common cause is a git rebase replacing the main DB file while the scanner
+    holds a WAL from the old DB (different salt).  Deleting the sidecar files
+    lets SQLite open the new DB file cleanly; some in-flight writes are lost
+    but the DB is uncorrupted and the scanner will re-queue the missing rows.
+    """
+    for suffix in ("-wal", "-shm"):
+        p = Path(str(db_path) + suffix)
+        if p.exists():
+            try:
+                p.unlink()
+                _db_log.warning("Discarded stale %s (WAL/DB salt mismatch from git rebase)", p.name)
+            except OSError as e:
+                _db_log.error("Could not remove %s: %s", p.name, e)
+
+
 def get_conn() -> sqlite3.Connection:
     """
-    Open a connection with robust concurrency settings.
+    Open a connection with robust concurrency settings and WAL self-healing.
 
     The scanner runs multiple processes against the same DB file:
       - launchd `run_local.py` and its `main.py <canton>` subprocess
       - manual scripts (export_for_web.py, push_local.sh's checkpoint)
       - the CI scanner during its run window
     Without `busy_timeout`, a writer holding the lock for >5s causes the
-    other writer to fail with "database is locked" — and if it fails
-    mid-transaction the indexes can end up inconsistent (we've seen
-    "wrong # of entries in index idx_egrid" several times after concurrent
-    writes during enum backfills).
+    other writer to fail with "database is locked".
+
+    Self-healing: if the DB reports 'malformed' (caused by push_local.sh
+    rebasing and replacing herrenlos.db while the scanner holds a WAL from
+    the old DB), we discard the stale WAL sidecar files and retry once.
+    The new connection opens the git-rebased DB cleanly; rows that were only
+    in the discarded WAL are re-queued on the next scanner pass.
 
     Settings:
       - timeout=30          : Python's default is 5s; bump to 30 so brief
@@ -34,26 +79,18 @@ def get_conn() -> sqlite3.Connection:
       - WAL journal mode    : allows one writer + many readers in parallel.
       - synchronous=NORMAL  : safe with WAL, much faster than FULL.
     """
-    conn = sqlite3.connect(DB_PATH, timeout=30.0)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA busy_timeout=30000")     # 30s waits for locks
-    conn.execute("PRAGMA synchronous=NORMAL")     # WAL-safe, faster than FULL
-    conn.execute("PRAGMA wal_autocheckpoint=1000")  # checkpoint every 1000 pages
-    # Attach the enumeration cache as a separate database (`enum.db`).
-    # parcel_enum lives there (~90 MB for a fully-enumerated all-cantons run)
-    # because:
-    #   1. It's regenerable: any canton can be re-enumerated via the geodienste
-    #      WFS in 1-10 minutes (see scanners/wfs_enum.py).
-    #   2. Keeping it in `herrenlos.db` pushed the file over GitHub's 100 MB
-    #      hard limit; splitting it lets us commit `herrenlos.db` (~7 MB) again.
-    # The `enum.db` file is gitignored.  All scripts that join parcels with
-    # enumeration use the `enum.parcel_enum` qualified table name.
-    conn.execute(f"ATTACH DATABASE '{ENUM_DB_PATH}' AS enum")
-    conn.execute("PRAGMA enum.journal_mode=WAL")
-    conn.execute("PRAGMA enum.busy_timeout=30000")
-    conn.execute("PRAGMA enum.synchronous=NORMAL")
-    return conn
+    try:
+        return _open_conn()
+    except sqlite3.DatabaseError as exc:
+        msg = str(exc).lower()
+        if "malformed" in msg or "not a database" in msg:
+            _db_log.error(
+                "herrenlos.db is malformed — likely stale WAL from git rebase. "
+                "Discarding WAL sidecar files and retrying."
+            )
+            _discard_wal(DB_PATH)
+            return _open_conn()   # raises normally if still broken
+        raise
 
 
 def init_db():
@@ -120,8 +157,9 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_testruns_runat  ON test_runs(run_at);
 
             -- parcel_enum lives in the attached `enum` database (enum.db).
-            -- This file is gitignored and regenerable; keeping it out of
-            -- herrenlos.db lets that file stay small enough to commit.
+            -- This file is tracked via Git LFS and regenerable via wfs_enum.py;
+            -- keeping it out of herrenlos.db lets that file stay small enough
+            -- to commit directly (without LFS).
             CREATE TABLE IF NOT EXISTS enum.parcel_enum (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 canton      TEXT NOT NULL,

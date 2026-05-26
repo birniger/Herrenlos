@@ -235,10 +235,18 @@ def scan(communes: list[str] | None = None,
 
     # Index by (bfs, NBIdent) → selcom, label.  Falls back to first selcom for
     # the bfs if NBIdent isn't in our enum (rare edge case, e.g. test rows).
+    # Also builds a NBIdent-only index for post-merger bfs_nr mismatches:
+    # After FR commune mergers the WFS uses the new merged bfs_nr, but parcels
+    # retain their old pre-merger NBIdent (e.g. FR202911 stays on the land even
+    # after its commune merged into a new bfs entity). The portal's selcom uses
+    # the OLD bfs code as the sector key, so (new_bfs, old_NBIdent) never matches
+    # selcom_by_key. Matching by NBIdent alone recovers those ~118k parcels.
     selcom_by_key:    dict[tuple[str, str], str] = {}
     label_by_key:     dict[tuple[str, str], str] = {}
     selcoms_by_bfs:   dict[str, list[str]]       = {}
     labels_by_bfs:    dict[str, list[str]]       = {}
+    selcom_by_nbident: dict[str, str]            = {}   # NBIdent → selcom fallback
+    label_by_nbident:  dict[str, str]            = {}
     for v, lbl in all_options:
         bfs = bfs_from_selcom(v)
         nb  = nbident_from_selcom(v)
@@ -246,6 +254,9 @@ def scan(communes: list[str] | None = None,
         label_by_key [(bfs, nb)] = clean_label(lbl)
         selcoms_by_bfs.setdefault(bfs, []).append(v)
         labels_by_bfs .setdefault(bfs, []).append(clean_label(lbl))
+        # NBIdent-only index: first entry wins (NBIdents are unique per sector)
+        selcom_by_nbident.setdefault(nb, v)
+        label_by_nbident .setdefault(nb, clean_label(lbl))
 
     # Determine which BFS numbers to include
     if communes:
@@ -302,13 +313,21 @@ def scan(communes: list[str] | None = None,
                 selcom = candidates[0]
                 label  = labels_by_bfs[bfs][0]
             elif candidates:
-                # Multi-sector bfs with NBIdent we don't recognise — skip rather
-                # than guess; would re-introduce false positives.
-                skipped_unknown_nbident += 1
-                continue
+                # Multi-sector new-bfs with unknown NBIdent — try NBIdent-only
+                # lookup (post-merger: old NBIdent survives but bfs changed).
+                selcom = selcom_by_nbident.get(nb)
+                label  = label_by_nbident.get(nb)
+                if not selcom:
+                    skipped_unknown_nbident += 1
+                    continue
             else:
-                skipped_no_selcom += 1
-                continue
+                # bfs not in portal at all — try NBIdent-only fallback for
+                # parcels whose municipality merged into a new bfs_nr.
+                selcom = selcom_by_nbident.get(nb)
+                label  = label_by_nbident.get(nb)
+                if not selcom:
+                    skipped_no_selcom += 1
+                    continue
 
         parcels.append({
             "bfs_nr":    bfs,

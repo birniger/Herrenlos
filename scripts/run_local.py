@@ -473,19 +473,25 @@ def _stop_sleep(stop_event: threading.Event, seconds: float) -> None:
 
 # ── Token keepalive ───────────────────────────────────────────────────────────
 
-def _keepalive_token(canton: str) -> None:
-    """Silently refresh the stored token so the session doesn't idle-expire."""
+def _keepalive_token(canton: str) -> bool:
+    """
+    Silently refresh the stored token so the session doesn't idle-expire.
+
+    Returns True if the token is healthy (refreshed or not needed).
+    Returns False if the refresh_token itself is dead (HTTP 4xx) — caller
+    should trigger re-login immediately rather than waiting out the cooldown.
+    """
     meta = _TOKEN_META.get(canton)
     if not meta:
-        return
+        return True
     token_file, token_ep, client_id = meta
     if not token_file.exists():
-        return
+        return True
     try:
         cached = json.loads(token_file.read_text())
         refresh_token = cached.get("refresh_token")
         if not refresh_token:
-            return
+            return True
         body = urllib.parse.urlencode({
             "grant_type":    "refresh_token",
             "client_id":     client_id,
@@ -497,15 +503,25 @@ def _keepalive_token(canton: str) -> None:
         if "access_token" not in data:
             log.warning("[%s] keepalive: refresh failed — %s",
                         canton.upper(), data.get("error", "unknown"))
-            return
+            return False   # server rejected our token
         cached["access_token"] = data["access_token"]
         cached["expires_at"]   = time.time() + data.get("expires_in", 300)
         if "refresh_token" in data:
             cached["refresh_token"] = data["refresh_token"]
         token_file.write_text(json.dumps(cached))
         log.debug("[%s] keepalive: token refreshed OK", canton.upper())
+        return True
+    except urllib.error.HTTPError as exc:
+        if exc.code in (400, 401):
+            # Refresh token is expired/revoked — no point retrying every 15 min.
+            log.warning("[%s] keepalive: refresh token dead (HTTP %d) — "
+                        "triggering re-login", canton.upper(), exc.code)
+            return False
+        log.warning("[%s] keepalive: %s", canton.upper(), exc)
+        return True   # transient network error; don't trigger re-login
     except Exception as exc:
         log.warning("[%s] keepalive: %s", canton.upper(), exc)
+        return True   # transient; don't trigger re-login
 
 
 # ── GitHub push (debounced) ───────────────────────────────────────────────────
@@ -580,7 +596,24 @@ def _canton_loop(
                 log.debug("[%s] in cooldown — sleeping %.0fs (until %s)",
                           canton.upper(), chunk, remaining_str)
                 _stop_sleep(stop_event, chunk)
-            _keepalive_token(canton)
+            token_alive = _keepalive_token(canton)
+            if not token_alive:
+                # Refresh token is dead — skip remaining cooldown and trigger
+                # re-login immediately instead of waiting up to 2h doing nothing.
+                _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
+                notify(
+                    title=f"Herrenlos — {canton.upper()} re-login needed",
+                    message=f"{canton.upper()} token expired. Tap to re-authenticate.",
+                    sound=True,
+                    execute=f"open '{_ln}'" if _ln.exists() else None,
+                )
+                cooldown_until = time.time() + 2 * 3600
+                _save_cooldown(canton, cooldown_until)
+                resume_str = datetime.datetime.fromtimestamp(
+                    cooldown_until).strftime("%H:%M")
+                log.warning("[%s] refresh token dead — re-login cooldown until %s",
+                            canton.upper(), resume_str)
+                break   # exit inner cooldown loop; outer loop will handle the new cooldown
 
         if stop_event.is_set():
             break

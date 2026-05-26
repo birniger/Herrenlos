@@ -83,9 +83,28 @@ if git show origin/main:herrenlos.db > _origin.db 2>/dev/null; then
     rm -f _origin.db
 fi
 # CRIT-2 fix: amend the scan commit with the freshly-merged DB BEFORE rebasing.
-# Without this, `git rebase -X theirs` replays the pre-merge DB content from the
-# commit object, discarding the merge_dbs.py result computed just above.
+# Without this the rebase replays the pre-merge DB, discarding merge_dbs.py output.
 git commit --amend --no-edit
-git rebase origin/main -X theirs || git rebase --abort
+
+# Use -X ours (not -X theirs) so git keeps OUR herrenlos.db (which already
+# contains origin's rows via merge_dbs.py above).  -X theirs would replace it
+# with origin's unmerged version, leaving the scanner's in-progress WAL pointing
+# at a different DB salt → "database disk image is malformed" on next connection.
+git rebase origin/main -X ours || git rebase --abort
+
+# After any rebase, truncate the WAL so the file on disk is fully self-contained.
+# Running scanners may have stale WAL state from before the rebase; TRUNCATE
+# forces a clean checkpoint that any new connection will see consistently.
+"$PYTHON" -c "
+import sqlite3, sys
+try:
+    c = sqlite3.connect('herrenlos.db', timeout=10)
+    total, done = c.execute('PRAGMA wal_checkpoint(TRUNCATE)').fetchone()[1:]
+    c.close()
+    print(f'[push_local] WAL truncated after rebase ({done}/{total} pages)')
+except Exception as e:
+    print(f'[push_local] WAL truncate warning: {e}', file=sys.stderr)
+"
+
 git push
 echo "[push_local] Pushed OK (after rebase)."
