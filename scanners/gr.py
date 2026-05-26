@@ -141,6 +141,20 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                     "raw_response": str(data)[:300], "error": None}
 
         for parcel in (parcels_list if isinstance(parcels_list, list) else []):
+            # ── Check recht[] for ownership before person[] ──────────────────
+            # Stockwerkseigentum (condominium) and similar structures store
+            # ownership through recht[].inhalt_eigentum_anteil rather than
+            # person[].  If any recht entry carries an eigentum_anteil the
+            # parcel IS owned — skip to next parcel without flagging herrenlos.
+            recht_list = parcel.get("recht") or []
+            for recht in (recht_list if isinstance(recht_list, list) else []):
+                if recht.get("inhalt_eigentum_anteil"):
+                    # Ownership registered via StWE/MitEigentum recht entry.
+                    # Mark as owned with a synthetic label so the scanner
+                    # records a non-herrenlos result.
+                    owners.append("[StWE/MitEigentum]")
+                    break
+
             person_list = parcel.get("person") or []
             for person in (person_list if isinstance(person_list, list) else []):
                 name = ""
