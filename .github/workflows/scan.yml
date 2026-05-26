@@ -152,7 +152,7 @@ jobs:
 
             # Proxy-limited cantons are spent after one turn — exclude them
             # from the rest of this job so pick_canton.py doesn't re-pick them.
-            if echo " $PROXY_LIMITED " | grep -qw " $CANTON "; then
+            if echo " $PROXY_LIMITED " | grep -qw "$CANTON"; then
               EXCLUDE_CANTONS="${EXCLUDE_CANTONS:+$EXCLUDE_CANTONS }$CANTON"
               echo "[$CANTON] proxy quota spent — excluded from further picks this job."
             fi
