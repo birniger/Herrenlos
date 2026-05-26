@@ -168,7 +168,9 @@ def check_owner(session: requests.Session, xv1: str,
             return {"owner": None, "owner_address": None,
                     "is_herrenlos": 1,
                     "herrenlos_type": "not_in_grundbuch", "claim_possible": 0,
-                    "raw_response": raw[:300], "error": None}
+                    # Store the full response (not truncated) so classification
+                    # can be verified post-hoc by inspecting the portal HTML.
+                    "raw_response": raw, "error": None}
 
         # Parse owner from table.proprio
         soup = BeautifulSoup(raw, "lxml")
@@ -202,7 +204,9 @@ def check_owner(session: requests.Session, xv1: str,
                 "is_herrenlos": 0 if owner else 1,
                 "herrenlos_type": None if owner else "dereliktion",
                 "claim_possible": None if owner else claim_possible_for("FR", "dereliktion"),
-                "raw_response": raw[:300] if owner is None else None,
+                # Store the full response for herrenlos parcels so the proprio
+                # table HTML can be inspected to verify the classification.
+                "raw_response": raw if owner is None else None,
                 "error": None}
 
     except Exception as exc:
