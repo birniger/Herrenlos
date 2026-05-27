@@ -207,14 +207,17 @@ def oidc_login() -> dict | None:
         log.error("No token captured — login may have timed out or failed")
         return None
 
+    now = time.time()
     expires_in = captured.get("expires_in", 300)
     token_data = {
-        "access_token":  captured["access_token"],
-        "refresh_token": captured.get("refresh_token"),
-        "expires_at":    time.time() + expires_in,
+        "access_token":             captured["access_token"],
+        "refresh_token":            captured.get("refresh_token"),
+        "expires_at":               now + expires_in,
+        "refresh_token_expires_at": now + captured.get("refresh_expires_in", 1800),
     }
     _save_token(token_data)
-    log.info("VS login successful — token valid for %ds", expires_in)
+    log.info("VS login successful — token valid for %ds, refresh valid for %ds",
+             expires_in, captured.get("refresh_expires_in", 1800))
     return token_data
 
 
@@ -234,13 +237,16 @@ def _refresh_access_token(refresh_token: str) -> dict | None:
             log.warning("Token refresh failed: HTTP %d", resp.status_code)
             return None
         data = resp.json()
+        now = time.time()
         token_data = {
-            "access_token":  data["access_token"],
-            "refresh_token": data.get("refresh_token", refresh_token),
-            "expires_at":    time.time() + data.get("expires_in", 300),
+            "access_token":             data["access_token"],
+            "refresh_token":            data.get("refresh_token", refresh_token),
+            "expires_at":               now + data.get("expires_in", 300),
+            "refresh_token_expires_at": now + data.get("refresh_expires_in", 1800),
         }
         _save_token(token_data)
-        log.info("Access token refreshed — valid for %ds", data.get("expires_in", 300))
+        log.info("Access token refreshed — valid for %ds, refresh valid for %ds",
+                 data.get("expires_in", 300), data.get("refresh_expires_in", 1800))
         return token_data
     except Exception as exc:
         log.warning("Token refresh error: %s", exc)

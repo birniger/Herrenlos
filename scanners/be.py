@@ -115,13 +115,16 @@ def _refresh_access_token(refresh_token: str) -> dict | None:
             log.warning("BE token refresh failed: HTTP %d", resp.status_code)
             return None
         data = resp.json()
+        now = time.time()
         token_data = {
-            "access_token":  data["access_token"],
-            "refresh_token": data.get("refresh_token", refresh_token),
-            "expires_at":    time.time() + data.get("expires_in", 300),
+            "access_token":           data["access_token"],
+            "refresh_token":          data.get("refresh_token", refresh_token),
+            "expires_at":             now + data.get("expires_in", 300),
+            "refresh_token_expires_at": now + data.get("refresh_expires_in", 1800),
         }
         _save_token(token_data)
-        log.info("BE access token refreshed — valid for %ds", data.get("expires_in", 300))
+        log.info("BE access token refreshed — valid for %ds, refresh valid for %ds",
+                 data.get("expires_in", 300), data.get("refresh_expires_in", 1800))
         return token_data
     except Exception as exc:
         log.warning("BE token refresh error: %s", exc)

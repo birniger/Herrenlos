@@ -497,7 +497,10 @@ def _next_midnight_bern() -> float:
 #   lo=18 hi= 22  → wait  20 min  → elapsed= 20  scanned=115  → hi= 20
 #   lo=18 hi= 20  → wait  19 min  ← converged to ±1 min
 
-_FR_MIN_PRODUCTIVE  = 50          # parcels scanned; below → "portal not ready"
+_FR_MIN_PRODUCTIVE  = 1           # parcels scanned; 0 means every JSESSIONID failed
+                                   # (circuit breaker fired with zero successes) → not ready.
+                                   # Even 1 means at least one valid session was granted → portal
+                                   # was accepting, regardless of how few parcels it yielded.
 _FR_MIN_WAIT        = 5 * 60      # never retry faster than 5 min (avoid hammering)
 _FR_WINDOW_HI_INIT  = 4 * 3600   # conservative initial upper bound (4 h)
 
@@ -733,39 +736,72 @@ def _canton_loop(
 
     while not stop_event.is_set():
         # ── Cooldown wait ───────────────────────────────────────────────────
+        token_dead = False
         while not stop_event.is_set() and time.time() < cooldown_until:
-            # Sleep in KEEPALIVE_INTERVAL chunks, refreshing token each time
-            # so a BE/VS session doesn't idle-expire during an overnight wait.
-            chunk = min(KEEPALIVE_INTERVAL, cooldown_until - time.time())
+            now = time.time()
+
+            if token_dead:
+                # Refresh token is known dead — user has been notified.
+                # Just sleep quietly; grudis_login() will handle re-auth
+                # when the cooldown expires.  No point hammering the dead token.
+                _stop_sleep(stop_event, min(300, cooldown_until - now))
+                continue
+
+            # Sleep in chunks and refresh the token each time so the session
+            # doesn't idle-expire during an overnight wait.
+            #
+            # Chunk = min(KEEPALIVE_INTERVAL, half the refresh-token's
+            # remaining lifetime) so one failed keepalive due to a transient
+            # network error can never leave less than one interval of margin.
+            rt_expires_at = 0.0
+            if canton in _LOGIN_REQUIRED:
+                try:
+                    meta = _TOKEN_META.get(canton)
+                    if meta:
+                        cached = json.loads(meta[0].read_text())
+                        rt_expires_at = float(cached.get("refresh_token_expires_at", 0))
+                except Exception:
+                    pass
+            rt_half = max(60.0, (rt_expires_at - now) / 2) if rt_expires_at > now \
+                      else KEEPALIVE_INTERVAL
+            chunk = min(KEEPALIVE_INTERVAL, cooldown_until - now, rt_half)
             if chunk > 0:
-                remaining_str = datetime.datetime.fromtimestamp(
-                    cooldown_until).strftime("%H:%M")
                 log.debug("[%s] in cooldown — sleeping %.0fs (until %s)",
-                          canton.upper(), chunk, remaining_str)
+                          canton.upper(), chunk,
+                          datetime.datetime.fromtimestamp(cooldown_until).strftime("%H:%M"))
                 _stop_sleep(stop_event, chunk)
+
             token_alive = _keepalive_token(canton)
             if not token_alive:
-                # Refresh token is dead — skip remaining cooldown and trigger
-                # re-login immediately instead of waiting up to 2h doing nothing.
+                # Refresh token is dead. Notify once, then keep waiting until
+                # whichever is later: the existing cooldown (e.g. midnight quota
+                # reset) or a 2h minimum so we don't hammer GRUDIS during
+                # rate-limited hours right after the login notification fires.
                 _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
                 notify(
                     title=f"Herrenlos — {canton.upper()} re-login needed",
-                    message=f"{canton.upper()} token expired. Tap to re-authenticate.",
+                    message="Tap to re-authenticate.",
                     sound=True,
                     execute=f"open '{_ln}'" if _ln.exists() else None,
                 )
-                cooldown_until = time.time() + 2 * 3600
+                cooldown_until = max(cooldown_until, time.time() + 2 * 3600)
                 _save_cooldown(canton, cooldown_until)
-                resume_str = datetime.datetime.fromtimestamp(
-                    cooldown_until).strftime("%H:%M")
-                log.warning("[%s] refresh token dead — re-login cooldown until %s",
-                            canton.upper(), resume_str)
-                break   # exit inner cooldown loop; outer loop will handle the new cooldown
+                log.warning("[%s] refresh token dead — waiting until %s, then re-login.",
+                            canton.upper(),
+                            datetime.datetime.fromtimestamp(cooldown_until).strftime("%H:%M"))
+                token_dead = True
 
         if stop_event.is_set():
             break
 
         # ── Run one rotation ────────────────────────────────────────────────
+        # Refresh token right before launching so the 30-min rotating
+        # refresh_token never expires during the scan→restart transition.
+        # This prevents grudis_login() from firing at midnight just because
+        # the keepalive last ran >15 min ago.
+        if canton in _LOGIN_REQUIRED:
+            _keepalive_token(canton)
+
         rc, tail = run_canton(canton)
 
         if stop_event.is_set():
@@ -782,6 +818,7 @@ def _canton_loop(
                 log.info("[%s] fully scanned — no remaining parcels. "
                          "Sleeping until midnight.", canton.upper())
                 consecutive_failures = 0
+                _push_debounced(push_lock, last_push)
 
             # Rate-limited / quota exhausted.
             # FR uses adaptive backoff (discovers the real reset window).
@@ -805,13 +842,14 @@ def _canton_loop(
                              "Cooling down until midnight (%s).",
                              canton.upper(), resume)
                 consecutive_failures = 0
+                _push_debounced(push_lock, last_push)
 
             # Login window timed out — fire push notification, 2 h cooldown.
             elif _is_login_failed(canton, tail):
                 _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
                 notify(
                     title=f"Herrenlos — {canton.upper()} login needed",
-                    message=f"Log in to {canton.upper()} then tap to scan",
+                    message="Tap to log in.",
                     sound=True,
                     execute=f"open '{_ln}'" if _ln.exists() else None,
                 )
@@ -844,9 +882,8 @@ def _canton_loop(
                 # taps the notification to re-authenticate via the .command file.
                 _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
                 notify(
-                    title="Herrenlos Scanner — re-login needed",
-                    message=(f"{canton.upper()} token expired. "
-                             "Tap to open Terminal and re-authenticate."),
+                    title=f"Herrenlos — {canton.upper()} re-login needed",
+                    message="Tap to re-authenticate.",
                     sound=True,
                     execute=f"open '{_ln}'" if _ln.exists() else None,
                 )
