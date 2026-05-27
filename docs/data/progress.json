@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-27T02:59:19+00:00",
+  "generated_at": "2026-05-27T04:09:35+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -17,12 +17,12 @@
     {
       "canton": "FR",
       "enumerated": 147148,
-      "scanned": 657,
-      "herrenlos": 0,
+      "scanned": 680,
+      "herrenlos": 23,
       "errors": 5573,
-      "percent": 0.4,
+      "percent": 0.5,
       "estimated_total": 147148,
-      "last_scan_at": "2026-05-27 02:59:15",
+      "last_scan_at": "2026-05-26 21:17:57",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -43,9 +43,9 @@
     {
       "canton": "GR",
       "enumerated": 225843,
-      "scanned": 101,
-      "herrenlos": 0,
-      "errors": 0,
+      "scanned": 103,
+      "herrenlos": 2,
+      "errors": 5187,
       "percent": 0.0,
       "estimated_total": 225843,
       "last_scan_at": "2026-05-26 02:53:55",
@@ -95,12 +95,12 @@
     {
       "canton": "SZ",
       "enumerated": 50217,
-      "scanned": 6480,
-      "herrenlos": 0,
-      "errors": 1099,
-      "percent": 12.9,
+      "scanned": 11041,
+      "herrenlos": 2,
+      "errors": 1078,
+      "percent": 22.0,
       "estimated_total": 50217,
-      "last_scan_at": "2026-05-26 22:43:36",
+      "last_scan_at": "2026-05-27 04:09:31",
       "access": "public",
       "test_group": "captcha_ocr",
       "rate_limit": "CAPTCHA per query only"
@@ -121,9 +121,9 @@
   ],
   "totals": {
     "enumerated": 1383253,
-    "scanned": 20141,
-    "herrenlos": 0,
-    "errors": 7545,
+    "scanned": 24727,
+    "herrenlos": 27,
+    "errors": 12711,
     "cantons": 9
   }
 }
