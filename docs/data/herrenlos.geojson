@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-05-28T08:15:24+00:00",
+  "generated_at": "2026-05-28T15:20:42+00:00",
   "features": [
     {
       "type": "Feature",
@@ -550,6 +550,28 @@
         "herrenlos_type": "not_in_grundbuch",
         "claim_possible": 0,
         "scanned_at": "2026-05-25 20:07:05"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.702816009521484,
+          46.93720626831055
+        ]
+      },
+      "properties": {
+        "egrid": "CH189274917786",
+        "canton": "GR",
+        "commune": "GR0000003863",
+        "bfs_nr": "3863",
+        "parcel_nr": "803",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-28 10:01:14"
       }
     },
     {
