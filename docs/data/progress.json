@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-29T15:10:57+00:00",
+  "generated_at": "2026-05-29T15:12:14+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -113,7 +113,7 @@
       "errors": 4,
       "percent": 0.0,
       "estimated_total": 316772,
-      "last_scan_at": "2026-05-29 15:10:08",
+      "last_scan_at": "2026-05-29 15:11:10",
       "access": "own_account",
       "test_group": "own_login",
       "rate_limit": "SwissID session, scan endpoints appear unlimited. VS uses SwissID (login.swissid.ch) \u2014 NOT AGOV; BE and VS use different identity providers. The ICP-extract endpoint is 10/day but the scanner deliberately avoids it. Main scan endpoints (grundstueck + eigentum JSON API) show no per-query quota. IP rotation is irrelevant: SwissID 2FA means any session is bound to a personal account, but there is no quota to route around. access_token ~5min / refresh_token rotating; re-auth needed after any gap >~30min."
