@@ -1,5 +1,20 @@
 {
-  "generated_at": "2026-05-29T18:54:47+00:00",
-  "count": 0,
-  "parcels": []
+  "generated_at": "2026-05-29T18:56:54+00:00",
+  "count": 1,
+  "parcels": [
+    {
+      "egrid": "CH184226387886",
+      "canton": "SZ",
+      "commune": "SZ0200001321",
+      "bfs_nr": "1321",
+      "parcel_nr": "1274",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "dereliktion",
+      "claim_possible": 1,
+      "scanned_at": "2026-05-29 16:24:31",
+      "lat": 47.17441177368164,
+      "lng": 8.719454765319824
+    }
+  ]
 }
