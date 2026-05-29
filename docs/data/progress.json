@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-29T02:32:00+00:00",
+  "generated_at": "2026-05-29T08:18:52+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -48,7 +48,7 @@
       "errors": 5205,
       "percent": 0.1,
       "estimated_total": 225843,
-      "last_scan_at": "2026-05-29 00:01:38",
+      "last_scan_at": "2026-05-29 02:57:42",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "10 req/day/IP"
@@ -82,12 +82,12 @@
     {
       "canton": "SH",
       "enumerated": 43256,
-      "scanned": 398,
+      "scanned": 498,
       "herrenlos": 0,
-      "errors": 761,
-      "percent": 0.9,
+      "errors": 757,
+      "percent": 1.2,
       "estimated_total": 43256,
-      "last_scan_at": "2026-05-28 21:10:34",
+      "last_scan_at": "2026-05-29 03:02:56",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "100 req/day/IP"
@@ -121,9 +121,9 @@
   ],
   "totals": {
     "enumerated": 1383253,
-    "scanned": 27911,
+    "scanned": 28011,
     "herrenlos": 28,
-    "errors": 11958,
+    "errors": 11954,
     "cantons": 9
   }
 }
