@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-05-29T22:05:59+00:00",
+  "generated_at": "2026-05-29T22:11:22+00:00",
   "features": [
     {
       "type": "Feature",
@@ -22,6 +22,28 @@
         "herrenlos_type": "not_in_grundbuch",
         "claim_possible": 0,
         "scanned_at": "2026-05-29 22:00:02"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.974939346313477,
+          46.701541900634766
+        ]
+      },
+      "properties": {
+        "egrid": "CH167285019568",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "553",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-29 22:11:18"
       }
     },
     {
