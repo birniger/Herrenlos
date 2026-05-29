@@ -125,9 +125,26 @@ jobs:
               MANUAL=""   # only honour the manual override once, then auto-pick
               echo "=== $(date -u '+%H:%M:%S') Manual pick: $CANTON (${REMAINING}s remaining) ==="
             else
-              CANTON=$(EXCLUDE_CANTONS="$EXCLUDE_CANTONS" python scripts/pick_canton.py) \
-                || { echo "No eligible cantons remaining — done."; break; }
-              echo "=== $(date -u '+%H:%M:%S') Auto-picked: $CANTON (${REMAINING}s remaining) ==="
+              # Priority: run proxy-quota cantons (SH, GR) first every job so
+              # their daily budget is never wasted.  Their quota resets every 24h
+              # regardless of whether a run picked them — skipping them loses
+              # that day's scan capacity permanently.  After one turn each they
+              # join EXCLUDE_CANTONS and auto-pick takes over for JU/SZ.
+              CANTON=""
+              for _PC in $PROXY_LIMITED; do
+                if echo " $ELIGIBLE_CANTONS " | grep -qw "$_PC" && \
+                   ! echo " $EXCLUDE_CANTONS " | grep -qw "$_PC"; then
+                  CANTON="$_PC"
+                  break
+                fi
+              done
+              if [ -z "$CANTON" ]; then
+                CANTON=$(EXCLUDE_CANTONS="$EXCLUDE_CANTONS" python scripts/pick_canton.py) \
+                  || { echo "No eligible cantons remaining — done."; break; }
+                echo "=== $(date -u '+%H:%M:%S') Auto-picked: $CANTON (${REMAINING}s remaining) ==="
+              else
+                echo "=== $(date -u '+%H:%M:%S') Priority pick: $CANTON (proxy quota, ${REMAINING}s remaining) ==="
+              fi
             fi
 
             # Per-canton limits.
