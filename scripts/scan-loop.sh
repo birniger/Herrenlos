@@ -95,9 +95,18 @@ _push_to_github() {
     bash scripts/push_local.sh "auto" 2>&1 || echo "[scan-loop] push failed — will retry next cycle"
 }
 
+_sync_proxies() {
+    # Refresh Webshare proxy list in .env + GitHub secret so stale/replaced
+    # proxies never silently kill GR/SH/NE progress.  Non-fatal if API is down.
+    "$PYTHON" scripts/sync_proxies.py --update-secret 2>&1 || true
+}
+
 # ── Main loop ─────────────────────────────────────────────────────────────────
 
 while true; do
+    # Sync Webshare proxy list so replaced proxies don't silently break GR/SH/NE.
+    _sync_proxies
+
     # Pull latest CI data before each run so the picker gap numbers are fresh
     # and we don't re-scan parcels CI already covered.
     _pull_from_github

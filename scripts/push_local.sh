@@ -102,39 +102,26 @@ if git push; then
     exit 0
 fi
 
-echo "[push_local] Push rejected — rebasing on origin/main..."
+echo "[push_local] Push rejected — resetting to origin/main and re-committing..."
 git fetch origin main
+
+# Incorporate any new CI rows into the live DB.
 if git show origin/main:herrenlos.db > _origin.db 2>/dev/null; then
     "$PYTHON" scripts/merge_dbs.py _origin.db herrenlos.db
     rm -f _origin.db
 fi
 
-# CRIT-2 fix: amend the scan commit with the freshly-merged DB BEFORE rebasing.
-# Without this the rebase replays the pre-merge DB, discarding merge_dbs.py output.
+# --soft reset: moves the branch tip to origin/main WITHOUT touching the index
+# or the working tree.  The live herrenlos.db is never checked out or overwritten
+# — no checkout, no rebase, no conflict.  Our staged snapshot + JSON stay in the
+# index, ready to be re-committed directly on top of origin/main.
+git reset --soft origin/main
+
+# Re-snapshot after the merge and regenerate exports.
 _stage_db_snapshot
-git commit --amend --no-edit
+"$PYTHON" scripts/export_for_web.py 2>/dev/null || true
+git add docs/data/*.json docs/data/*.geojson docs/data/*.csv 2>/dev/null || true
 
-# Use -X ours (not -X theirs) so git keeps OUR herrenlos.db (which already
-# contains origin's rows via merge_dbs.py above).  -X theirs would replace it
-# with origin's unmerged version, leaving the scanner's in-progress WAL pointing
-# at a different DB salt → "database disk image is malformed" on next connection.
-git rebase origin/main -X ours || git rebase --abort
-
-# After the rebase, herrenlos.db on disk = our snapshot (same content and salt
-# as what the running scanner's WAL was written against) so WAL consistency is
-# intact.  Use PASSIVE (never TRUNCATE) to flush what we can; TRUNCATE would wipe
-# WAL frames that an active scanner writer still holds in memory → corruption.
-"$PYTHON" -c "
-import sqlite3, sys
-try:
-    c = sqlite3.connect('herrenlos.db', timeout=10)
-    total, done = c.execute('PRAGMA wal_checkpoint(PASSIVE)').fetchone()[1:]
-    c.close()
-    extra = f' ({total - done} held by active writer, OK)' if total > done else ''
-    print(f'[push_local] post-rebase WAL checkpoint: {done}/{total} pages flushed{extra}')
-except Exception as e:
-    print(f'[push_local] post-rebase WAL checkpoint warning: {e}', file=sys.stderr)
-"
-
+git commit -m "$COMMIT_MSG"
 git push
-echo "[push_local] Pushed OK (after rebase)."
+echo "[push_local] Pushed OK (after reset + re-commit)."

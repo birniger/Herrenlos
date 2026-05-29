@@ -6,3 +6,7 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# Skill manager local installs
+.agents/
+skills-lock.json

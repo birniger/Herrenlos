@@ -1,533 +1,27 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-05-29T08:18:52+00:00",
+  "generated_at": "2026-05-29T12:09:15+00:00",
   "features": [
     {
       "type": "Feature",
       "geometry": {
         "type": "Point",
         "coordinates": [
-          7.11042594909668,
-          46.71883773803711
+          6.93482780456543,
+          46.90528869628906
         ]
       },
       "properties": {
-        "egrid": "CH457510829411",
+        "egrid": "CH450510789470",
         "canton": "FR",
-        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
-        "bfs_nr": "2236",
-        "parcel_nr": "160",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:58:38"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          7.0349860191345215,
-          46.707427978515625
-        ]
-      },
-      "properties": {
-        "egrid": "CH849410777658",
-        "canton": "FR",
-        "commune": "Gibloux (secteur Vuisternens-en-Ogoz)",
-        "bfs_nr": "2236",
-        "parcel_nr": "280",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:51:49"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          7.004053115844727,
-          46.759647369384766
-        ]
-      },
-      "properties": {
-        "egrid": "CH607301368548",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "1029",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:45:47"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          7.004262924194336,
-          46.75625991821289
-        ]
-      },
-      "properties": {
-        "egrid": "CH309294061032",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "14",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:38:50"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          7.013848781585693,
-          46.76558303833008
-        ]
-      },
-      "properties": {
-        "egrid": "CH331081943684",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "142",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:48:01"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          7.035293102264404,
-          46.77925109863281
-        ]
-      },
-      "properties": {
-        "egrid": "CH659510719418",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "16",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 01:03:49"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          7.001023292541504,
-          46.754127502441406
-        ]
-      },
-      "properties": {
-        "egrid": "CH749410778385",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "173",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:38:11"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          7.010861873626709,
-          46.77154541015625
-        ]
-      },
-      "properties": {
-        "egrid": "CH931071946439",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "207",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:39:39"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          6.996072292327881,
-          46.75699996948242
-        ]
-      },
-      "properties": {
-        "egrid": "CH749410847374",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "216",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:37:03"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          7.000112056732178,
-          46.756080627441406
-        ]
-      },
-      "properties": {
-        "egrid": "CH538579016406",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "242",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:37:38"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          6.990737438201904,
-          46.764854431152344
-        ]
-      },
-      "properties": {
-        "egrid": "CH119410109146",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "349",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:36:04"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          6.9855852127075195,
-          46.761085510253906
-        ]
-      },
-      "properties": {
-        "egrid": "CH768810948928",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "572",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:43:15"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          6.999094486236572,
-          46.762603759765625
-        ]
-      },
-      "properties": {
-        "egrid": "CH428441109445",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "640",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:44:58"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          7.0042853355407715,
-          46.76962661743164
-        ]
-      },
-      "properties": {
-        "egrid": "CH338577012435",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "677",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:39:01"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          7.011137008666992,
-          46.76808547973633
-        ]
-      },
-      "properties": {
-        "egrid": "CH291084849462",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "683",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:48:03"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          7.0169758796691895,
-          46.76522445678711
-        ]
-      },
-      "properties": {
-        "egrid": "CH728085109443",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "688",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:50:56"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          7.010262489318848,
-          46.75782012939453
-        ]
-      },
-      "properties": {
-        "egrid": "CH849410841204",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "701",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:47:04"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          7.007054328918457,
-          46.75767135620117
-        ]
-      },
-      "properties": {
-        "egrid": "CH808994541090",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "931",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:39:34"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          6.99600076675415,
-          46.752235412597656
-        ]
-      },
-      "properties": {
-        "egrid": "CH498579830150",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "945",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:44:26"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          6.988361358642578,
-          46.753944396972656
-        ]
-      },
-      "properties": {
-        "egrid": "CH949410770102",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "952",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:35:34"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          6.9850358963012695,
-          46.75754165649414
-        ]
-      },
-      "properties": {
-        "egrid": "CH591092059428",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "956",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:34:57"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          6.983757972717285,
-          46.75241470336914
-        ]
-      },
-      "properties": {
-        "egrid": "CH868310946061",
-        "canton": "FR",
-        "commune": "La Brillaz (secteur Onnens)",
-        "bfs_nr": "2234",
-        "parcel_nr": "960",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:43:01"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          7.026961803436279,
-          46.813480377197266
-        ]
-      },
-      "properties": {
-        "egrid": "CH786885017722",
-        "canton": "FR",
-        "commune": "Prez (secteur Prez-vers-Nor\u00e9az)",
-        "bfs_nr": "2237",
-        "parcel_nr": "269",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "not_in_grundbuch",
-        "claim_possible": 0,
-        "scanned_at": "2026-05-25 00:58:25"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          9.717100143432617,
-          46.93205261230469
-        ]
-      },
-      "properties": {
-        "egrid": "CH237477910221",
-        "canton": "GR",
-        "commune": "GR0000003863",
-        "bfs_nr": "3863",
-        "parcel_nr": "1317",
+        "commune": "Gletterens",
+        "bfs_nr": "2022",
+        "parcel_nr": "554",
         "owner": null,
         "owner_address": null,
         "herrenlos_type": "dereliktion",
-        "claim_possible": null,
-        "scanned_at": "2026-05-25 20:14:03"
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 14:22:39"
       }
     },
     {
@@ -535,21 +29,725 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          9.726174354553223,
-          46.92473602294922
+          6.937401294708252,
+          46.895965576171875
         ]
       },
       "properties": {
-        "egrid": "CH579177827461",
-        "canton": "GR",
-        "commune": "GR0000003863",
-        "bfs_nr": "3863",
-        "parcel_nr": "469",
+        "egrid": "CH128502109483",
+        "canton": "FR",
+        "commune": "Gletterens",
+        "bfs_nr": "2022",
+        "parcel_nr": "811",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-28 22:04:38"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.084933280944824,
+          46.54124450683594
+        ]
+      },
+      "properties": {
+        "egrid": "CH987810947978",
+        "canton": "FR",
+        "commune": "Grandvillard",
+        "bfs_nr": "2134",
+        "parcel_nr": "4021",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:40"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.086638927459717,
+          46.538169860839844
+        ]
+      },
+      "properties": {
+        "egrid": "CH991087179495",
+        "canton": "FR",
+        "commune": "Grandvillard",
+        "bfs_nr": "2134",
+        "parcel_nr": "4183",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:43"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.082810878753662,
+          46.53774642944336
+        ]
+      },
+      "properties": {
+        "egrid": "CH949410863340",
+        "canton": "FR",
+        "commune": "Grandvillard",
+        "bfs_nr": "2134",
+        "parcel_nr": "4310",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:42"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.087948799133301,
+          46.54202651977539
+        ]
+      },
+      "properties": {
+        "egrid": "CH779487371021",
+        "canton": "FR",
+        "commune": "Grandvillard",
+        "bfs_nr": "2134",
+        "parcel_nr": "4445",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 16:33:47"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.08053731918335,
+          46.53062057495117
+        ]
+      },
+      "properties": {
+        "egrid": "CH467710941912",
+        "canton": "FR",
+        "commune": "Grandvillard",
+        "bfs_nr": "2134",
+        "parcel_nr": "4470",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 16:33:48"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.100736618041992,
+          46.52836608886719
+        ]
+      },
+      "properties": {
+        "egrid": "CH452010799450",
+        "canton": "FR",
+        "commune": "Grandvillard",
+        "bfs_nr": "2134",
+        "parcel_nr": "4863",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-29 08:42:44"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.11556339263916,
+          46.512813568115234
+        ]
+      },
+      "properties": {
+        "egrid": "CH731092948492",
+        "canton": "FR",
+        "commune": "Grandvillard",
+        "bfs_nr": "2134",
+        "parcel_nr": "4893",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:40"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.976716995239258,
+          46.7003059387207
+        ]
+      },
+      "properties": {
+        "egrid": "CH140185729690",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "537",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:34"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.977141380310059,
+          46.69842529296875
+        ]
+      },
+      "properties": {
+        "egrid": "CH980885017227",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "583",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 16:33:56"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.976865291595459,
+          46.69597244262695
+        ]
+      },
+      "properties": {
+        "egrid": "CH398572070184",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "614",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:34"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.973169803619385,
+          46.695343017578125
+        ]
+      },
+      "properties": {
+        "egrid": "CH267285010725",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "620",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 16:33:56"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.972749710083008,
+          46.693729400634766
+        ]
+      },
+      "properties": {
+        "egrid": "CH659485720142",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "629",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:46"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.9739508628845215,
+          46.69287109375
+        ]
+      },
+      "properties": {
+        "egrid": "CH638572019405",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "631",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-29 08:42:45"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.969091415405273,
+          46.695003509521484
+        ]
+      },
+      "properties": {
+        "egrid": "CH967285010778",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "700",
         "owner": null,
         "owner_address": null,
         "herrenlos_type": "not_in_grundbuch",
         "claim_possible": 0,
-        "scanned_at": "2026-05-25 20:07:05"
+        "scanned_at": "2026-05-27 21:49:15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.96375036239624,
+          46.69695281982422
+        ]
+      },
+      "properties": {
+        "egrid": "CH640185729617",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "719",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:49:15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.966573715209961,
+          46.69267654418945
+        ]
+      },
+      "properties": {
+        "egrid": "CH407201968560",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "726",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:37"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.967746257781982,
+          46.69321823120117
+        ]
+      },
+      "properties": {
+        "egrid": "CH410196857220",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "727",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:28"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.970407009124756,
+          46.69144821166992
+        ]
+      },
+      "properties": {
+        "egrid": "CH210194857209",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "742",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-29 08:42:45"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.971142292022705,
+          46.693458557128906
+        ]
+      },
+      "properties": {
+        "egrid": "CH267285019435",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "746",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 16:33:56"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.963893890380859,
+          46.7024040222168
+        ]
+      },
+      "properties": {
+        "egrid": "CH267285019633",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "757",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:39"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.981285095214844,
+          46.70402908325195
+        ]
+      },
+      "properties": {
+        "egrid": "CH759585720178",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "792",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:31"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.9661478996276855,
+          46.70394515991211
+        ]
+      },
+      "properties": {
+        "egrid": "CH467285019464",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "804",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:30"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.978219509124756,
+          46.69649887084961
+        ]
+      },
+      "properties": {
+        "egrid": "CH310108857270",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "830",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:46"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.988682746887207,
+          46.69269561767578
+        ]
+      },
+      "properties": {
+        "egrid": "CH767285010848",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "862",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:31"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.9778547286987305,
+          46.696617126464844
+        ]
+      },
+      "properties": {
+        "egrid": "CH370172968529",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "880",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:36"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.9751129150390625,
+          46.6973991394043
+        ]
+      },
+      "properties": {
+        "egrid": "CH289685017223",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "885",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:43"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.978104591369629,
+          46.700008392333984
+        ]
+      },
+      "properties": {
+        "egrid": "CH767285010749",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "895",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:33"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.9748311042785645,
+          46.69558334350586
+        ]
+      },
+      "properties": {
+        "egrid": "CH707201318556",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "903",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 16:33:47"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.978367805480957,
+          46.693050384521484
+        ]
+      },
+      "properties": {
+        "egrid": "CH727248850172",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "906",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 14:22:39"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.966732501983643,
+          46.69464111328125
+        ]
+      },
+      "properties": {
+        "egrid": "CH767385013393",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "912",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:45"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.9743499755859375,
+          46.70040512084961
+        ]
+      },
+      "properties": {
+        "egrid": "CH240185748759",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "932",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 21:41:37"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.98207426071167,
+          46.69319534301758
+        ]
+      },
+      "properties": {
+        "egrid": "CH738575011622",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "937",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-27 14:22:39"
       }
     },
     {
@@ -572,50 +770,6 @@
         "herrenlos_type": "not_in_grundbuch",
         "claim_possible": 0,
         "scanned_at": "2026-05-28 10:01:14"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          8.68479061126709,
-          46.99063491821289
-        ]
-      },
-      "properties": {
-        "egrid": "CH432277405797",
-        "canton": "SZ",
-        "commune": "1944",
-        "bfs_nr": "1367",
-        "parcel_nr": "1944",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "dereliktion",
-        "claim_possible": 1,
-        "scanned_at": "2026-05-23 16:27:57"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          8.68479061126709,
-          46.99063491821289
-        ]
-      },
-      "properties": {
-        "egrid": "CH444022775711",
-        "canton": "SZ",
-        "commune": "2064",
-        "bfs_nr": "1367",
-        "parcel_nr": "2064",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "dereliktion",
-        "claim_possible": 1,
-        "scanned_at": "2026-05-23 16:27:53"
       }
     }
   ]

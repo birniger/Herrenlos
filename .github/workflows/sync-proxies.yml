@@ -1,0 +1,35 @@
+name: Sync Webshare Proxies
+
+# Runs daily at 05:00 UTC — before the main scan workflow starts.
+# Fetches the current valid proxy list from the Webshare API and writes it
+# back to the WEBSHARE_PROXY_LIST secret so CI always has fresh credentials.
+# If a proxy is replaced by Webshare (free tier rotates occasionally), this
+# self-heals within 24 hours without any manual intervention.
+
+on:
+  schedule:
+    - cron: "0 5 * * *"   # 05:00 UTC daily
+  workflow_dispatch:        # allow manual trigger from GitHub UI
+
+permissions:
+  contents: read
+  secrets: write            # needed to update WEBSHARE_PROXY_LIST secret
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Sync proxy list → WEBSHARE_PROXY_LIST secret
+        env:
+          WEBSHARE_API_TOKEN: ${{ secrets.WEBSHARE_API_TOKEN }}
+          GH_TOKEN:           ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/sync_proxies.py --update-secret
