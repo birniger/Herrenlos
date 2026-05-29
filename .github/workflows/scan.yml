@@ -130,11 +130,19 @@ jobs:
               echo "=== $(date -u '+%H:%M:%S') Auto-picked: $CANTON (${REMAINING}s remaining) ==="
             fi
 
-            # Per-canton limits.  SH/GR exit naturally on proxy exhaustion;
-            # JU/SZ are CPU-bound so the limit caps their per-rotation slice.
+            # Per-canton limits.
+            # SH/GR: exit naturally on proxy exhaustion; no limit needed.
+            # JU/SZ: no proxy limit — use 99999 so the scanner can reach parcels
+            #   beyond the already-scanned front of the enum.  DO NOT use a low
+            #   limit like 11000/12000 here: the scanner iterates parcel_enum in
+            #   order, and all already-scanned parcels sit at the front.  A limit
+            #   below the already-scanned count means every run hits only done
+            #   parcels, returns scanned=0 in <1s, and the loop spins for hours.
+            #   The `timeout ${REMAINING}s` wrapper already caps the wall-clock
+            #   budget — no explicit limit needed for OCR-only cantons.
             case "$CANTON" in
-              ju) LIMIT=11000 ;;    # ~14k total; full run ~6h → cap at 5h slice
-              sz) LIMIT=12000 ;;    # ~50k total; many rotations needed
+              ju) LIMIT=99999 ;;    # ~14k total; timeout caps wall time
+              sz) LIMIT=99999 ;;    # ~50k total; timeout caps wall time
               sh) LIMIT=99999 ;;    # runs until all proxies exhausted (~1000/day)
               gr) LIMIT=99999 ;;    # runs until all proxies exhausted (~100/day)
               bs) LIMIT=12000 ;;
@@ -144,14 +152,25 @@ jobs:
               *)  LIMIT=10000 ;;
             esac
 
+            SCAN_START=$(date +%s)
             timeout ${REMAINING}s python main.py "$CANTON" --limit "$LIMIT" \
               || echo "Scan exited (timeout or failure) — continuing loop."
+            SCAN_ELAPSED=$(( $(date +%s) - SCAN_START ))
 
             # Proxy-limited cantons are spent after one turn — exclude them
             # from the rest of this job so pick_canton.py doesn't re-pick them.
             if echo " $PROXY_LIMITED " | grep -qw "$CANTON"; then
               EXCLUDE_CANTONS="${EXCLUDE_CANTONS:+$EXCLUDE_CANTONS }$CANTON"
               echo "[$CANTON] proxy quota spent — excluded from further picks this job."
+            fi
+
+            # Safety net: if the scan finished in < 10 seconds, it almost certainly
+            # returned scanned=0 (all eligible parcels already done or errored out
+            # with nothing to retry).  Exclude the canton for the rest of this job
+            # so the loop doesn't spin on it burning the remaining budget.
+            if [ $SCAN_ELAPSED -lt 10 ] && ! echo " $EXCLUDE_CANTONS " | grep -qw "$CANTON"; then
+              EXCLUDE_CANTONS="${EXCLUDE_CANTONS:+$EXCLUDE_CANTONS }$CANTON"
+              echo "[$CANTON] completed in ${SCAN_ELAPSED}s (scanned=0) — excluded for this job."
             fi
 
             # Accumulate distinct canton names for the commit message.
