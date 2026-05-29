@@ -1,7 +1,35 @@
 {
-  "generated_at": "2026-05-29T21:34:22+00:00",
-  "count": 1,
+  "generated_at": "2026-05-29T22:00:25+00:00",
+  "count": 3,
   "parcels": [
+    {
+      "egrid": "CH450510789470",
+      "canton": "FR",
+      "commune": "Gletterens",
+      "bfs_nr": "2022",
+      "parcel_nr": "554",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "not_in_grundbuch",
+      "claim_possible": 0,
+      "scanned_at": "2026-05-29 22:00:02",
+      "lat": 46.90528869628906,
+      "lng": 6.93482780456543
+    },
+    {
+      "egrid": "CH980885017227",
+      "canton": "FR",
+      "commune": "Massonnens",
+      "bfs_nr": "2086",
+      "parcel_nr": "583",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "not_in_grundbuch",
+      "claim_possible": 0,
+      "scanned_at": "2026-05-29 22:00:13",
+      "lat": 46.69842529296875,
+      "lng": 6.977141380310059
+    },
     {
       "egrid": "CH184226387886",
       "canton": "SZ",
