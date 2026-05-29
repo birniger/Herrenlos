@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-05-29T22:00:25+00:00",
+  "generated_at": "2026-05-29T22:00:40+00:00",
   "cantons": [
     {
       "canton": "BE",
       "enumerated": 426009,
       "scanned": 130,
       "herrenlos": 0,
-      "errors": 3,
+      "errors": 4,
       "percent": 0.0,
       "estimated_total": 426009,
-      "last_scan_at": "2026-05-29 22:00:15",
+      "last_scan_at": "2026-05-29 22:00:27",
       "access": "own_account",
       "test_group": "own_login",
       "rate_limit": "per-account (personal AGOV identity) \u2014 CONFIRMED per-account (empirically verified: fresh browser session + new token still returned 429, proving the limit is on the account, not the IP). Limit appears to be on the person/owner-name resolution step (GET /api/gb/person/master), not on parcel lookups. Threshold count unknown. access_token 5min / refresh_token 30min rotating; session alive while running, re-auth after >~30min gap; IP rotation cannot help \u2014 account is the hard constraint"
@@ -17,12 +17,12 @@
     {
       "canton": "FR",
       "enumerated": 147148,
-      "scanned": 878,
+      "scanned": 880,
       "herrenlos": 2,
       "errors": 5610,
       "percent": 0.6,
       "estimated_total": 147148,
-      "last_scan_at": "2026-05-29 22:00:24",
+      "last_scan_at": "2026-05-29 22:00:38",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -121,9 +121,9 @@
   ],
   "totals": {
     "enumerated": 1383253,
-    "scanned": 29988,
+    "scanned": 29990,
     "herrenlos": 3,
-    "errors": 8876,
+    "errors": 8877,
     "cantons": 9
   }
 }
