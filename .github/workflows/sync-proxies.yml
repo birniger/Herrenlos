@@ -13,7 +13,10 @@ on:
 
 permissions:
   contents: read
-  secrets: write            # needed to update WEBSHARE_PROXY_LIST secret
+  # Note: `secrets` is not a valid GitHub Actions permission scope — writing
+  # repository secrets requires a Personal Access Token (PAT) with `repo` scope.
+  # Store your PAT as a repository secret named GH_PAT and it will be used below.
+  # Without GH_PAT the --update-secret step fails gracefully (sync_proxies.py exits 0).
 
 jobs:
   sync:
@@ -31,5 +34,7 @@ jobs:
       - name: Sync proxy list → WEBSHARE_PROXY_LIST secret
         env:
           WEBSHARE_API_TOKEN: ${{ secrets.WEBSHARE_API_TOKEN }}
-          GH_TOKEN:           ${{ secrets.GITHUB_TOKEN }}
+          # Use PAT (GH_PAT) for secret writes; fall back to GITHUB_TOKEN (secret
+          # update will fail gracefully but local .env rewrite still runs).
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: python scripts/sync_proxies.py --update-secret

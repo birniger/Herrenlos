@@ -43,9 +43,22 @@ COMMUNE  = f"{BASE}/selectCommune.jsp"
 QUERY    = f"{BASE}/v2TAffImmx01.jsp"
 UA       = DEFAULT_UA  # alias kept for call sites within this file; imported from utils
 
-NOT_FOUND_NEEDLE  = "INFORMATION INTROUVABLE"
-NOT_FOUND_MAX_B   = 800    # bytes; valid response is ~8–10 KB
-RATE_LIMIT_NEEDLE = "dépassement de la limite"
+NOT_FOUND_NEEDLE   = "INFORMATION INTROUVABLE"
+NOT_FOUND_MAX_B    = 800    # bytes; valid response is ~8–10 KB
+# Rate-limit page indicators — any of these means the session/IP quota is spent.
+# The portal serves at least three different rate-limit page variants:
+#   "dépassement de la limite" — standard French quota-exceeded text
+#   "StopConsult"              — portal-specific rate-limit class/marker
+#   "Abfragelimite"            — German-language quota text
+RATE_LIMIT_NEEDLES = (
+    "dépassement de la limite",
+    "StopConsult",
+    "Abfragelimite",
+)
+# Server-error page indicators — portal errors that are NOT valid Grundbuch results.
+ERROR_PAGE_NEEDLES = (
+    "error_msg",               # error page HTML marker (class/id in the portal)
+)
 QUERIES_PER_SESSION = 3    # 3 queries per JSESSIONID — empirically ~2-3 succeed before exhaustion
 # FR portal rate-limits session creation (~1 every 12s per IP).  new_session()
 # takes ~4 s.  ~27% of 2nd/3rd queries return session_exhausted; scanner retries
@@ -148,8 +161,15 @@ def check_owner(session: requests.Session, xv1: str,
         raw  = r.text
         size = len(raw.encode())
 
-        if RATE_LIMIT_NEEDLE in raw:
+        if any(n in raw for n in RATE_LIMIT_NEEDLES):
             return {"error": "session_exhausted", "is_herrenlos": None,
+                    "herrenlos_type": None, "claim_possible": None,
+                    "owner": None, "owner_address": None, "raw_response": None}
+
+        if any(n in raw for n in ERROR_PAGE_NEEDLES):
+            log.warning("Error page in %d-byte response (selcom=%s nr=%s) — "
+                        "will retry", size, selcom, parcel_nr)
+            return {"error": "server_error", "is_herrenlos": None,
                     "herrenlos_type": None, "claim_possible": None,
                     "owner": None, "owner_address": None, "raw_response": None}
 
@@ -175,24 +195,57 @@ def check_owner(session: requests.Session, xv1: str,
         # Parse owner from table.proprio
         soup = BeautifulSoup(raw, "lxml")
         proprio = soup.find("table", class_="proprio")
-        owner = None
-        herrenlos_texts: list = []
-        if proprio:
-            rows = proprio.find_all("tr")
-            owner_names = []
-            skip = {"propriété", "miteigentum", "gesamteigentum",
-                    "informations sur la propriété:", "angaben zur liegenschaft:"}
-            for row in rows:
-                td = row.find("td")
-                if td:
-                    text = td.get_text(" ", strip=True)
-                    if not text or text.lower() in skip or len(text) <= 1:
-                        continue
-                    if is_herrenlos_owner_text(text):
-                        herrenlos_texts.append(text)
-                    else:
-                        owner_names.append(text)
-            owner = "; ".join(owner_names) if owner_names else None
+
+        # GUARD 1: No table.proprio → not a valid Grundbuch result.
+        # Rate-limit and server-error pages are normally caught by the text
+        # checks above, but occasionally slip through (e.g. a new page variant
+        # we haven't seen).  If proprio is missing from a full-size response,
+        # it's still not a real Grundbuch result — retry rather than flag herrenlos.
+        if proprio is None:
+            log.warning("No table.proprio in %d-byte response (selcom=%s nr=%s) — "
+                        "server error, parcel will be retried", size, selcom, parcel_nr)
+            return {"error": "server_error", "is_herrenlos": None,
+                    "herrenlos_type": None, "claim_possible": None,
+                    "owner": None, "owner_address": None, "raw_response": None}
+
+        # GUARD 2: Cross-reference link to another parcel inside proprio.
+        # The FR portal renders some servient parcels (Dienstbarkeits- or
+        # Eigentumsbeschränkungs-einträge) with a data row whose cells are
+        # orphaned <td>s outside any <tr> (malformed HTML).  lxml adopts them
+        # onto a phantom row that row.find("td") cannot see, so the scanner
+        # previously missed the content and returned "no owner → herrenlos".
+        # A parcel with a Grundbuch cross-reference link is NOT herrenlos.
+        _PARCEL_LINK = re.compile(r'v2TAffImmx01\.jsp', re.I)
+        if proprio.find("a", href=_PARCEL_LINK):
+            link_text = proprio.find("a", href=_PARCEL_LINK).get_text(" ", strip=True)
+            log.debug("table.proprio has parcel cross-reference '%s' (selcom=%s nr=%s) "
+                      "— not herrenlos", link_text, selcom, parcel_nr)
+            return {"owner": f"parcel_ref({link_text})", "owner_address": None,
+                    "is_herrenlos": 0, "herrenlos_type": None, "claim_possible": None,
+                    "raw_response": None, "error": None}
+
+        # Use find_all("td") on the table rather than iterating find_all("tr") →
+        # find("td"), because the FR portal occasionally emits data cells as
+        # orphaned <td>s outside any <tr> (invalid HTML).  find_all("td") on the
+        # table element catches those rows too.
+        owner_names:     list[str] = []
+        herrenlos_texts: list[str] = []
+        skip = {
+            "propriété", "miteigentum", "gesamteigentum",
+            "informations sur la propriété:", "angaben zur liegenschaft:",
+            # Column headers occasionally rendered as <td> instead of <th>:
+            "commune", "no immeuble", "type de propriété", "propriété de:",
+            "gemeinde", "liegenschaftsnr.", "art des eigentums", "grundeigentümer:",
+        }
+        for td in proprio.find_all("td"):
+            text = td.get_text(" ", strip=True)
+            if not text or text.lower() in skip or len(text) <= 1:
+                continue
+            if is_herrenlos_owner_text(text):
+                herrenlos_texts.append(text)
+            else:
+                owner_names.append(text)
+        owner = "; ".join(owner_names) if owner_names else None
 
         if owner is None:
             reason = f"explicit herrenlos text: {herrenlos_texts}" if herrenlos_texts \

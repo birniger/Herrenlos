@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-29T12:20:53+00:00",
+  "generated_at": "2026-05-29T12:25:38+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -17,8 +17,8 @@
     {
       "canton": "FR",
       "enumerated": 147148,
-      "scanned": 904,
-      "herrenlos": 34,
+      "scanned": 870,
+      "herrenlos": 0,
       "errors": 5588,
       "percent": 0.6,
       "estimated_total": 147148,
@@ -121,8 +121,8 @@
   ],
   "totals": {
     "enumerated": 1383253,
-    "scanned": 26700,
-    "herrenlos": 35,
+    "scanned": 26666,
+    "herrenlos": 1,
     "errors": 8329,
     "cantons": 9
   }
