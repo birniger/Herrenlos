@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-05-30T00:19:08+00:00",
+  "generated_at": "2026-05-30T00:23:09+00:00",
   "features": [
     {
       "type": "Feature",
@@ -88,6 +88,50 @@
         "herrenlos_type": "dereliktion",
         "claim_possible": 1,
         "scanned_at": "2026-05-29 16:24:31"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8.49510383605957,
+          47.718624114990234
+        ]
+      },
+      "properties": {
+        "egrid": "CH392677393844",
+        "canton": "SZ",
+        "commune": "SZ0200001322",
+        "bfs_nr": "1322",
+        "parcel_nr": "1413",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 1,
+        "scanned_at": "2026-05-29 20:28:35"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8.726723670959473,
+          47.196781158447266
+        ]
+      },
+      "properties": {
+        "egrid": "CH327880263892",
+        "canton": "SZ",
+        "commune": "SZ0200001322",
+        "bfs_nr": "1322",
+        "parcel_nr": "3529",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 1,
+        "scanned_at": "2026-05-29 20:27:54"
       }
     }
   ]
