@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-05-30T09:41:20+00:00",
-  "count": 21,
+  "generated_at": "2026-05-30T09:47:26+00:00",
+  "count": 26,
   "parcels": [
     {
       "egrid": "CH253410829422",
@@ -101,6 +101,20 @@
       "lng": 7.132625102996826
     },
     {
+      "egrid": "CH884710948867",
+      "canton": "FR",
+      "commune": "Grandvillard",
+      "bfs_nr": "2134",
+      "parcel_nr": "4859",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "not_in_grundbuch",
+      "claim_possible": 0,
+      "scanned_at": "2026-05-30 09:46:38",
+      "lat": 46.5327033996582,
+      "lng": 7.107048988342285
+    },
+    {
       "egrid": "CH268810944053",
       "canton": "FR",
       "commune": "Grandvillard",
@@ -185,6 +199,20 @@
       "lng": 6.9739508628845215
     },
     {
+      "egrid": "CH259585720154",
+      "canton": "FR",
+      "commune": "Massonnens",
+      "bfs_nr": "2086",
+      "parcel_nr": "653",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "not_in_grundbuch",
+      "claim_possible": 0,
+      "scanned_at": "2026-05-30 09:46:38",
+      "lat": 46.691864013671875,
+      "lng": 6.973562717437744
+    },
+    {
       "egrid": "CH570172088531",
       "canton": "FR",
       "commune": "Massonnens",
@@ -197,6 +225,48 @@
       "scanned_at": "2026-05-30 09:31:29",
       "lat": 46.690303802490234,
       "lng": 6.982248783111572
+    },
+    {
+      "egrid": "CH207201088504",
+      "canton": "FR",
+      "commune": "Massonnens",
+      "bfs_nr": "2086",
+      "parcel_nr": "677",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "not_in_grundbuch",
+      "claim_possible": 0,
+      "scanned_at": "2026-05-30 09:46:49",
+      "lat": 46.689022064208984,
+      "lng": 6.984588623046875
+    },
+    {
+      "egrid": "CH589685017218",
+      "canton": "FR",
+      "commune": "Massonnens",
+      "bfs_nr": "2086",
+      "parcel_nr": "687",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "not_in_grundbuch",
+      "claim_possible": 0,
+      "scanned_at": "2026-05-30 09:46:28",
+      "lat": 46.70024108886719,
+      "lng": 6.97188663482666
+    },
+    {
+      "egrid": "CH607201078565",
+      "canton": "FR",
+      "commune": "Massonnens",
+      "bfs_nr": "2086",
+      "parcel_nr": "839",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "not_in_grundbuch",
+      "claim_possible": 0,
+      "scanned_at": "2026-05-30 09:46:49",
+      "lat": 46.694087982177734,
+      "lng": 6.981812000274658
     },
     {
       "egrid": "CH240185748759",
