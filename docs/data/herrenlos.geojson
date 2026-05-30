@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-05-30T15:25:41+00:00",
+  "generated_at": "2026-05-30T15:34:24+00:00",
   "features": [
     {
       "type": "Feature",
@@ -161,6 +161,28 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
+          6.828973770141602,
+          46.830810546875
+        ]
+      },
+      "properties": {
+        "egrid": "CH649410725268",
+        "canton": "FR",
+        "commune": "Ch\u00e2tillon (FR)",
+        "bfs_nr": "2008",
+        "parcel_nr": "2088",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-30 15:33:15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
           6.83224630355835,
           46.830284118652344
         ]
@@ -220,6 +242,28 @@
         "herrenlos_type": "not_in_grundbuch",
         "claim_possible": 0,
         "scanned_at": "2026-05-30 13:19:48"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.834951877593994,
+          46.83055114746094
+        ]
+      },
+      "properties": {
+        "egrid": "CH456210869459",
+        "canton": "FR",
+        "commune": "Ch\u00e2tillon (FR)",
+        "bfs_nr": "2008",
+        "parcel_nr": "2151",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-30 15:34:12"
       }
     },
     {
@@ -308,6 +352,50 @@
         "herrenlos_type": "not_in_grundbuch",
         "claim_possible": 0,
         "scanned_at": "2026-05-30 13:19:50"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.8333210945129395,
+          46.8348388671875
+        ]
+      },
+      "properties": {
+        "egrid": "CH527895109475",
+        "canton": "FR",
+        "commune": "Ch\u00e2tillon (FR)",
+        "bfs_nr": "2008",
+        "parcel_nr": "2224",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-30 15:33:15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.833924293518066,
+          46.83308029174805
+        ]
+      },
+      "properties": {
+        "egrid": "CH407801768555",
+        "canton": "FR",
+        "commune": "Ch\u00e2tillon (FR)",
+        "bfs_nr": "2008",
+        "parcel_nr": "2246",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-30 15:33:14"
       }
     },
     {

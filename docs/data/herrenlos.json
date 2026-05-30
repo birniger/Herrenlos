@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-05-30T15:25:41+00:00",
-  "count": 56,
+  "generated_at": "2026-05-30T15:34:24+00:00",
+  "count": 60,
   "parcels": [
     {
       "egrid": "CH253410829422",
@@ -101,6 +101,20 @@
       "lng": 6.828563213348389
     },
     {
+      "egrid": "CH649410725268",
+      "canton": "FR",
+      "commune": "Ch\u00e2tillon (FR)",
+      "bfs_nr": "2008",
+      "parcel_nr": "2088",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "not_in_grundbuch",
+      "claim_possible": 0,
+      "scanned_at": "2026-05-30 15:33:15",
+      "lat": 46.830810546875,
+      "lng": 6.828973770141602
+    },
+    {
       "egrid": "CH528733109402",
       "canton": "FR",
       "commune": "Ch\u00e2tillon (FR)",
@@ -141,6 +155,20 @@
       "scanned_at": "2026-05-30 13:19:48",
       "lat": 46.83083724975586,
       "lng": 6.834732532501221
+    },
+    {
+      "egrid": "CH456210869459",
+      "canton": "FR",
+      "commune": "Ch\u00e2tillon (FR)",
+      "bfs_nr": "2008",
+      "parcel_nr": "2151",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "not_in_grundbuch",
+      "claim_possible": 0,
+      "scanned_at": "2026-05-30 15:34:12",
+      "lat": 46.83055114746094,
+      "lng": 6.834951877593994
     },
     {
       "egrid": "CH379483821058",
@@ -197,6 +225,34 @@
       "scanned_at": "2026-05-30 13:19:50",
       "lat": 46.83530807495117,
       "lng": 6.8294548988342285
+    },
+    {
+      "egrid": "CH527895109475",
+      "canton": "FR",
+      "commune": "Ch\u00e2tillon (FR)",
+      "bfs_nr": "2008",
+      "parcel_nr": "2224",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "not_in_grundbuch",
+      "claim_possible": 0,
+      "scanned_at": "2026-05-30 15:33:15",
+      "lat": 46.8348388671875,
+      "lng": 6.8333210945129395
+    },
+    {
+      "egrid": "CH407801768555",
+      "canton": "FR",
+      "commune": "Ch\u00e2tillon (FR)",
+      "bfs_nr": "2008",
+      "parcel_nr": "2246",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "not_in_grundbuch",
+      "claim_possible": 0,
+      "scanned_at": "2026-05-30 15:33:14",
+      "lat": 46.83308029174805,
+      "lng": 6.833924293518066
     },
     {
       "egrid": "CH308094851022",
