@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-05-30T00:23:08+00:00",
+  "generated_at": "2026-05-30T00:23:45+00:00",
   "cantons": [
     {
       "canton": "BE",
       "enumerated": 426009,
-      "scanned": 117,
+      "scanned": 130,
       "herrenlos": 0,
-      "errors": 13,
+      "errors": 4,
       "percent": 0.0,
       "estimated_total": 426009,
       "last_scan_at": "2026-05-29 22:00:27",
@@ -22,7 +22,7 @@
       "errors": 5518,
       "percent": 0.7,
       "estimated_total": 147148,
-      "last_scan_at": "2026-05-29 13:31:10",
+      "last_scan_at": "2026-05-30 00:23:26",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -48,7 +48,7 @@
       "errors": 60,
       "percent": 0.1,
       "estimated_total": 225843,
-      "last_scan_at": "2026-05-29 19:01:21",
+      "last_scan_at": "2026-05-29 13:40:47",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "10 req/day/IP"
@@ -87,7 +87,7 @@
       "errors": 831,
       "percent": 1.0,
       "estimated_total": 43256,
-      "last_scan_at": "2026-05-29 18:59:41",
+      "last_scan_at": "2026-05-29 03:02:56",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "100 req/day/IP"
@@ -95,10 +95,10 @@
     {
       "canton": "SZ",
       "enumerated": 50217,
-      "scanned": 20949,
+      "scanned": 19068,
       "herrenlos": 3,
-      "errors": 1015,
-      "percent": 41.7,
+      "errors": 2896,
+      "percent": 38.0,
       "estimated_total": 50217,
       "last_scan_at": "2026-05-30 00:23:06",
       "access": "public",
@@ -113,7 +113,7 @@
       "errors": 4,
       "percent": 0.0,
       "estimated_total": 316772,
-      "last_scan_at": "2026-05-29 13:14:03",
+      "last_scan_at": "2026-05-29 22:02:19",
       "access": "own_account",
       "test_group": "own_login",
       "rate_limit": "SwissID session, scan endpoints appear unlimited. VS uses SwissID (login.swissid.ch) \u2014 NOT AGOV; BE and VS use different identity providers. The ICP-extract endpoint is 10/day but the scanner deliberately avoids it. Main scan endpoints (grundstueck + eigentum JSON API) show no per-query quota. IP rotation is irrelevant: SwissID 2FA means any session is bound to a personal account, but there is no quota to route around. access_token ~5min / refresh_token rotating; re-auth needed after any gap >~30min."
@@ -121,9 +121,9 @@
   ],
   "totals": {
     "enumerated": 1383253,
-    "scanned": 35432,
-    "herrenlos": 3,
-    "errors": 7595,
+    "scanned": 33632,
+    "herrenlos": 6,
+    "errors": 9410,
     "cantons": 9
   }
 }
