@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-05-30T12:17:37+00:00",
+  "generated_at": "2026-05-30T12:41:45+00:00",
   "features": [
     {
       "type": "Feature",
@@ -132,6 +132,28 @@
         "herrenlos_type": "not_in_grundbuch",
         "claim_possible": 0,
         "scanned_at": "2026-05-30 09:32:14"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.089238166809082,
+          46.53817367553711
+        ]
+      },
+      "properties": {
+        "egrid": "CH649410915805",
+        "canton": "FR",
+        "commune": "Grandvillard",
+        "bfs_nr": "2134",
+        "parcel_nr": "4689",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-30 12:41:40"
       }
     },
     {
@@ -286,6 +308,28 @@
         "herrenlos_type": "not_in_grundbuch",
         "claim_possible": 0,
         "scanned_at": "2026-05-30 09:31:29"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.972749710083008,
+          46.693729400634766
+        ]
+      },
+      "properties": {
+        "egrid": "CH659485720142",
+        "canton": "FR",
+        "commune": "Massonnens",
+        "bfs_nr": "2086",
+        "parcel_nr": "629",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-05-30 12:41:07"
       }
     },
     {
