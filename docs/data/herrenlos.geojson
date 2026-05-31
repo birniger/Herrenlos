@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-05-31T08:59:25+00:00",
+  "generated_at": "2026-05-31T14:25:19+00:00",
   "features": [
     {
       "type": "Feature",
@@ -616,6 +616,28 @@
         "herrenlos_type": "dereliktion",
         "claim_possible": 1,
         "scanned_at": "2026-05-31 05:35:47"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8.615273475646973,
+          47.0494499206543
+        ]
+      },
+      "properties": {
+        "egrid": "CH130978670923",
+        "canton": "SZ",
+        "commune": "SZ0200001373",
+        "bfs_nr": "1373",
+        "parcel_nr": "1369",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "dereliktion",
+        "claim_possible": 1,
+        "scanned_at": "2026-05-31 09:35:22"
       }
     },
     {
