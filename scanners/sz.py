@@ -318,8 +318,26 @@ def _parse_owner_html(html: str, egrid: str) -> dict:
                 "herrenlos_type": "not_in_grundbuch", "claim_possible": 0,
                 "raw_response": html, "error": None}
 
+    # ── Success-page validation ───────────────────────────────────────────────
+    # A genuine SZ result page ALWAYS renders the parcel header (Grundstück-Nr,
+    # Gemeinde, Eigentumsform).  A degraded/broken response — e.g. after a wrong
+    # captcha solve that the portal renders without re-prompting — echoes only the
+    # E-GRID (taken from the URL) plus "Keine Eigentümer erfasst", omitting those
+    # header fields.  Such a page is a FAILED lookup, not a parcel without an owner.
+    # Without this guard it is misclassified as herrenlos/dereliktion (e.g. parcel
+    # 426 / CH344022798511, which actually has an owner).  Treat it as a retryable
+    # failure instead.
     if owner is None:
-        log.info("No owner found in response (EGRID=%s) — potential herrenlos", egrid)
+        has_header = ("grundstück-nr" in page_text
+                      and "gemeinde" in page_text
+                      and "eigentumsform" in page_text)
+        if not has_header:
+            log.warning("Invalid/degraded SZ result page (no parcel header) for "
+                        "EGRID=%s — treating as retryable failure, NOT herrenlos", egrid)
+            return {"owner": None, "owner_address": None, "is_herrenlos": None,
+                    "herrenlos_type": None, "claim_possible": None,
+                    "raw_response": None, "error": "invalid_page"}
+        log.info("No owner found in valid result page (EGRID=%s) — potential herrenlos", egrid)
 
     return {
         "owner":          owner,
@@ -395,13 +413,13 @@ def scan(limit: int | None = None,
             result = None
             for attempt in range(1, max_captcha_retries + 1):
                 result = check_owner(session, egrid)
-                if result.get("error") not in ("captcha_wrong", "captcha_unsolved"):
+                if result.get("error") not in ("captcha_wrong", "captcha_unsolved", "invalid_page"):
                     break
                 log.debug("Captcha attempt %d/%d failed for EGRID=%s",
                           attempt, max_captcha_retries, egrid)
                 time.sleep(1)
 
-            if result.get("error") in ("captcha_wrong", "captcha_unsolved"):
+            if result.get("error") in ("captcha_wrong", "captcha_unsolved", "invalid_page"):
                 captcha_fails += 1
                 # Store as error, don't skip — will be retried next run
                 result = {"owner": None, "owner_address": None,
@@ -424,7 +442,7 @@ def scan(limit: int | None = None,
             if result.get("is_herrenlos") == 1:
                 herrenlos += 1
                 log.info("HERRENLOS  %s Nr.%s  EGRID=%s", commune, nr, egrid)
-            if result.get("error") and result["error"] not in ("captcha_wrong", "captcha_unsolved"):
+            if result.get("error") and result["error"] not in ("captcha_wrong", "captcha_unsolved", "invalid_page"):
                 errors += 1
 
             if scanned % 50 == 0:
