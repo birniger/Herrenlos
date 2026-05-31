@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-05-31T19:51:13+00:00",
+  "generated_at": "2026-05-31T19:55:18+00:00",
   "cantons": [
     {
       "canton": "BE",
       "enumerated": 426009,
-      "scanned": 135,
+      "scanned": 133,
       "herrenlos": 0,
-      "errors": 4,
+      "errors": 6,
       "percent": 0.0,
       "estimated_total": 426009,
       "last_scan_at": "2026-05-31 17:24:36",
@@ -17,12 +17,12 @@
     {
       "canton": "FR",
       "enumerated": 147148,
-      "scanned": 1527,
-      "herrenlos": 54,
-      "errors": 5343,
-      "percent": 1.0,
+      "scanned": 1107,
+      "herrenlos": 9,
+      "errors": 5761,
+      "percent": 0.8,
       "estimated_total": 147148,
-      "last_scan_at": "2026-05-31 19:49:05",
+      "last_scan_at": "2026-05-31 19:55:15",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -43,10 +43,10 @@
     {
       "canton": "GR",
       "enumerated": 225843,
-      "scanned": 333,
+      "scanned": 400,
       "herrenlos": 0,
-      "errors": 79,
-      "percent": 0.1,
+      "errors": 19,
+      "percent": 0.2,
       "estimated_total": 225843,
       "last_scan_at": "2026-05-31 09:07:18",
       "access": "public",
@@ -82,7 +82,7 @@
     {
       "canton": "SH",
       "enumerated": 43256,
-      "scanned": 788,
+      "scanned": 924,
       "herrenlos": 1,
       "errors": 9910,
       "percent": 2.1,
@@ -95,10 +95,10 @@
     {
       "canton": "SZ",
       "enumerated": 50217,
-      "scanned": 43992,
+      "scanned": 48471,
       "herrenlos": 10,
-      "errors": 5183,
-      "percent": 87.6,
+      "errors": 704,
+      "percent": 96.5,
       "estimated_total": 50217,
       "last_scan_at": "2026-05-31 14:25:17",
       "access": "public",
@@ -108,9 +108,9 @@
     {
       "canton": "VS",
       "enumerated": 316772,
-      "scanned": 61,
+      "scanned": 59,
       "herrenlos": 0,
-      "errors": 4,
+      "errors": 6,
       "percent": 0.0,
       "estimated_total": 316772,
       "last_scan_at": "2026-05-31 19:25:03",
@@ -121,9 +121,9 @@
   ],
   "totals": {
     "enumerated": 1383253,
-    "scanned": 63754,
-    "herrenlos": 31,
-    "errors": 16368,
+    "scanned": 63779,
+    "herrenlos": 20,
+    "errors": 16503,
     "cantons": 9
   }
 }
