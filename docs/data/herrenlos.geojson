@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-05-31T18:44:43+00:00",
+  "generated_at": "2026-05-31T18:50:04+00:00",
   "features": [
     {
       "type": "Feature",
@@ -1217,94 +1217,6 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          8.719454765319824,
-          47.17441177368164
-        ]
-      },
-      "properties": {
-        "egrid": "CH184226387886",
-        "canton": "SZ",
-        "commune": "SZ0200001321",
-        "bfs_nr": "1321",
-        "parcel_nr": "1274",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "dereliktion",
-        "claim_possible": 1,
-        "scanned_at": "2026-05-29 16:24:31"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          8.49510383605957,
-          47.718624114990234
-        ]
-      },
-      "properties": {
-        "egrid": "CH392677393844",
-        "canton": "SZ",
-        "commune": "SZ0200001322",
-        "bfs_nr": "1322",
-        "parcel_nr": "1413",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "dereliktion",
-        "claim_possible": 1,
-        "scanned_at": "2026-05-29 20:28:35"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          8.726723670959473,
-          47.196781158447266
-        ]
-      },
-      "properties": {
-        "egrid": "CH327880263892",
-        "canton": "SZ",
-        "commune": "SZ0200001322",
-        "bfs_nr": "1322",
-        "parcel_nr": "3529",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "dereliktion",
-        "claim_possible": 1,
-        "scanned_at": "2026-05-29 20:27:54"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          8.922686576843262,
-          47.105674743652344
-        ]
-      },
-      "properties": {
-        "egrid": "CH807993185346",
-        "canton": "SZ",
-        "commune": "SZ0200001343",
-        "bfs_nr": "1343",
-        "parcel_nr": "171",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "dereliktion",
-        "claim_possible": 1,
-        "scanned_at": "2026-05-30 05:23:06"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
           8.602487564086914,
           47.003944396972656
         ]
@@ -1320,94 +1232,6 @@
         "herrenlos_type": "dereliktion",
         "claim_possible": 1,
         "scanned_at": "2026-05-30 03:31:35"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          8.608927726745605,
-          46.992431640625
-        ]
-      },
-      "properties": {
-        "egrid": "CH507740302292",
-        "canton": "SZ",
-        "commune": "SZ0200001364",
-        "bfs_nr": "1364",
-        "parcel_nr": "1804",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "dereliktion",
-        "claim_possible": 1,
-        "scanned_at": "2026-05-30 04:30:44"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          8.770609855651855,
-          46.97323226928711
-        ]
-      },
-      "properties": {
-        "egrid": "CH227868224050",
-        "canton": "SZ",
-        "commune": "SZ0200001367",
-        "bfs_nr": "1367",
-        "parcel_nr": "1778",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "dereliktion",
-        "claim_possible": 1,
-        "scanned_at": "2026-05-30 13:58:45"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          8.766619682312012,
-          46.973533630371094
-        ]
-      },
-      "properties": {
-        "egrid": "CH767822405991",
-        "canton": "SZ",
-        "commune": "SZ0200001367",
-        "bfs_nr": "1367",
-        "parcel_nr": "494",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "dereliktion",
-        "claim_possible": 1,
-        "scanned_at": "2026-05-30 15:55:50"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          8.770756721496582,
-          46.97220993041992
-        ]
-      },
-      "properties": {
-        "egrid": "CH453922784068",
-        "canton": "SZ",
-        "commune": "SZ0200001367",
-        "bfs_nr": "1367",
-        "parcel_nr": "532",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "dereliktion",
-        "claim_possible": 1,
-        "scanned_at": "2026-05-30 13:50:53"
       }
     },
     {
@@ -1474,50 +1298,6 @@
         "herrenlos_type": "dereliktion",
         "claim_possible": 1,
         "scanned_at": "2026-05-30 17:57:59"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          8.769417762756348,
-          47.041648864746094
-        ]
-      },
-      "properties": {
-        "egrid": "CH344022798511",
-        "canton": "SZ",
-        "commune": "SZ0200001368",
-        "bfs_nr": "1368",
-        "parcel_nr": "426",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "dereliktion",
-        "claim_possible": 1,
-        "scanned_at": "2026-05-30 18:00:56"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          8.778093338012695,
-          47.045555114746094
-        ]
-      },
-      "properties": {
-        "egrid": "CH592279804038",
-        "canton": "SZ",
-        "commune": "SZ0200001368",
-        "bfs_nr": "1368",
-        "parcel_nr": "56",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "dereliktion",
-        "claim_possible": 1,
-        "scanned_at": "2026-05-30 18:03:49"
       }
     },
     {
