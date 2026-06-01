@@ -119,6 +119,11 @@ PUSH_DEBOUNCE_SECONDS = 120  # 2 minutes
 # Token keepalive interval: refresh idle tokens during long cooldowns.
 KEEPALIVE_INTERVAL = 900  # 15 min — well within any Keycloak idle timeout
 
+# Login notification timing for BE/VS quota-reset cooldowns.
+LOGIN_POLL_INTERVAL     = 180   # 3 min fast-poll after notification sent
+LOGIN_NOTIFY_AHEAD_SECS = 900   # notify 15 min before quota reset when token dead
+LOGIN_REPEAT_NOTIFY_INTERVAL = 1800  # re-notify every 30 min while waiting for user login
+
 # Token cache (created on first interactive login by BE/VS scanners)
 TOKEN_DIR = pathlib.Path.home() / ".herrenlos_scanner"
 
@@ -315,6 +320,53 @@ def notify(title: str, message: str, sound: bool = False,
         subprocess.run([osascript, "-e", script], check=False)
     except Exception as e:
         log.debug("osascript notification failed: %s", e)
+
+
+def _send_login_notification(canton: str, reason: str = "reauth",
+                             reset_at: float | None = None) -> None:
+    """
+    Send a macOS push notification prompting the user to log in for *canton*.
+    Opens the pre-built .command file (which immediately starts a scan) on tap.
+
+    reason values
+    -------------
+    "reauth"        — session expired during an active scan
+    "login_timeout" — interactive login window was not completed in time
+    "quota_reset"   — quota just reset; token dead; time to log in and scan
+    "token_expired" — token died during quiet cooldown; early heads-up with reset time
+    "reminder"      — repeat nudge while waiting for user to tap during fast-poll
+    """
+    _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
+    execute = f"open '{_ln}'" if _ln.exists() else None
+
+    # Human-readable reset time ("23:58") or "soon" if unknown.
+    reset_str = (datetime.datetime.fromtimestamp(reset_at).strftime("%H:%M")
+                 if reset_at else None)
+
+    if reason == "login_timeout":
+        title   = f"Herrenlos — {canton.upper()} login timed out"
+        message = "Tap to open a fresh login window and start scanning."
+    elif reason == "quota_reset":
+        title   = f"Herrenlos — {canton.upper()} quota reset, login needed"
+        message = "Daily quota just reset. Tap to log in and scan now."
+    elif reason == "token_expired":
+        # Fired as soon as the token dies during a cooldown — gives the user
+        # a heads-up hours before reset so they can pre-login at their leisure.
+        reset_info = f" Quota resets at {reset_str}." if reset_str else ""
+        title   = f"Herrenlos — {canton.upper()} token expired"
+        message = (f"Session dead.{reset_info} Tap to pre-login — "
+                   "scanning starts automatically after reset.")
+    elif reason == "reminder":
+        # Repeat nudge during fast-poll: user hasn't logged in yet.
+        reset_info = f" until {reset_str}" if reset_str else ""
+        title   = f"Herrenlos — {canton.upper()} still waiting for login"
+        message = (f"Scanner is idle{reset_info}. Tap to log in and start scanning.")
+    else:  # "reauth"
+        title   = f"Herrenlos — {canton.upper()} re-login needed"
+        message = "Session expired. Tap to re-authenticate and start scanning."
+
+    notify(title=title, message=message, sound=True, execute=execute)
+    log.info("[%s] login notification sent (reason=%s).", canton.upper(), reason)
 
 
 # ── Pre-flight orchestration ─────────────────────────────────────────────────
@@ -658,6 +710,13 @@ def _keepalive_token(canton: str) -> bool:
         cached["expires_at"]   = time.time() + data.get("expires_in", 300)
         if "refresh_token" in data:
             cached["refresh_token"] = data["refresh_token"]
+            # Keep refresh_token_expires_at current so the cooldown loop can
+            # tighten its sleep chunk as the rolling window narrows.
+            # Critical for VS whose refresh token only lasts 30 min.
+            if "refresh_expires_in" in data:
+                cached["refresh_token_expires_at"] = (
+                    time.time() + data["refresh_expires_in"]
+                )
         token_file.write_text(json.dumps(cached))
         log.debug("[%s] keepalive: token refreshed OK", canton.upper())
         return True
@@ -721,78 +780,156 @@ def _canton_loop(
     Worker thread for one canton. Runs `main.py <canton>` in a tight loop,
     handling rate-limit cooldowns, login timeouts, auth failures, and
     transient errors independently of all other canton threads.
+
+    Login state machine (BE/VS only)
+    ---------------------------------
+    login_needed=False                 Normal: keepalive every KEEPALIVE_INTERVAL.
+    login_needed=True, alerted=True    Notification already sent (token_expired or
+                                       quota_reset).  Fast-poll every LOGIN_POLL_INTERVAL.
+                                       Re-notify (quota_reset / reminder) in the last
+                                       LOGIN_REPEAT_NOTIFY_INTERVAL before reset, or
+                                       every LOGIN_REPEAT_NOTIFY_INTERVAL for short
+                                       reauth cooldowns (<1h).  Clear cooldown and scan
+                                       immediately when token comes back.
+    (login_needed=True, alerted=False  is never reached — first notification is
+                                       always sent immediately when login_needed is set)
     """
     # Restore any cooldown that was active before this process started
     # (e.g. quota exhausted before a crash/restart).
     cooldown_until = _load_cooldown(canton)
     consecutive_failures = 0
 
+    # login_needed  = True: refresh token is dead; re-auth required.
+    # login_alerted = True: first notification already sent; fast-poll active.
+    # last_notify_at: wall-clock time of last notification (for repeat throttle).
+    login_needed   = False
+    login_alerted  = False
+    last_notify_at = 0.0
+
     if cooldown_until > time.time():
         resume = datetime.datetime.fromtimestamp(cooldown_until).strftime("%H:%M")
         log.info("[%s] worker started — restoring cooldown until %s",
                  canton.upper(), resume)
+        # On restart with an active cooldown, check whether the token is dead and
+        # immediately notify if so — the user may not realise login is needed.
+        if canton in _LOGIN_REQUIRED and not _keepalive_token(canton):
+            login_needed = True
+            remaining_now = cooldown_until - time.time()
+            if remaining_now <= LOGIN_NOTIFY_AHEAD_SECS:
+                _send_login_notification(canton, reason="quota_reset",
+                                         reset_at=cooldown_until)
+            else:
+                _send_login_notification(canton, reason="token_expired",
+                                         reset_at=cooldown_until)
+            login_alerted  = True
+            last_notify_at = time.time()
+            log.info("[%s] token dead on restart — notified user (reset at %s).",
+                     canton.upper(), resume)
     else:
         log.info("[%s] worker started", canton.upper())
 
     while not stop_event.is_set():
         # ── Cooldown wait ───────────────────────────────────────────────────
-        token_dead = False
         while not stop_event.is_set() and time.time() < cooldown_until:
-            now = time.time()
+            now       = time.time()
+            remaining = cooldown_until - now
 
-            if token_dead:
-                # Refresh token is known dead — user has been notified.
-                # Just sleep quietly; grudis_login() will handle re-auth
-                # when the cooldown expires.  No point hammering the dead token.
-                _stop_sleep(stop_event, min(300, cooldown_until - now))
-                continue
+            if login_needed:
+                if login_alerted:
+                    # ── Fast-poll: wake up every 3 min and check token ──────
+                    # The user tapped the notification → .command file ran →
+                    # fresh token written to disk.  We detect it here and start
+                    # scanning immediately without waiting for cooldown expiry.
+                    _stop_sleep(stop_event, min(LOGIN_POLL_INTERVAL, remaining))
+                    if _keepalive_token(canton):
+                        log.info("[%s] fresh token detected after login — "
+                                 "clearing cooldown, scanning now.", canton.upper())
+                        cooldown_until = 0.0
+                        _save_cooldown(canton, 0.0)
+                        login_needed  = False
+                        login_alerted = False
+                        break
+                    # Still dead — re-notify if:
+                    #   a) we are in the final approach to quota reset (last 30 min),
+                    #      so the user gets the "quota_reset" call-to-action; OR
+                    #   b) this is a short reauth/login_timeout cooldown (<1h total),
+                    #      so the user hears about it promptly.
+                    #
+                    # We intentionally do NOT spam every 30 min through a 6h
+                    # overnight cooldown — the initial "token_expired" heads-up is
+                    # enough until the 15-min-before-reset reminder fires.
+                    short_cooldown   = remaining < 3600
+                    near_reset       = remaining <= LOGIN_REPEAT_NOTIFY_INTERVAL
+                    notify_overdue   = (time.time() - last_notify_at
+                                        >= LOGIN_REPEAT_NOTIFY_INTERVAL)
+                    if notify_overdue and (near_reset or short_cooldown):
+                        reason = ("quota_reset" if remaining <= LOGIN_NOTIFY_AHEAD_SECS
+                                  else "reminder")
+                        _send_login_notification(canton, reason=reason,
+                                                 reset_at=cooldown_until)
+                        last_notify_at = time.time()
 
-            # Sleep in chunks and refresh the token each time so the session
-            # doesn't idle-expire during an overnight wait.
-            #
-            # Chunk = min(KEEPALIVE_INTERVAL, half the refresh-token's
-            # remaining lifetime) so one failed keepalive due to a transient
-            # network error can never leave less than one interval of margin.
-            rt_expires_at = 0.0
-            if canton in _LOGIN_REQUIRED:
-                try:
-                    meta = _TOKEN_META.get(canton)
-                    if meta:
-                        cached = json.loads(meta[0].read_text())
-                        rt_expires_at = float(cached.get("refresh_token_expires_at", 0))
-                except Exception:
-                    pass
-            rt_half = max(60.0, (rt_expires_at - now) / 2) if rt_expires_at > now \
-                      else KEEPALIVE_INTERVAL
-            chunk = min(KEEPALIVE_INTERVAL, cooldown_until - now, rt_half)
-            if chunk > 0:
-                log.debug("[%s] in cooldown — sleeping %.0fs (until %s)",
-                          canton.upper(), chunk,
-                          datetime.datetime.fromtimestamp(cooldown_until).strftime("%H:%M"))
-                _stop_sleep(stop_event, chunk)
+            else:
+                # ── Normal: keepalive every KEEPALIVE_INTERVAL ──────────────
+                # Tighten the sleep chunk as the refresh token approaches
+                # expiry — gives multiple retry shots per rolling window.
+                # Essential for VS whose refresh token only lasts 30 min:
+                # half the remaining lifetime → ≥2 shots always available.
+                # Falls back to KEEPALIVE_INTERVAL when expiry is unknown.
+                rt_expires_at = 0.0
+                if canton in _LOGIN_REQUIRED:
+                    try:
+                        meta = _TOKEN_META.get(canton)
+                        if meta:
+                            rt_expires_at = float(
+                                json.loads(meta[0].read_text())
+                                .get("refresh_token_expires_at", 0)
+                            )
+                    except Exception:
+                        pass
+                rt_margin = (max(60.0, (rt_expires_at - now) / 2)
+                             if rt_expires_at > now else KEEPALIVE_INTERVAL)
+                chunk = min(KEEPALIVE_INTERVAL, remaining, rt_margin)
+                if chunk > 0:
+                    log.debug("[%s] in cooldown — sleeping %.0fs (until %s)",
+                              canton.upper(), chunk,
+                              datetime.datetime.fromtimestamp(
+                                  cooldown_until).strftime("%H:%M"))
+                    _stop_sleep(stop_event, chunk)
 
-            token_alive = _keepalive_token(canton)
-            if not token_alive:
-                # Refresh token is dead. Notify once, then keep waiting until
-                # whichever is later: the existing cooldown (e.g. midnight quota
-                # reset) or a 2h minimum so we don't hammer GRUDIS during
-                # rate-limited hours right after the login notification fires.
-                _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
-                notify(
-                    title=f"Herrenlos — {canton.upper()} re-login needed",
-                    message="Tap to re-authenticate.",
-                    sound=True,
-                    execute=f"open '{_ln}'" if _ln.exists() else None,
-                )
-                cooldown_until = max(cooldown_until, time.time() + 2 * 3600)
-                _save_cooldown(canton, cooldown_until)
-                log.warning("[%s] refresh token dead — waiting until %s, then re-login.",
+                if not _keepalive_token(canton):
+                    login_needed = True
+                    remaining_now = cooldown_until - time.time()
+                    if remaining_now <= LOGIN_NOTIFY_AHEAD_SECS:
+                        # Already close to quota reset — notify now.
+                        _send_login_notification(canton, reason="quota_reset",
+                                                 reset_at=cooldown_until)
+                        login_alerted  = True
+                        last_notify_at = time.time()
+                    else:
+                        # Far from reset — send immediate heads-up, then the
+                        # loop will send a "quota_reset" reminder 15 min before.
+                        _send_login_notification(canton, reason="token_expired",
+                                                 reset_at=cooldown_until)
+                        login_alerted  = True
+                        last_notify_at = time.time()
+                    log.warning(
+                            "[%s] refresh token dead — notified user immediately; "
+                            "quota reset at %s. Repeat reminders every %d min.",
                             canton.upper(),
-                            datetime.datetime.fromtimestamp(cooldown_until).strftime("%H:%M"))
-                token_dead = True
+                            datetime.datetime.fromtimestamp(
+                                cooldown_until).strftime("%H:%M"),
+                            LOGIN_REPEAT_NOTIFY_INTERVAL // 60,
+                        )
 
         if stop_event.is_set():
             break
+
+        # Reset login state — we're entering a fresh rotation (either cooldown
+        # expired or fast-poll detected a fresh token and broke early).
+        login_needed   = False
+        login_alerted  = False
+        last_notify_at = 0.0
 
         # ── Run one rotation ────────────────────────────────────────────────
         # Refresh token right before launching so the 30-min rotating
@@ -844,20 +981,19 @@ def _canton_loop(
                 consecutive_failures = 0
                 _push_debounced(push_lock, last_push)
 
-            # Login window timed out — fire push notification, 2 h cooldown.
+            # Login window timed out — notify immediately, short cooldown,
+            # fast-poll so scan starts as soon as the user logs in.
             elif _is_login_failed(canton, tail):
-                _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
-                notify(
-                    title=f"Herrenlos — {canton.upper()} login needed",
-                    message="Tap to log in.",
-                    sound=True,
-                    execute=f"open '{_ln}'" if _ln.exists() else None,
-                )
-                cooldown_until = time.time() + 2 * 3600
+                cooldown_until = time.time() + 1800  # 30 min; fast-poll clears early
                 _save_cooldown(canton, cooldown_until)
+                _send_login_notification(canton, reason="login_timeout",
+                                         reset_at=cooldown_until)
+                login_needed   = True
+                login_alerted  = True   # notification already sent
+                last_notify_at = time.time()
                 resume_str = datetime.datetime.fromtimestamp(
                     cooldown_until).strftime("%H:%M")
-                log.warning("[%s] login timed out — cooldown until %s. "
+                log.warning("[%s] login timed out — fast-polling until %s. "
                             "Tap push notification to scan now.",
                             canton.upper(), resume_str)
                 consecutive_failures = 0
@@ -877,21 +1013,20 @@ def _canton_loop(
                           RETRY_MAX_SECONDS)
 
             if looks_like_auth_failure(canton, tail):
-                # Token expired: notify with sound + 2 h cooldown so the thread
-                # keeps running (and other cantons aren't affected). The user
-                # taps the notification to re-authenticate via the .command file.
-                _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
-                notify(
-                    title=f"Herrenlos — {canton.upper()} re-login needed",
-                    message="Tap to re-authenticate.",
-                    sound=True,
-                    execute=f"open '{_ln}'" if _ln.exists() else None,
-                )
-                cooldown_until = time.time() + 2 * 3600
+                # Token expired during an active scan — notify immediately,
+                # short cooldown (30 min), fast-poll for fresh token.
+                # Much better than 2h arbitrary wait: scan starts within
+                # LOGIN_POLL_INTERVAL seconds of the user tapping the notification.
+                cooldown_until = time.time() + 1800
                 _save_cooldown(canton, cooldown_until)
+                _send_login_notification(canton, reason="reauth",
+                                         reset_at=cooldown_until)
+                login_needed   = True
+                login_alerted  = True
+                last_notify_at = time.time()
                 resume_str = datetime.datetime.fromtimestamp(
                     cooldown_until).strftime("%H:%M")
-                log.warning("[%s] auth failure — cooling down until %s. "
+                log.warning("[%s] auth failure — fast-polling until %s. "
                             "Tap push notification to re-authenticate.",
                             canton.upper(), resume_str)
                 consecutive_failures = 0
