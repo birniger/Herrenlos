@@ -37,7 +37,8 @@ STATUS (2026-05-17): WORKING. Tested: scanned=5  herrenlos=0  errors=0.
                       0.5s if needed (no throttling observed in testing).
 
 - Herrenlos signals :
-    Type A (not_in_grundbuch) : "Bien-fonds" absent from response despite CAPTCHA success.
+    Type A (not_in_grundbuch) : "Bien-fonds" absent from response AND page is ≥400 bytes
+                                 (portal stubs < 400 bytes are retried, not classified).
                                  Parcel is in cadastre but not in RF → canton acquires (Art. 664 ZGB).
                                  claim_possible = 0
     Type B (dereliktion)      : "Bien-fonds" present, "Propriétaire" table exists but has
@@ -323,9 +324,11 @@ def check_owner(bfs_nr: str, parcel_nr: str, egrid: str,
                 time.sleep(2)
                 continue
 
-            # Already on owner page (session reuse — unlikely for fresh session)
+            # Already on owner page (session reuse — unlikely for fresh session).
+            # Use "Bien-fonds" (not "Extrait") as the check: the 272-byte portal
+            # stub also contains "Extrait du Registre Foncier" but lacks parcel data.
             solver_used = None   # set below in CAPTCHA branch; None = no CAPTCHA needed
-            if "Extrait" in r1.text:
+            if "Bien-fonds" in r1.text:
                 html = r1.text
             else:
                 # Parse ASP.NET form fields
@@ -383,7 +386,13 @@ def check_owner(bfs_nr: str, parcel_nr: str, egrid: str,
             # ── Parse owner page ─────────────────────────────────────────────
             if solver_used:   # None = owner page served without CAPTCHA (cached session)
                 log_captcha("JU", solver_used, "correct")
-            return _parse_owner_html(html, egrid, nocompar)
+            result = _parse_owner_html(html, egrid, nocompar)
+            if result.get("error") == "invalid_page":
+                log.warning("Invalid/stub JU result page for nocompar=%s (attempt %d) — retrying",
+                            nocompar, attempt)
+                time.sleep(1)
+                continue
+            return result
 
         except Exception as exc:
             log.debug("check_owner exception (attempt %d): %s", attempt, exc)
@@ -407,6 +416,17 @@ def _parse_owner_html(html: str, egrid: str, nocompar: str) -> dict:
     """
     soup = BeautifulSoup(html, "html.parser")
     text = soup.get_text(separator="\n")
+
+    # ── Success-page validation ───────────────────────────────────────────────
+    # The 272-byte portal stub ("République et Canton du Jura … RF SIT") lacks
+    # "Bien-fonds" and is silently misclassified as not_in_grundbuch without this
+    # guard.  A real JU response (found or genuinely not-found) is always >400 bytes.
+    if len(html.strip()) < 400:
+        log.warning("Invalid/stub JU result page (only %d bytes) for EGRID=%s nocompar=%s "
+                    "— treating as retryable failure, NOT herrenlos", len(html.strip()), egrid, nocompar)
+        return {"owner": None, "owner_address": None, "is_herrenlos": None,
+                "herrenlos_type": None, "claim_possible": None,
+                "raw_response": None, "error": "invalid_page"}
 
     # ── Type A: parcel not in RF at all ──────────────────────────────────────
     if "Bien-fonds" not in text:
@@ -574,7 +594,7 @@ def scan(limit: int | None = None,
             if result.get("is_herrenlos") == 1:
                 herrenlos += 1
                 log.info("HERRENLOS  %s Nr.%s  EGRID=%s", commune, nr, egrid)
-            if result.get("error"):
+            if result.get("error") and result["error"] != "invalid_page":
                 errors += 1
                 log.warning("Error %s Nr.%s: %s", commune, nr, result["error"])
 
