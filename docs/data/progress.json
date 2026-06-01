@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-01T16:50:48+00:00",
+  "generated_at": "2026-06-01T16:53:36+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -22,7 +22,7 @@
       "errors": 5660,
       "percent": 0.8,
       "estimated_total": 147148,
-      "last_scan_at": "2026-06-01 16:48:05",
+      "last_scan_at": "2026-06-01 16:53:26",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -48,7 +48,7 @@
       "errors": 64,
       "percent": 0.2,
       "estimated_total": 225843,
-      "last_scan_at": "2026-06-01 11:30:54",
+      "last_scan_at": "2026-06-01 04:03:20",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "10 req/day/IP"
@@ -56,12 +56,12 @@
     {
       "canton": "JU",
       "enumerated": 14156,
-      "scanned": 16040,
-      "herrenlos": 133,
+      "scanned": 15841,
+      "herrenlos": 0,
       "errors": 0,
       "percent": 100.0,
       "estimated_total": 14156,
-      "last_scan_at": "2026-06-01 12:24:14",
+      "last_scan_at": "2026-06-01 00:07:01",
       "access": "public",
       "test_group": "captcha_ocr",
       "rate_limit": "CAPTCHA per query only"
@@ -87,7 +87,7 @@
       "errors": 9910,
       "percent": 2.1,
       "estimated_total": 43256,
-      "last_scan_at": "2026-06-01 11:29:14",
+      "last_scan_at": "2026-05-31 19:51:10",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "100 req/day/IP"
@@ -95,12 +95,12 @@
     {
       "canton": "SZ",
       "enumerated": 50217,
-      "scanned": 50205,
+      "scanned": 49511,
       "herrenlos": 10,
-      "errors": 12,
-      "percent": 100.0,
+      "errors": 704,
+      "percent": 98.6,
       "estimated_total": 50217,
-      "last_scan_at": "2026-06-01 16:50:46",
+      "last_scan_at": "2026-06-01 00:27:55",
       "access": "public",
       "test_group": "captcha_ocr",
       "rate_limit": "CAPTCHA per query only"
@@ -121,9 +121,9 @@
   ],
   "totals": {
     "enumerated": 1383253,
-    "scanned": 69114,
-    "herrenlos": 153,
-    "errors": 15755,
+    "scanned": 68242,
+    "herrenlos": 20,
+    "errors": 16444,
     "cantons": 9
   }
 }
