@@ -280,12 +280,41 @@ def _save_cooldown(canton: str, until: float) -> None:
             # a past timestamp would prune-then-re-add a stale entry to the file.
             now = time.time()
             data = {k: v for k, v in data.items()
-                    if k.startswith("fr_") or v > now}
+                    if k.startswith("fr_") or k.endswith("_last_notify") or v > now}
             if until > now:
                 data[canton.lower()] = until
             _COOLDOWN_FILE.write_text(json.dumps(data, indent=2))
     except Exception as exc:
         log.debug("_save_cooldown failed: %s", exc)
+
+
+def _load_last_notify(canton: str) -> float:
+    """Return the wall-clock time of the last login notification for *canton* (0 if none)."""
+    try:
+        with _cooldown_file_lock:
+            if not _COOLDOWN_FILE.exists():
+                return 0.0
+            data = json.loads(_COOLDOWN_FILE.read_text())
+        return float(data.get(f"{canton.lower()}_last_notify", 0))
+    except Exception:
+        return 0.0
+
+
+def _save_last_notify(canton: str, ts: float) -> None:
+    """Persist the last-notification timestamp for *canton* to disk."""
+    try:
+        TOKEN_DIR.mkdir(parents=True, exist_ok=True)
+        with _cooldown_file_lock:
+            data: dict = {}
+            if _COOLDOWN_FILE.exists():
+                try:
+                    data = json.loads(_COOLDOWN_FILE.read_text())
+                except Exception:
+                    data = {}
+            data[f"{canton.lower()}_last_notify"] = ts
+            _COOLDOWN_FILE.write_text(json.dumps(data, indent=2))
+    except Exception as exc:
+        log.debug("_save_last_notify failed: %s", exc)
 
 
 # ── macOS desktop notifications ──────────────────────────────────────────────
@@ -323,10 +352,17 @@ def notify(title: str, message: str, sound: bool = False,
 
 
 def _send_login_notification(canton: str, reason: str = "reauth",
-                             reset_at: float | None = None) -> None:
+                             reset_at: float | None = None,
+                             force: bool = False) -> bool:
     """
     Send a macOS push notification prompting the user to log in for *canton*.
     Opens the pre-built .command file (which immediately starts a scan) on tap.
+
+    Returns True if the notification was sent, False if throttled.
+
+    The last send time is persisted in cooldowns.json so the LOGIN_REPEAT_NOTIFY_INTERVAL
+    rate-limit survives process restarts (prevents scan-loop.sh crash-restart spam and
+    reauth-cycle spam every 30 min through the night).
 
     reason values
     -------------
@@ -336,10 +372,20 @@ def _send_login_notification(canton: str, reason: str = "reauth",
     "token_expired" — token died during quiet cooldown; early heads-up with reset time
     "reminder"      — repeat nudge while waiting for user to tap during fast-poll
     """
+    # Rate-limit: never send two notifications for the same canton within
+    # LOGIN_REPEAT_NOTIFY_INTERVAL (30 min) unless force=True.
+    # This is persisted so rapid process restarts and the reauth loop both respect it.
+    last = _load_last_notify(canton)
+    since_last = time.time() - last
+    if not force and since_last < LOGIN_REPEAT_NOTIFY_INTERVAL:
+        log.debug("[%s] notification throttled (%.0f s since last, interval=%d s).",
+                  canton.upper(), since_last, LOGIN_REPEAT_NOTIFY_INTERVAL)
+        return False
+
     _ln = PROJECT_ROOT / "scripts" / f"start_{canton.lower()}_scan.command"
     execute = f"open '{_ln}'" if _ln.exists() else None
 
-    # Human-readable reset time ("23:58") or "soon" if unknown.
+    # Human-readable reset time ("23:58") or None if unknown.
     reset_str = (datetime.datetime.fromtimestamp(reset_at).strftime("%H:%M")
                  if reset_at else None)
 
@@ -362,11 +408,14 @@ def _send_login_notification(canton: str, reason: str = "reauth",
         title   = f"Herrenlos — {canton.upper()} still waiting for login"
         message = (f"Scanner is idle{reset_info}. Tap to log in and start scanning.")
     else:  # "reauth"
+        reset_info = f" (retry window: until {reset_str})" if reset_str else ""
         title   = f"Herrenlos — {canton.upper()} re-login needed"
-        message = "Session expired. Tap to re-authenticate and start scanning."
+        message = f"Session expired{reset_info}. Tap to re-authenticate and start scanning."
 
     notify(title=title, message=message, sound=True, execute=execute)
+    _save_last_notify(canton, time.time())
     log.info("[%s] login notification sent (reason=%s).", canton.upper(), reason)
+    return True
 
 
 # ── Pre-flight orchestration ─────────────────────────────────────────────────
@@ -802,29 +851,33 @@ def _canton_loop(
     # login_needed  = True: refresh token is dead; re-auth required.
     # login_alerted = True: first notification already sent; fast-poll active.
     # last_notify_at: wall-clock time of last notification (for repeat throttle).
+    #   Restored from disk so restarts and the reauth loop honour the rate-limit.
     login_needed   = False
     login_alerted  = False
-    last_notify_at = 0.0
+    last_notify_at = _load_last_notify(canton)
 
     if cooldown_until > time.time():
         resume = datetime.datetime.fromtimestamp(cooldown_until).strftime("%H:%M")
         log.info("[%s] worker started — restoring cooldown until %s",
                  canton.upper(), resume)
         # On restart with an active cooldown, check whether the token is dead and
-        # immediately notify if so — the user may not realise login is needed.
+        # notify if so — subject to the persistent throttle so rapid restarts
+        # (scan-loop.sh crash-recovery) don't send duplicate notifications.
         if canton in _LOGIN_REQUIRED and not _keepalive_token(canton):
             login_needed = True
             remaining_now = cooldown_until - time.time()
-            if remaining_now <= LOGIN_NOTIFY_AHEAD_SECS:
-                _send_login_notification(canton, reason="quota_reset",
-                                         reset_at=cooldown_until)
-            else:
-                _send_login_notification(canton, reason="token_expired",
-                                         reset_at=cooldown_until)
+            reason = ("quota_reset" if remaining_now <= LOGIN_NOTIFY_AHEAD_SECS
+                      else "token_expired")
+            sent = _send_login_notification(canton, reason=reason,
+                                            reset_at=cooldown_until)
             login_alerted  = True
-            last_notify_at = time.time()
-            log.info("[%s] token dead on restart — notified user (reset at %s).",
-                     canton.upper(), resume)
+            if sent:
+                last_notify_at = time.time()
+                log.info("[%s] token dead on restart — notified user (reset at %s).",
+                         canton.upper(), resume)
+            else:
+                log.info("[%s] token dead on restart — notification throttled "
+                         "(sent recently). Fast-polling.", canton.upper())
     else:
         log.info("[%s] worker started", canton.upper())
 
@@ -849,25 +902,22 @@ def _canton_loop(
                         login_needed  = False
                         login_alerted = False
                         break
-                    # Still dead — re-notify if:
-                    #   a) we are in the final approach to quota reset (last 30 min),
-                    #      so the user gets the "quota_reset" call-to-action; OR
-                    #   b) this is a short reauth/login_timeout cooldown (<1h total),
-                    #      so the user hears about it promptly.
-                    #
-                    # We intentionally do NOT spam every 30 min through a 6h
-                    # overnight cooldown — the initial "token_expired" heads-up is
-                    # enough until the 15-min-before-reset reminder fires.
-                    short_cooldown   = remaining < 3600
-                    near_reset       = remaining <= LOGIN_REPEAT_NOTIFY_INTERVAL
-                    notify_overdue   = (time.time() - last_notify_at
-                                        >= LOGIN_REPEAT_NOTIFY_INTERVAL)
-                    if notify_overdue and (near_reset or short_cooldown):
+                    # Still dead — send a reminder if:
+                    #   a) within the last LOGIN_REPEAT_NOTIFY_INTERVAL of reset
+                    #      ("quota_reset" final call), OR
+                    #   b) short reauth/login_timeout cooldown (<1h), so the user
+                    #      keeps hearing about it until they act.
+                    # _send_login_notification is self-throttling (LOGIN_REPEAT_NOTIFY_INTERVAL
+                    # persisted on disk), so calling it here is safe even on restart.
+                    near_reset    = remaining <= LOGIN_REPEAT_NOTIFY_INTERVAL
+                    short_cooldown = remaining < 3600
+                    if near_reset or short_cooldown:
                         reason = ("quota_reset" if remaining <= LOGIN_NOTIFY_AHEAD_SECS
                                   else "reminder")
-                        _send_login_notification(canton, reason=reason,
-                                                 reset_at=cooldown_until)
-                        last_notify_at = time.time()
+                        sent = _send_login_notification(canton, reason=reason,
+                                                        reset_at=cooldown_until)
+                        if sent:
+                            last_notify_at = time.time()
 
             else:
                 # ── Normal: keepalive every KEEPALIVE_INTERVAL ──────────────
@@ -898,28 +948,22 @@ def _canton_loop(
                     _stop_sleep(stop_event, chunk)
 
                 if not _keepalive_token(canton):
-                    login_needed = True
-                    remaining_now = cooldown_until - time.time()
-                    if remaining_now <= LOGIN_NOTIFY_AHEAD_SECS:
-                        # Already close to quota reset — notify now.
-                        _send_login_notification(canton, reason="quota_reset",
-                                                 reset_at=cooldown_until)
-                        login_alerted  = True
-                        last_notify_at = time.time()
-                    else:
-                        # Far from reset — send immediate heads-up, then the
-                        # loop will send a "quota_reset" reminder 15 min before.
-                        _send_login_notification(canton, reason="token_expired",
-                                                 reset_at=cooldown_until)
-                        login_alerted  = True
+                    login_needed   = True
+                    login_alerted  = True
+                    remaining_now  = cooldown_until - time.time()
+                    reason = ("quota_reset" if remaining_now <= LOGIN_NOTIFY_AHEAD_SECS
+                              else "token_expired")
+                    sent = _send_login_notification(canton, reason=reason,
+                                                    reset_at=cooldown_until)
+                    if sent:
                         last_notify_at = time.time()
                     log.warning(
-                            "[%s] refresh token dead — notified user immediately; "
-                            "quota reset at %s. Repeat reminders every %d min.",
+                            "[%s] refresh token dead — %s; "
+                            "quota reset at %s.",
                             canton.upper(),
+                            "notified user" if sent else "notification throttled (sent recently)",
                             datetime.datetime.fromtimestamp(
                                 cooldown_until).strftime("%H:%M"),
-                            LOGIN_REPEAT_NOTIFY_INTERVAL // 60,
                         )
 
         if stop_event.is_set():
@@ -929,7 +973,9 @@ def _canton_loop(
         # expired or fast-poll detected a fresh token and broke early).
         login_needed   = False
         login_alerted  = False
-        last_notify_at = 0.0
+        # Keep last_notify_at from disk so repeat throttle survives across
+        # rotations (prevents reauth-cycle spam if auth fails repeatedly).
+        last_notify_at = _load_last_notify(canton)
 
         # ── Run one rotation ────────────────────────────────────────────────
         # Refresh token right before launching so the 30-min rotating
@@ -986,11 +1032,12 @@ def _canton_loop(
             elif _is_login_failed(canton, tail):
                 cooldown_until = time.time() + 1800  # 30 min; fast-poll clears early
                 _save_cooldown(canton, cooldown_until)
-                _send_login_notification(canton, reason="login_timeout",
-                                         reset_at=cooldown_until)
+                sent = _send_login_notification(canton, reason="login_timeout",
+                                               reset_at=cooldown_until)
                 login_needed   = True
-                login_alerted  = True   # notification already sent
-                last_notify_at = time.time()
+                login_alerted  = True   # notification already sent (or throttled)
+                if sent:
+                    last_notify_at = time.time()
                 resume_str = datetime.datetime.fromtimestamp(
                     cooldown_until).strftime("%H:%M")
                 log.warning("[%s] login timed out — fast-polling until %s. "
@@ -1013,22 +1060,22 @@ def _canton_loop(
                           RETRY_MAX_SECONDS)
 
             if looks_like_auth_failure(canton, tail):
-                # Token expired during an active scan — notify immediately,
+                # Token expired during an active scan — notify (subject to throttle),
                 # short cooldown (30 min), fast-poll for fresh token.
-                # Much better than 2h arbitrary wait: scan starts within
-                # LOGIN_POLL_INTERVAL seconds of the user tapping the notification.
                 cooldown_until = time.time() + 1800
                 _save_cooldown(canton, cooldown_until)
-                _send_login_notification(canton, reason="reauth",
-                                         reset_at=cooldown_until)
+                sent = _send_login_notification(canton, reason="reauth",
+                                                reset_at=cooldown_until)
                 login_needed   = True
                 login_alerted  = True
-                last_notify_at = time.time()
+                if sent:
+                    last_notify_at = time.time()
                 resume_str = datetime.datetime.fromtimestamp(
                     cooldown_until).strftime("%H:%M")
-                log.warning("[%s] auth failure — fast-polling until %s. "
-                            "Tap push notification to re-authenticate.",
-                            canton.upper(), resume_str)
+                log.warning("[%s] auth failure — fast-polling until %s. %s",
+                            canton.upper(), resume_str,
+                            "Tap notification to re-authenticate." if sent
+                            else "(Notification throttled — sent recently.)")
                 consecutive_failures = 0
 
             else:
