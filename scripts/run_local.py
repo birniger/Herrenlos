@@ -122,7 +122,7 @@ KEEPALIVE_INTERVAL = 900  # 15 min — well within any Keycloak idle timeout
 # Login notification timing for BE/VS quota-reset cooldowns.
 LOGIN_POLL_INTERVAL     = 180   # 3 min fast-poll after notification sent
 LOGIN_NOTIFY_AHEAD_SECS = 900   # notify 15 min before quota reset when token dead
-LOGIN_REPEAT_NOTIFY_INTERVAL = 1800  # re-notify every 30 min while waiting for user login
+LOGIN_REPEAT_NOTIFY_INTERVAL = 86400  # at most 1 follow-up notification per day per canton
 
 # Token cache (created on first interactive login by BE/VS scanners)
 TOKEN_DIR = pathlib.Path.home() / ".herrenlos_scanner"
@@ -320,7 +320,7 @@ def _save_last_notify(canton: str, ts: float) -> None:
 # ── macOS desktop notifications ──────────────────────────────────────────────
 
 def notify(title: str, message: str, sound: bool = False,
-           execute: str | None = None) -> None:
+           execute: str | None = None, group: str | None = None) -> None:
     """Show a macOS desktop notification. Silently no-ops on other OSes."""
     print(f"\n🔔 {title}: {message}\n", flush=True)
 
@@ -331,6 +331,10 @@ def notify(title: str, message: str, sound: bool = False,
             cmd += ["-sound", "Glass"]
         if execute:
             cmd += ["-execute", execute]
+        if group:
+            # Replace the previous notification in the same group instead of
+            # stacking — prevents old tapped notifications from opening windows.
+            cmd += ["-group", group]
         try:
             subprocess.run(cmd, check=False)
             return
@@ -412,7 +416,8 @@ def _send_login_notification(canton: str, reason: str = "reauth",
         title   = f"Herrenlos — {canton.upper()} re-login needed"
         message = f"Session expired{reset_info}. Tap to re-authenticate and start scanning."
 
-    notify(title=title, message=message, sound=True, execute=execute)
+    notify(title=title, message=message, sound=True, execute=execute,
+           group=f"herrenlos-{canton.lower()}")
     _save_last_notify(canton, time.time())
     log.info("[%s] login notification sent (reason=%s).", canton.upper(), reason)
     return True
