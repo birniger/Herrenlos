@@ -987,8 +987,28 @@ def _canton_loop(
         # refresh_token never expires during the scan→restart transition.
         # This prevents grudis_login() from firing at midnight just because
         # the keepalive last ran >15 min ago.
+        #
+        # IMPORTANT: if the keepalive fails (refresh token dead), do NOT call
+        # run_canton — that would open an unwanted browser window.  Instead
+        # arm fast-poll and wait for the user to log in manually.
         if canton in _LOGIN_REQUIRED:
-            _keepalive_token(canton)
+            if not _keepalive_token(canton):
+                cooldown_until = time.time() + 1800
+                _save_cooldown(canton, cooldown_until)
+                sent = _send_login_notification(canton, reason="login_timeout",
+                                                reset_at=cooldown_until)
+                login_needed  = True
+                login_alerted = True
+                if sent:
+                    last_notify_at = time.time()
+                resume_str = datetime.datetime.fromtimestamp(
+                    cooldown_until).strftime("%H:%M")
+                log.warning("[%s] token dead before rotation — skipping scanner "
+                            "(no browser window), fast-polling until %s. %s",
+                            canton.upper(), resume_str,
+                            "Notification sent." if sent
+                            else "(Notification throttled — sent recently.)")
+                continue  # back to the cooldown loop, no run_canton
 
         rc, tail = run_canton(canton)
 
@@ -1045,9 +1065,10 @@ def _canton_loop(
                     last_notify_at = time.time()
                 resume_str = datetime.datetime.fromtimestamp(
                     cooldown_until).strftime("%H:%M")
-                log.warning("[%s] login timed out — fast-polling until %s. "
-                            "Tap push notification to scan now.",
-                            canton.upper(), resume_str)
+                log.warning("[%s] login timed out — fast-polling until %s. %s",
+                            canton.upper(), resume_str,
+                            "Notification sent." if sent
+                            else "(Notification throttled — sent recently.)")
                 consecutive_failures = 0
 
             # Normal clean rotation — push and immediately restart.
