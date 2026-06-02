@@ -281,14 +281,27 @@ def _fire_be_login_notification() -> None:
     """
     Send a macOS push notification after the 3-min login window expires.
 
-    With terminal-notifier: tapping the notification opens start_be_scan.command
-    in a new Terminal window, which runs `python main.py be` directly —
-    independent of the main scan loop, for as long as the token stays valid.
+    Respects the shared 24-hour throttle in ~/.herrenlos_scanner/cooldowns.json
+    (key: be_last_notify) so all notification sources — be.py, run_local.py,
+    and check_tokens.py — collectively fire at most once per day for BE.
 
-    Falls back to a plain osascript banner (no tap action) if terminal-notifier
-    is not installed.
+    With terminal-notifier: tapping replaces the existing notification in the
+    "herrenlos-be" group (prevents stale notifications opening extra windows).
     """
-    import shutil, subprocess
+    import json, shutil, subprocess, time as _time
+
+    # ── Shared 24h throttle ──────────────────────────────────────────────────
+    _NOTIFY_INTERVAL = 86400  # 24 h — matches run_local.py's LOGIN_REPEAT_NOTIFY_INTERVAL
+    _state_file = pathlib.Path.home() / ".herrenlos_scanner" / "cooldowns.json"
+    try:
+        state = json.loads(_state_file.read_text()) if _state_file.exists() else {}
+        since_last = _time.time() - float(state.get("be_last_notify", 0))
+        if since_last < _NOTIFY_INTERVAL:
+            log.debug("BE login notification throttled (%.0fh since last, "
+                      "interval=24h)", since_last / 3600)
+            return
+    except Exception:
+        pass  # if state is unreadable, proceed with the notification
 
     proj     = pathlib.Path(__file__).resolve().parent.parent
     launcher = proj / "scripts" / "start_be_scan.command"
@@ -303,18 +316,27 @@ def _fire_be_login_notification() -> None:
             "-message",  message,
             "-sound",    "Funk",
             "-execute",  f"open '{launcher}'",
+            "-group",    "herrenlos-be",   # replaces previous notification
         ]
         try:
             subprocess.run(cmd, check=False)
-            return
         except Exception:
             pass
+    else:
+        osa = shutil.which("osascript")
+        if osa:
+            script = (f'display notification "{message}" with title "{title}" '
+                      f'sound name "Funk"')
+            subprocess.run([osa, "-e", script], check=False)
 
-    osa = shutil.which("osascript")
-    if osa:
-        script = (f'display notification "{message}" with title "{title}" '
-                  f'sound name "Funk"')
-        subprocess.run([osa, "-e", script], check=False)
+    # Persist the send time so other notification sources honour the throttle.
+    try:
+        _state_file.parent.mkdir(parents=True, exist_ok=True)
+        state = json.loads(_state_file.read_text()) if _state_file.exists() else {}
+        state["be_last_notify"] = _time.time()
+        _state_file.write_text(json.dumps(state, indent=2))
+    except Exception:
+        pass
 
 
 def grudis_login() -> dict | None:

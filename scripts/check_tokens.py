@@ -96,14 +96,30 @@ def _fire_notification(canton: str) -> None:
     """
     Fire a macOS notification for an expired canton token.
 
-    With terminal-notifier installed (brew install terminal-notifier):
-      - Shows a proper Notification Center alert with a click action.
-      - Tapping the notification opens a new Terminal window and runs
-        `python3 main.py <canton>`, which handles login then scans.
+    Respects the shared 24-hour throttle in ~/.herrenlos_scanner/cooldowns.json
+    (key: {canton}_last_notify) so all notification sources — check_tokens.py,
+    run_local.py, and be.py — collectively fire at most once per day per canton.
 
-    Falls back to a plain osascript banner (no click action) if
-    terminal-notifier is not installed.
+    With terminal-notifier: uses -group "herrenlos-{canton}" so each new
+    notification replaces the previous one (prevents stacked old notifications
+    from opening extra windows when tapped).
     """
+    import json as _json, time as _time
+
+    # ── Shared 24h throttle ──────────────────────────────────────────────────
+    _NOTIFY_INTERVAL = 86400  # 24 h
+    _state_file = pathlib.Path.home() / ".herrenlos_scanner" / "cooldowns.json"
+    try:
+        state = _json.loads(_state_file.read_text()) if _state_file.exists() else {}
+        key   = f"{canton.lower()}_last_notify"
+        since_last = _time.time() - float(state.get(key, 0))
+        if since_last < _NOTIFY_INTERVAL:
+            print(f"  [{canton.upper()}] notification throttled "
+                  f"(sent {since_last/3600:.1f}h ago, interval=24h)")
+            return
+    except Exception:
+        pass  # if state is unreadable, proceed
+
     proj     = pathlib.Path(__file__).parent.parent
     launcher = proj / "scripts" / f"start_{canton.lower()}_scan.command"
     title    = "Herrenlos Scanner"
@@ -119,18 +135,27 @@ def _fire_notification(canton: str) -> None:
             "-message",  msg,
             "-sound",    "Funk",
             "-execute",  f"open '{str(launcher)}'",
+            "-group",    f"herrenlos-{canton.lower()}",  # replace previous
         ]
         try:
             subprocess.run(cmd, check=False)
-            return
         except Exception:
             pass  # fall through to osascript
+    else:
+        osa = shutil.which("osascript")
+        if osa:
+            script = (f'display notification "{msg}" with title "{title}" '
+                      f'subtitle "{subtitle}" sound name "Funk"')
+            subprocess.run([osa, "-e", script], check=False)
 
-    osa = shutil.which("osascript")
-    if osa:
-        script = (f'display notification "{msg}" with title "{title}" '
-                  f'subtitle "{subtitle}" sound name "Funk"')
-        subprocess.run([osa, "-e", script], check=False)
+    # Persist the send time.
+    try:
+        _state_file.parent.mkdir(parents=True, exist_ok=True)
+        state = _json.loads(_state_file.read_text()) if _state_file.exists() else {}
+        state[f"{canton.lower()}_last_notify"] = _time.time()
+        _state_file.write_text(_json.dumps(state, indent=2))
+    except Exception:
+        pass
 
 
 def main():
