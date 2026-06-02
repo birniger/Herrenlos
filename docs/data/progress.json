@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-06-02T00:44:59+00:00",
+  "generated_at": "2026-06-02T04:21:56+00:00",
   "cantons": [
     {
       "canton": "BE",
       "enumerated": 426009,
-      "scanned": 150,
+      "scanned": 147,
       "herrenlos": 0,
-      "errors": 4,
+      "errors": 7,
       "percent": 0.0,
       "estimated_total": 426009,
       "last_scan_at": "2026-06-01 22:00:31",
@@ -17,12 +17,12 @@
     {
       "canton": "FR",
       "enumerated": 147148,
-      "scanned": 1309,
+      "scanned": 1208,
       "herrenlos": 9,
-      "errors": 5559,
-      "percent": 0.9,
+      "errors": 5660,
+      "percent": 0.8,
       "estimated_total": 147148,
-      "last_scan_at": "2026-06-02 00:44:55",
+      "last_scan_at": "2026-06-01 17:30:48",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -48,7 +48,7 @@
       "errors": 64,
       "percent": 0.2,
       "estimated_total": 225843,
-      "last_scan_at": "2026-06-01 04:03:20",
+      "last_scan_at": "2026-06-01 23:05:19",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "10 req/day/IP"
@@ -82,12 +82,12 @@
     {
       "canton": "SH",
       "enumerated": 43256,
-      "scanned": 924,
+      "scanned": 1024,
       "herrenlos": 1,
-      "errors": 9910,
-      "percent": 2.1,
+      "errors": 9810,
+      "percent": 2.4,
       "estimated_total": 43256,
-      "last_scan_at": "2026-05-31 19:51:10",
+      "last_scan_at": "2026-06-01 23:03:38",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "100 req/day/IP"
@@ -100,7 +100,7 @@
       "errors": 704,
       "percent": 98.6,
       "estimated_total": 50217,
-      "last_scan_at": "2026-06-01 00:27:55",
+      "last_scan_at": "2026-06-02 04:21:54",
       "access": "public",
       "test_group": "captcha_ocr",
       "rate_limit": "CAPTCHA per query only"
@@ -108,9 +108,9 @@
     {
       "canton": "VS",
       "enumerated": 316772,
-      "scanned": 79,
+      "scanned": 77,
       "herrenlos": 0,
-      "errors": 4,
+      "errors": 6,
       "percent": 0.0,
       "estimated_total": 316772,
       "last_scan_at": "2026-06-01 22:02:26",
@@ -121,9 +121,9 @@
   ],
   "totals": {
     "enumerated": 1383253,
-    "scanned": 68359,
-    "herrenlos": 20,
-    "errors": 16342,
+    "scanned": 69246,
+    "herrenlos": 153,
+    "errors": 15656,
     "cantons": 9
   }
 }
