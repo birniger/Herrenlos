@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-03T06:24:53+00:00",
+  "generated_at": "2026-06-03T06:30:40+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -22,7 +22,7 @@
       "errors": 5458,
       "percent": 1.0,
       "estimated_total": 147148,
-      "last_scan_at": "2026-06-03 06:24:50",
+      "last_scan_at": "2026-06-03 06:30:35",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
