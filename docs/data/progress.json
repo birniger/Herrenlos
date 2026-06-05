@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-06-05T22:57:27+00:00",
+  "generated_at": "2026-06-05T23:51:40+00:00",
   "cantons": [
     {
       "canton": "BE",
       "enumerated": 426009,
-      "scanned": 150,
+      "scanned": 155,
       "herrenlos": 0,
       "errors": 4,
       "percent": 0.0,
       "estimated_total": 426009,
-      "last_scan_at": "2026-06-01 22:00:31",
+      "last_scan_at": "2026-06-05 23:50:13",
       "access": "own_account",
       "test_group": "own_login",
       "rate_limit": "per-account (personal AGOV identity) \u2014 CONFIRMED per-account (empirically verified: fresh browser session + new token still returned 429, proving the limit is on the account, not the IP). Limit appears to be on the person/owner-name resolution step (GET /api/gb/person/master), not on parcel lookups. Threshold count unknown. access_token 5min / refresh_token 30min rotating; session alive while running, re-auth after >~30min gap; IP rotation cannot help \u2014 account is the hard constraint"
@@ -22,7 +22,7 @@
       "errors": 5627,
       "percent": 1.3,
       "estimated_total": 147148,
-      "last_scan_at": "2026-06-05 22:57:24",
+      "last_scan_at": "2026-06-05 23:51:36",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -108,12 +108,12 @@
     {
       "canton": "VS",
       "enumerated": 316772,
-      "scanned": 79,
+      "scanned": 89,
       "herrenlos": 0,
-      "errors": 4,
+      "errors": 2,
       "percent": 0.0,
       "estimated_total": 316772,
-      "last_scan_at": "2026-06-01 22:02:26",
+      "last_scan_at": "2026-06-05 23:51:19",
       "access": "own_account",
       "test_group": "own_login",
       "rate_limit": "SwissID session, scan endpoints appear unlimited. VS uses SwissID (login.swissid.ch) \u2014 NOT AGOV; BE and VS use different identity providers. The ICP-extract endpoint is 10/day but the scanner deliberately avoids it. Main scan endpoints (grundstueck + eigentum JSON API) show no per-query quota. IP rotation is irrelevant: SwissID 2FA means any session is bound to a personal account, but there is no quota to route around. access_token ~5min / refresh_token rotating; re-auth needed after any gap >~30min."
@@ -121,9 +121,9 @@
   ],
   "totals": {
     "enumerated": 1383253,
-    "scanned": 69026,
+    "scanned": 69041,
     "herrenlos": 20,
-    "errors": 20892,
+    "errors": 20890,
     "cantons": 9
   }
 }
