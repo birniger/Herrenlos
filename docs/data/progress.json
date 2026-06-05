@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-05T21:31:28+00:00",
+  "generated_at": "2026-06-05T22:00:29+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -17,12 +17,12 @@
     {
       "canton": "FR",
       "enumerated": 147148,
-      "scanned": 1844,
+      "scanned": 1848,
       "herrenlos": 9,
-      "errors": 5374,
+      "errors": 5370,
       "percent": 1.3,
       "estimated_total": 147148,
-      "last_scan_at": "2026-06-05 21:26:23",
+      "last_scan_at": "2026-06-05 22:00:24",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -121,9 +121,9 @@
   ],
   "totals": {
     "enumerated": 1383253,
-    "scanned": 68925,
+    "scanned": 68929,
     "herrenlos": 20,
-    "errors": 20639,
+    "errors": 20635,
     "cantons": 9
   }
 }
