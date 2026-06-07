@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-06-07T23:39:56+00:00",
+  "generated_at": "2026-06-07T23:40:36+00:00",
   "features": [
     {
       "type": "Feature",
@@ -110,6 +110,138 @@
         "herrenlos_type": "not_in_grundbuch",
         "claim_possible": 0,
         "scanned_at": "2026-05-30 13:32:18"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.938777446746826,
+          46.74842834472656
+        ]
+      },
+      "properties": {
+        "egrid": "CH849410756773",
+        "canton": "FR",
+        "commune": "Ch\u00e2tonnaye",
+        "bfs_nr": "2068",
+        "parcel_nr": "122",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-06-07 23:40:11"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.937877178192139,
+          46.734222412109375
+        ]
+      },
+      "properties": {
+        "egrid": "CH331074942264",
+        "canton": "FR",
+        "commune": "Ch\u00e2tonnaye",
+        "bfs_nr": "2068",
+        "parcel_nr": "201",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-06-07 23:40:14"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.949272155761719,
+          46.743003845214844
+        ]
+      },
+      "properties": {
+        "egrid": "CH779474911073",
+        "canton": "FR",
+        "commune": "Ch\u00e2tonnaye",
+        "bfs_nr": "2068",
+        "parcel_nr": "233",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-06-07 23:40:11"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.953166961669922,
+          46.75054931640625
+        ]
+      },
+      "properties": {
+        "egrid": "CH891080389432",
+        "canton": "FR",
+        "commune": "Ch\u00e2tonnaye",
+        "bfs_nr": "2068",
+        "parcel_nr": "274.00301",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-06-07 23:40:11"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.953166961669922,
+          46.75054931640625
+        ]
+      },
+      "properties": {
+        "egrid": "CH891080389432",
+        "canton": "FR",
+        "commune": "Ch\u00e2tonnaye",
+        "bfs_nr": "2068",
+        "parcel_nr": "274.00303",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-06-07 23:40:12"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6.953166961669922,
+          46.75054931640625
+        ]
+      },
+      "properties": {
+        "egrid": "CH891080389432",
+        "canton": "FR",
+        "commune": "Ch\u00e2tonnaye",
+        "bfs_nr": "2068",
+        "parcel_nr": "274.00304",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-06-07 23:40:11"
       }
     },
     {
