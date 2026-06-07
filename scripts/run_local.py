@@ -10,13 +10,15 @@ Eligible for bulk scanning from the laptop:
           When the quota is exhausted the loop cools BE down until midnight Bern time.
     VS  — one-time SwissID 2FA (Playwright window); ~210k parcels
     FR  — no login, no CAPTCHA; needs residential IP (keycloak.fr.ch geo-blocks
-          GitHub Actions datacenter IPs). ~80k parcels; ~600-800/hr.
+          GitHub Actions datacenter IPs). ~147k parcels; ~100-300/day.
+    NE  — no login; Playwright auto-solves Altcha PoW. sitn.ne.ch blocks datacenter
+          IPs, so residential only. ~91k parcels; ~50/day quota.
     BL  — needs ANTHROPIC_API_KEY (Claude vision for handwritten CAPTCHA); ~70k parcels
 
 NOT included by design:
-  - JU, SZ, SH, NE, GR : handled by GitHub Actions. NE/GR share the same Webshare
-                          proxy quota — running them here too would just compete with CI
-                          for the same 90-450 queries/day without adding throughput.
+  - JU, SZ, SH, GR : handled by GitHub Actions.
+  - NE was previously also listed here but sitn.ne.ch blocks datacenter IPs,
+    so it was removed from CI and added here instead.
   - UR              : daily quota (10/day), geo-blocked from CI; use `python main.py ur`.
   - GE              : Imperva blocks ~30/IP even from residential; needs proxies
                       AND ANTHROPIC_API_KEY. Use `python main.py ge` separately.
@@ -94,7 +96,7 @@ if _env_file.exists():
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
-LOCAL_ELIGIBLE_DEFAULT = ["be", "vs", "fr", "bl"]
+LOCAL_ELIGIBLE_DEFAULT = ["be", "vs", "fr", "ne", "bl"]
 
 # enum_count below this = "not yet enumerated" (test seeds / empty).
 REAL_ENUM_MIN = 100
@@ -205,6 +207,14 @@ def _check_fr() -> tuple[bool, str]:
     return True, "FR needs no token (residential IP only)"
 
 
+def _check_ne() -> tuple[bool, str]:
+    try:
+        import playwright  # noqa: F401
+        return True, "NE ready (Playwright installed, residential IP only)"
+    except ImportError:
+        return False, "Playwright not installed (needed for NE Altcha PoW solver)"
+
+
 PREFLIGHT_CHECKS = {
     "be": {
         "check":      _check_be,
@@ -234,6 +244,14 @@ PREFLIGHT_CHECKS = {
         "check":      _check_fr,
         "setup_cmd":  None,
         "setup_note": "FR needs no setup — just run from a Swiss residential IP.",
+    },
+    "ne": {
+        "check":      _check_ne,
+        "setup_cmd":  None,
+        "setup_note": (
+            "NE setup: install Playwright — `pip install playwright && "
+            "playwright install chromium`. Runs from residential IP only (~50/day quota)."
+        ),
     },
 }
 
