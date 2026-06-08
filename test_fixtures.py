@@ -284,7 +284,15 @@ CANTON_STATUS: dict[str, dict] = {
            "daily_limit": 10, "rate_limit": "~10 free queries per registered user (login required)",
            "max_test_parcels": 0,
            "blocker": "owner-query button is logged-in-only (smartserviceportal); no scanner module yet; account registration required to inspect actual API",
-           "needs": "register at ag.ch/de/smartserviceportal/konto/registrierung; with logged-in session, capture the owner-query endpoint (browser DevTools), build BE-style OIDC scanner; paid proxies for full scan"},
+           # CONFIRMED 2026-06-08 via live fetch: registration requires only a valid
+           # email address — no Swiss ID / phone proofing. Equivalent to BS/BE free-
+           # registration paths. The 10-query cap per account is the real constraint
+           # for full-scale scanning (130k parcels needs account cycling or proxy).
+           "needs": "register at ag.ch/de/smartserviceportal/konto/registrierung "
+                    "(email only — no Swiss ID/phone proofing required); capture "
+                    "owner-query endpoint via browser DevTools; build BE-style OIDC "
+                    "scanner; 10 free queries/account means full 130k-parcel scan "
+                    "needs account cycling or proxy arrangement"},
     # TG remains blocked: SMS verification per query is a human-action gate, not
     # something IP rotation can solve. Same operational dead-end as ZG and ZH.
     "TG": {"access": "blocked", "test_group": "blocked", "ip_rotation": None,
@@ -305,7 +313,16 @@ CANTON_STATUS: dict[str, dict] = {
            "daily_limit": None, "rate_limit": "Public via reCAPTCHA Enterprise v2 checkbox per parcel",
            "max_test_parcels": 0,
            "blocker": "no scanner module against the public CAPTCHA path; geoportal.ch/search/ownerinfo/ endpoint shared with professional path but needs reCAPTCHA v2 solving for anonymous use",
-           "needs": "build scanner using geoportal_base.py + reCAPTCHA Enterprise v2 solver (Playwright auto-click or 2captcha service ~$0.003/solve); paid residential proxies for full scan"},
+           # CONFIRMED 2026-06-08 via live API probe: GET /search/ownerinfo?egrid=...
+           # returns {"challenge":true} without a valid token — endpoint is live.
+           # CAPTCHA type confirmed: Enterprise v2 checkbox ("I'm not a robot"),
+           # NOT v3 invisible. Playwright stealth cannot auto-click v2 checkbox —
+           # requires a dedicated solver (2captcha 'enterprises' endpoint, not
+           # standard v2). Cost: ~$0.003/solve × 115k parcels ≈ $345.
+           "needs": "build scanner using geoportal_base.py + reCAPTCHA Enterprise v2 "
+                    "solver (2captcha 'enterprises' endpoint ~$0.003/solve × 115k "
+                    "parcels ≈ $345; NOT Playwright auto-click — v2 checkbox cannot "
+                    "be auto-solved); paid residential proxies for full scan"},
     # GL: CONFIRMED BLOCKED (researched 2026-05-18) — my.gl.ch Grundbuch service
     # requires AGOV LoA-3 ("erhöht"), which currently requires manual identity
     # proofing and is NOT self-service. The federal Swiss e-ID that would unlock
