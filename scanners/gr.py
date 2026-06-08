@@ -77,6 +77,24 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                     "owner": None, "owner_address": None, "raw_response": None}
 
         if r.status_code in (404, 400):
+            # Distinguish genuine Terravis "EGRID not in Grundbuch" from a
+            # proxy connection error that also returns 404.
+            #
+            # Genuine Terravis 404: Content-Type is application/json (or the
+            # body is empty / very short).  Proxy error pages are HTML.
+            #
+            # False-positive risk: proxy returns HTTP 404 for a connection
+            # error → scanner records not_in_grundbuch → herrenlos hit for a
+            # parcel that actually has owners (confirmed GR 3863/803, 2026-05-28).
+            ct = r.headers.get("Content-Type", "")
+            if "text/html" in ct:
+                # Proxy error page — not a real Terravis response.
+                log.warning("GR %s: 404/400 with HTML body (proxy error?) — "
+                            "skipping, will retry.", egrid)
+                return {"error": f"proxy_error_404", "is_herrenlos": None,
+                        "herrenlos_type": None, "claim_possible": None,
+                        "owner": None, "owner_address": None,
+                        "raw_response": r.text[:200]}
             # EGRID not found in Terravis / Grundbuch at all.
             # This is Type 2 herrenlos (Art. 664 ZGB) — parcel exists in the
             # cadastre but has no Grundbuch entry. Falls to canton by law.
@@ -85,7 +103,7 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                     "is_herrenlos": 1,
                     "herrenlos_type": "not_in_grundbuch",
                     "claim_possible": 0,
-                    "raw_response": None, "error": None}
+                    "raw_response": r.text[:200] or None, "error": None}
 
         if r.status_code != 200:
             return {"error": f"http_{r.status_code}", "is_herrenlos": None,
@@ -264,7 +282,7 @@ def _gr_session(proxy_url: str | None = None) -> requests.Session:
 
 def scan(limit: int | None = None,
          skip_existing: bool = True,
-         delay: float = 2.0):
+         delay: float = 1.0):
     """
     Scan GR parcels for herrenlos detection.
 
