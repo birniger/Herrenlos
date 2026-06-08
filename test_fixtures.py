@@ -245,34 +245,60 @@ CANTON_STATUS: dict[str, dict] = {
            "needs": "free SwissID account at swissid.ch; complete login in the Chromium window that opens; scan endpoints appear unlimited once authenticated"},
 
     # ── geoportal.ch-based cantons + other restricted ones ──────────────────
-    # VERIFICATION PASS — 2026-05-18 (agent + direct portal inspection):
-    # All 10 cant_get/blocked classifications below were RE-CONFIRMED by both
-    # web research and (where possible) direct Chrome DevTools inspection.
-    # Detailed evidence and URLs are in each canton's `blocker` / `needs` field.
-    # Summary of why each is excluded under our policy:
-    #   AI, AR        : Terravis professional + private = mail-only (CHF 40, ~1 week)
-    #   GL            : my.gl.ch needs AGOV LoA-3 (not self-service; federal e-ID
-    #                   launches 1 Dec 2026 — revisit then)
-    #   NW            : online form is purpose-bound, postal return, not direct lookup
-    #   OW            : Terravis-only; 2021 public-portal plans never delivered
-    #   TI            : SIFTI requires registry-issued auth (ORF Art. 28+)
-    #   VD            : prestations.vd.ch/pub/101435 is form-mail with 48h turnaround
-    # PARTIALLY BUILDABLE (still unbuilt; needs paid CAPTCHA solver or registration):
-    #   SG            : reCAPTCHA Enterprise v2 visible checkbox → needs 2captcha service
-    #   AG            : public AGIS path requires smartserviceportal account to inspect
-    # See test_runs / `python main.py ready` for live status.
-    # AR: Confirmed 2026-05 — Terravis online access for banks/insurance/notaries
-    # only; private persons must request shortened extract by MAIL (Art. 970 ZGB).
-    # Not solvable by IP rotation (no automatable online path for private persons).
-    "AR": {"access": "cant_get", "test_group": "blocked", "ip_rotation": None,
-           "daily_limit": None, "rate_limit": None, "max_test_parcels": 0,
-           "blocker": "no automatable online path for private persons (Terravis = professional only; shortened extract for private persons is mail-only)",
-           "needs": "no workaround — mail-only access is not automatable"},
-    # AI: Same as AR — Terravis for professionals, mail-only for private persons.
-    "AI": {"access": "cant_get", "test_group": "blocked", "ip_rotation": None,
-           "daily_limit": None, "rate_limit": None, "max_test_parcels": 0,
-           "blocker": "no automatable online path for private persons (same as AR — Terravis professional + mail-only for private)",
-           "needs": "no workaround — mail-only access is not automatable"},
+    # VERIFICATION PASS — 2026-06-09 (independent agent, browser/HTTP probing only,
+    # no code consulted — see session for raw probe output):
+    # CORRECTIONS vs 2026-05-18 pass:
+    #   AR/AI : UPGRADED — previous "mail-only" was wrong. geoportal.ch/ktar and
+    #           geoportal.ch/ktai provide PUBLIC owner query by parcel click, no login.
+    #           reCAPTCHA in CSP is login-form only, not on the map identify flow.
+    #   GL    : UPGRADED — previous "AGOV LoA-3" was for my.gl.ch (formal extracts).
+    #           The public GeoViewer has Grundstücksinformation tool freely accessible.
+    #   VD    : CORRECTED — previously described as "form-mail 48h turnaround"
+    #           (prestations.vd.ch). That was wrong: intercapi-public.vd.ch is a
+    #           real-time Keycloak-backed portal with SMS authentication, 5/day.
+    #   NW/OW : MORE SPECIFIC — not just "form-mail"; gis-daten.ch WebGIS PRO
+    #           subscription is the only path (CHF 300/yr NW, CHF 600/yr OW).
+    #   TI    : MORE SPECIFIC — geoticino.ch commercial (CHF 15/extract, no free tier).
+    # CONFIRMED BLOCKED (unchanged):
+    #   ZH, ZG, TG, LU — SMS gate enforced in JS (Swiss mobile regex confirmed in source)
+    # PARTIALLY BUILDABLE (unbuilt):
+    #   AR, AI : geoportal.ch public identify endpoint — likely same as SG but without
+    #            reCAPTCHA requirement (needs live API probe to confirm endpoint)
+    #   GL     : GeoViewer public Grundstücksinformation — Cloudflare present, needs
+    #            live Playwright test to confirm API endpoint accessibility
+    #   SG     : reCAPTCHA Enterprise v2 checkbox → needs 2captcha (~$345)
+    #   AG     : smartserviceportal account → email-only registration, 10 queries/user
+
+    # AR: RE-CLASSIFIED 2026-06-09 — previous "mail-only" was incorrect.
+    # geoportal.ch/ktar (IG GIS AG platform, shared with AI/SG) provides PUBLIC owner
+    # data on parcel click: "auf Grundstück klicken, unter Allgemein, Eigentümer"
+    # (confirmed by mapplus.ch legend and live probe). No login needed for the map
+    # identify query. reCAPTCHA in the page CSP is on account login forms only.
+    # The backing endpoint is likely geoportal.ch/search/ownerinfo/ (same as SG) but
+    # without the challenge:true gate — AR has public owner.search permissions enabled.
+    # Needs: live probe of the identify API to capture exact endpoint + parameters.
+    "AR": {"access": "unbuilt", "test_group": "unbuilt", "ip_rotation": "deferred",
+           "daily_limit": None, "rate_limit": "unknown — no published limit for public map identify",
+           "max_test_parcels": 0,
+           "blocker": "scanner not yet built; public geoportal.ch/ktar owner query confirmed live (2026-06-09) but API endpoint not yet reverse-engineered",
+           "needs": "probe geoportal.ch/ktar with browser DevTools to capture the map "
+                    "identify REST call for owner data; likely geoportal.ch/search/ownerinfo/ "
+                    "without challenge:true (AR has public permissions unlike SG); "
+                    "build scanner similar to SG but without CAPTCHA solver"},
+    # AI: RE-CLASSIFIED 2026-06-09 — same correction as AR.
+    # geoportal.ch/ktai (same IG GIS AG platform as AR/SG) shows owner on parcel click
+    # without login. Confirmed by mapplus.ch legend: "Eigentümer über Geoportal AI:
+    # auf Grundstück klicken, unter Allgemein, Eigentümer."
+    # Note: Terravis implementation in AI is partial (Gonten/Schlatt-Haslen/Oberegg
+    # since 2019; Appenzell/Schwende/Rüte still pending 2026) — geoportal.ch may have
+    # incomplete coverage for the Terravis-pending municipalities.
+    "AI": {"access": "unbuilt", "test_group": "unbuilt", "ip_rotation": "deferred",
+           "daily_limit": None, "rate_limit": "unknown — no published limit for public map identify",
+           "max_test_parcels": 0,
+           "blocker": "scanner not yet built; public geoportal.ch/ktai owner query confirmed live (2026-06-09); partial Terravis rollout in AI may mean incomplete coverage",
+           "needs": "same approach as AR — probe geoportal.ch/ktai identify API; "
+                    "note partial Terravis coverage (some AI municipalities may not "
+                    "appear in geoportal.ch owner data yet)"},
     # AG: VERIFIED 2026-05-18 via Chrome MCP — public AGIS Viewer is open without
     # login for MAP browsing, but the "Grundeigentümer abfragen" button on parcel
     # detail panel is GREYED OUT with message "Für Grundeigentümerabfrage anmelden"
@@ -323,55 +349,74 @@ CANTON_STATUS: dict[str, dict] = {
                     "solver (2captcha 'enterprises' endpoint ~$0.003/solve × 115k "
                     "parcels ≈ $345; NOT Playwright auto-click — v2 checkbox cannot "
                     "be auto-solved); paid residential proxies for full scan"},
-    # GL: CONFIRMED BLOCKED (researched 2026-05-18) — my.gl.ch Grundbuch service
-    # requires AGOV LoA-3 ("erhöht"), which currently requires manual identity
-    # proofing and is NOT self-service. The federal Swiss e-ID that would unlock
-    # self-service LoA-3 was postponed from summer 2026 to 1 December 2026 (SFAO
-    # security audit). Until then, GL is effectively locked. Revisit Dec 2026.
-    "GL": {"access": "cant_get", "test_group": "blocked", "ip_rotation": None,
-           "daily_limit": None, "rate_limit": None, "max_test_parcels": 0,
-           "blocker": "my.gl.ch requires AGOV LoA-3; only obtainable via manual identity proofing today; federal e-ID self-service path postponed to 1 December 2026",
-           "needs": "wait for Swiss federal e-ID launch (postponed to Dec 2026); revisit then"},
-    # NW: VERIFIED 2026-05 — nw.ch/online-schalter offers form-based ORDERING of
-    # Grundbuchauszüge for specific purposes (building submissions, bank credits).
-    # This is a request-by-purpose model, not a direct lookup — submit a request,
-    # office processes it. Not automatable for "owner of arbitrary parcel" queries.
+    # GL: RE-CLASSIFIED 2026-06-09 — previous "AGOV LoA-3" assessment was for
+    # my.gl.ch (formal Grundbuchauszug ordering service — that IS still locked).
+    # However the PUBLIC GeoViewer has a free "Grundstücksinformation" tool:
+    #   "Das Informationswerkzeug 'Grundstücksinformation' steht im GeoViewer des
+    #   kantonalen Geoportals kostenlos zur Verfügung." (official GL canton release)
+    # mapplus.ch confirms: "Eigentümer über WebGIS GL, auf Grundstücksinformation
+    # klicken, dann auf Grundstück" — no login required.
+    # GeoViewer URL: geo.gl.ch or via www.gl.ch/geoportal
+    # Cloudflare is active on www.gl.ch (cf-cache-status header) but the GeoViewer
+    # SPA endpoint may be accessible without bot detection — needs live Playwright test.
+    # NOTE: my.gl.ch AGOV LoA-3 assessment still correct for formal extracts;
+    # geoportal informal query is a separate, lower-friction path.
+    "GL": {"access": "unbuilt", "test_group": "unbuilt", "ip_rotation": "deferred",
+           "daily_limit": None, "rate_limit": "unknown; Cloudflare present on www.gl.ch",
+           "max_test_parcels": 0,
+           "blocker": "scanner not yet built; public GeoViewer Grundstücksinformation confirmed (2026-06-09) but Cloudflare on www.gl.ch may block programmatic access",
+           "needs": "load geo.gl.ch/geoportal with Playwright; navigate to "
+                    "Grundstücksinformation tool; click a known parcel; intercept "
+                    "the identify API call in browser DevTools; confirm Cloudflare "
+                    "doesn't block headless browser. If it does, test with "
+                    "DataImpulse residential proxy"},
+    # NW: RE-CONFIRMED 2026-06-09 (independent probe) — more specific finding:
+    # The gis-daten.ch WebGIS has a NW/OW public GeoShop (credentials nwow-public/public)
+    # but owner query requires WebGIS PRO subscription (CHF 300/yr NW). The public
+    # GeoShop tier only shows parcel geometry; mapplus.ch legend explicitly marks NW
+    # as having NO owner query available ("nur ÖREB: Direktlink").
+    # nw.ch online-schalter offers purpose-bound extract ordering (building permit,
+    # bank credit) — not an arbitrary parcel lookup.
     "NW": {"access": "cant_get", "test_group": "blocked", "ip_rotation": None,
            "daily_limit": None, "rate_limit": None, "max_test_parcels": 0,
-           "blocker": "online presence is a request form for ordering extracts by purpose (building submission, bank credit, etc.) — not a direct owner lookup; effectively form-mail equivalent",
-           "needs": "no automatable workaround (would need to fake purpose codes — not legitimate)"},
-    # OW: VERIFIED 2026-05 — Terravis professional portal launched April 2022 for
-    # banks/insurance/notaries. Public Eigentumsabfrage was "planned" 2021 but
-    # not delivered for private persons.
+           "blocker": "no free public owner query: gis-daten.ch WebGIS PRO costs CHF 300/yr (NW); public GeoShop tier shows geometry only; mapplus.ch: 'nur ÖREB: Direktlink' for NW",
+           "needs": "no automatable public-path workaround; paid CHF 300/yr subscription not viable for automated scanning"},
+    # OW: RE-CONFIRMED 2026-06-09 — same infrastructure as NW (gis-daten.ch WebGIS),
+    # WebGIS PRO costs CHF 600/yr for OW. Terravis professional-only. mapplus.ch
+    # legend marks OW as no owner query available.
     "OW": {"access": "cant_get", "test_group": "blocked", "ip_rotation": None,
            "daily_limit": None, "rate_limit": None, "max_test_parcels": 0,
-           "blocker": "Terravis portal serves professionals only; public Eigentumsabfrage was planned 2021 but not delivered for private persons (verified 2026-05)",
-           "needs": "no public-path workaround currently; revisit if ow.ch announces public access"},
-    # TI: VERIFIED 2026-05 — SIFTI-web requires authorization from registry section
-    # under ORF Art. 28+; explicitly excludes "craftspeople, consultants, trust
-    # companies, planners, architects, real estate agents." Public alternative via
-    # Geoportale Ticino only shows lot numbers/EGRIDs; owner info requires a
-    # manual mail request to the Land Registry Office (not automatable).
+           "blocker": "no free public owner query: gis-daten.ch WebGIS PRO costs CHF 600/yr (OW); Terravis professional-only; mapplus.ch: no owner query available for OW",
+           "needs": "no automatable public-path workaround; CHF 600/yr subscription not viable"},
+    # TI: RE-CONFIRMED 2026-06-09 (independent probe) — more specific finding:
+    # geoticino.ch (commercial service, geoticino SA) charges CHF 15+VAT per extract
+    # for unregistered users, or CHF 400+/yr subscription. No free tier exists.
+    # mapplus.ch legend explicitly states "Eigentümer: nicht verfügbar" for TI.
+    # SIFTI-web (SIFTI professional system) still requires registry-issued auth.
     "TI": {"access": "cant_get", "test_group": "blocked", "ip_rotation": None,
            "daily_limit": None, "rate_limit": None, "max_test_parcels": 0,
-           "blocker": "SIFTI-web requires registry-issued authorization (professional-only); Geoportale Ticino shows lots only, owner info requires manual mail request to registry office",
-           "needs": "no automatable public-path workaround (mail request is not automatable)"},
-    # VD: RE-CORRECTED 2026-05 — prestations.vd.ch/pub/101435/ is form-based, NOT a
-    # real-time query: 5 requests/day per person AND 48-hour response time (results
-    # come by email, not instantly). Means a full ~200k-parcel canton scan would
-    # take ~40,000 days. Not feasible as a real-time scanner; same operational
-    # category as NW (form-mail-equivalent).
-    "VD": {"access": "cant_get", "test_group": "blocked", "ip_rotation": None,
-           "daily_limit": 5, "rate_limit": "5 req/day + 48h email turnaround",
+           "blocker": "geoticino.ch charges CHF 15/extract (no free tier); SIFTI-web is professional-only; mapplus.ch: 'Eigentümer: nicht verfügbar' for TI",
+           "needs": "no automatable free path; CHF 15/parcel × ~200k parcels = CHF 3M — not viable"},
+    # VD: CORRECTED 2026-06-09 — previous "48h form-mail" assessment was wrong.
+    # intercapi-public.vd.ch is a REAL-TIME Keycloak-backed angular portal with SMS
+    # authentication. 5 queries/day ("maximum de 5 consultations par jour"). Phone
+    # type requirement: "numéro de téléphone mobile" — likely Swiss-only (Keycloak
+    # realm 'capitastra' with Swiss-only hint found in JS). Same SMS gate as ZH/ZG.
+    # The prestations.vd.ch form is a separate, older path for formal extracts.
+    "VD": {"access": "blocked", "test_group": "blocked", "ip_rotation": None,
+           "daily_limit": 5, "rate_limit": "5 queries/day per mobile number (SMS auth)",
            "max_test_parcels": 0,
-           "blocker": "vd.ch consultation is form-based with 48h email turnaround (not real-time); full canton scan would take ~40k days — not viable as scanner",
-           "needs": "no real-time public path. INTERCAPI is the only real-time option but requires professional accreditation (notaries/lawyers/surveyors/banks)"},
+           "blocker": "intercapi-public.vd.ch requires SMS authentication per session (mobile number, likely Swiss-only); 5 queries/day — same operational dead-end as ZH/ZG/TG/LU",
+           "needs": "no workaround under our policy (SMS gate, Swiss phone likely required)"},
 
-    # ── Explicitly blocked (no public access at all) ─────────────────────────
+    # ── Explicitly blocked (SMS gate — confirmed in source code / official docs) ─
+    # ZG: CONFIRMED 2026-06-09 — zugmap.ch click → Swiss mobile → SMS code (5-day
+    # validity). 30 queries/24h per mobile number. No Swiss-phone = postal contact only.
     "ZG": {"access": "blocked", "test_group": "blocked", "ip_rotation": None,
-           "daily_limit": None, "rate_limit": None, "max_test_parcels": 0,
-           "blocker": "lr.zugmap.ch requires SMS verification per query",
-           "needs": "no known workaround for private persons"},
+           "daily_limit": 30, "rate_limit": "30 queries/24h per Swiss mobile number",
+           "max_test_parcels": 0,
+           "blocker": "zugmap.ch requires Swiss mobile number + SMS code per session",
+           "needs": "no known workaround for private persons (Swiss mobile required)"},
     # SO: ENDPOINT CAPTURED 2026-05-18 via Chrome MCP direct inspection.
     #   Captcha bootstrap: GET geo.so.ch/api/v1/plotinfo/plot_owner/captcha/{EGRID}
     #     → returns HTML page that loads grecaptcha and calls
@@ -426,14 +471,14 @@ CANTON_STATUS: dict[str, dict] = {
            "max_test_parcels": 0,
            "blocker": "grundbuch.lu.ch/onlinedienste/eigentuemerabfrage requires Swiss Mobile-Nr + SMS PIN per query — same operational dead-end as ZH/ZG/TG (verified by direct portal inspection 2026-05-18)",
            "needs": "no known workaround for private persons (SMS-per-query gate)"},
-    # ZH is effectively BLOCKED for an automated scanner. Confirmed 2026-05 via
-    # law.ch and NZZ: maps.zh.ch GIS-Browser requires SMS verification on each
-    # query; Swiss mobile number required; 5 queries per day. Identical to ZG.
+    # ZH: CONFIRMED 2026-06-09 (independent probe) — maps.zh.ch → Swiss mobile →
+    # SMS TAN valid 7 days; 5 queries/day/mobile. Terms: "Schweizer Mobiltelefonnummer".
+    # Property owners can opt out (end-2024). ~450k parcels.
     "ZH": {"access": "blocked", "test_group": "blocked", "ip_rotation": None,
-           "daily_limit": 5, "rate_limit": "5 req/day/person + SMS code per query",
+           "daily_limit": 5, "rate_limit": "5 queries/day per Swiss mobile number (7-day TAN)",
            "max_test_parcels": 0,
-           "blocker": "maps.zh.ch requires SMS verification per query (Swiss mobile number) — same operational dead-end as ZG; ~450k parcels makes automation prohibitive",
-           "needs": "no known workaround for private persons (same SMS-per-query gate as ZG)"},
+           "blocker": "maps.zh.ch requires Swiss mobile number + SMS TAN; terms explicitly state 'Schweizer Mobiltelefonnummer'; ~450k parcels",
+           "needs": "no known workaround for private persons (Swiss mobile required by ordinance)"},
 }
 
 TESTABLE_CANTONS = {c for c, s in CANTON_STATUS.items()
