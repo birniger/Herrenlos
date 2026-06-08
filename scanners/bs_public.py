@@ -74,6 +74,7 @@ import os
 import json
 import time
 import logging
+import urllib.parse
 import requests
 
 import sys
@@ -135,9 +136,20 @@ def _init_playwright():
 
 
 def _make_page(pw, stealth_sync, proxy_url: str | None = None):
+    # Playwright requires proxy credentials as separate fields — embedding
+    # user:pass in the server URL causes HTTPS CONNECT tunneling to hang.
+    proxy_cfg = None
+    if proxy_url:
+        p = urllib.parse.urlparse(proxy_url)
+        proxy_cfg = {"server": f"{p.scheme}://{p.hostname}:{p.port}"}
+        if p.username:
+            proxy_cfg["username"] = urllib.parse.unquote(p.username)
+        if p.password:
+            proxy_cfg["password"] = urllib.parse.unquote(p.password)
+
     browser = pw.chromium.launch(
         headless=True,
-        proxy={"server": proxy_url} if proxy_url else None,
+        proxy=proxy_cfg,
         args=[
             "--no-sandbox",
             "--disable-blink-features=AutomationControlled",
