@@ -9,22 +9,22 @@ Eligible for bulk scanning from the laptop (login-only cantons):
           NOTE: GRUDIS enforces a per-account daily quota (account-level, not IP).
           When the quota is exhausted the loop cools BE down until midnight Bern time.
     VS  — one-time SwissID 2FA (Playwright window); ~210k parcels
-    BL  — needs ANTHROPIC_API_KEY (Claude vision for handwritten CAPTCHA); ~70k parcels
 
-NOT included — handled by GitHub Actions CI instead:
+NOT included — handled by GitHub Actions CI instead (ju sz sh gr ne fr ur bs bl):
   - JU, SZ   : OCR CAPTCHA only, no login, no geo-block. Always on CI.
-  - SH        : Litport hub-us-8 rotating proxy (100 req/day/IP). On CI.
-  - GR        : Litport hub-us-10 rotating proxy (10 req/day/IP). On CI.
-  - NE        : DataImpulse Swiss residential proxy on CI (sitn.ne.ch blocks DCs).
-  - FR        : DataImpulse Swiss residential proxy on CI (keycloak.fr.ch blocks DCs).
-  - UR        : DataImpulse Swiss residential proxy on CI (geo.ur.ch blocks DCs).
-  - BS        : Free REST API key on CI — no proxy or geo-blocking needed.
+  - SH        : Litport hub-us-8 rotating proxy (datacenter, rate-limited 100/day/IP).
+  - GR        : Litport hub-us-10 rotating proxy (datacenter, rate-limited 10/day/IP).
+  - NE        : DataImpulse Swiss residential proxy (sitn.ne.ch geo-blocks DCs).
+  - FR        : DataImpulse Swiss residential proxy (keycloak.fr.ch geo-blocks DCs).
+  - UR        : DataImpulse Swiss residential proxy (geo.ur.ch geo-blocks DCs).
+  - BS        : Free REST API key — no proxy or geo-blocking needed.
+  - BL        : ANTHROPIC_API_KEY secret for Claude CAPTCHA — no geo-blocking.
 
 NOT included — needs special handling, run manually:
   - SO, GE    : reCAPTCHA/Imperva; 94%+ failure rate. Run `python main.py so/ge`.
 
 Parallel mode: one thread per canton, each running `python main.py <canton>
---limit ROTATION_LIMIT` in a tight loop. BE, VS, BL scan simultaneously.
+--limit ROTATION_LIMIT` in a tight loop. BE and VS scan simultaneously.
 
 Push to GitHub is debounced: at most one push every PUSH_DEBOUNCE_SECONDS
 regardless of how many cantons finish around the same time.
@@ -32,14 +32,13 @@ regardless of how many cantons finish around the same time.
 Pre-flight: at startup, checks each eligible canton's prerequisites:
   - BE  : ~/.herrenlos_scanner/be_token.json exists?
   - VS  : ~/.herrenlos_scanner/vs_token.json exists?
-  - BL  : ANTHROPIC_API_KEY in env / .env?
 
 Configuration:
   LOCAL_ELIGIBLE_CANTONS env var (space-separated) overrides the default list.
   LOCAL_ROTATION_LIMIT   env var overrides ROTATION_LIMIT (default 3000).
 
 Usage:
-  python scripts/run_local.py                 # BE + VS + BL
+  python scripts/run_local.py                 # BE + VS
   LOCAL_ELIGIBLE_CANTONS="be vs" python scripts/run_local.py
 
 For auto-restart across crashes / network outages, use the bash wrapper:
@@ -88,9 +87,10 @@ if _env_file.exists():
 # ── Configuration ────────────────────────────────────────────────────────────
 
 # Only login-dependent cantons run locally.
-# NE, FR, UR, BS — now on CI (DataImpulse residential proxy for geo-blocked ones).
+# NE, FR, UR, BS, BL — now on CI (DataImpulse residential proxy for geo-blocked ones;
+#   ANTHROPIC_API_KEY secret for BL CAPTCHA).
 # SO, GE — reCAPTCHA/Imperva; 94%+ failure rate; run manually via `python main.py so/ge`.
-LOCAL_ELIGIBLE_DEFAULT = ["be", "vs", "bl"]
+LOCAL_ELIGIBLE_DEFAULT = ["be", "vs"]
 
 # enum_count below this = "not yet enumerated" (test seeds / empty).
 REAL_ENUM_MIN = 100

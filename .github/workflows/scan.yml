@@ -22,10 +22,11 @@
 #         (geo.ur.ch geo-blocks datacenter IPs). ~5k parcels.
 #   BS  — REST API (api.geo.bs.ch) with free API key; no geo-blocking, no proxy
 #         needed. ~8.6k parcels; API key in BS_API_KEY secret.
+#   BL  — handwritten CAPTCHA; OCR chain: ddddocr → tesseract → Claude vision.
+#         No geo-blocking, no login. Needs ANTHROPIC_API_KEY secret. ~70k parcels.
 #
 # Run locally instead (see main.py for details):
 #   BE, VS  — one-time interactive login; token cached; macOS/laptop only
-#   BL      — needs ANTHROPIC_API_KEY for handwritten CAPTCHA
 #   SO, GE  — reCAPTCHA/Imperva; 94%+ failure rate even from residential IPs
 
 name: scan
@@ -60,7 +61,7 @@ jobs:
       # Cantons eligible for CI scanning.
       # NE/FR/UR: geo-blocked from datacenter IPs — Swiss residential proxy via DataImpulse.
       # BS: public API with free key — no proxy needed, no geo-blocking.
-      ELIGIBLE_CANTONS: "ju sz sh gr ne fr ur bs"
+      ELIGIBLE_CANTONS: "ju sz sh gr ne fr ur bs bl"
       # NE: 2 workers max (single proxy IP rate-limits the Altcha /captcha endpoint at 8)
       NE_WORKERS: "2"
       # NE / FR / UR — DataImpulse Swiss residential proxy (geo-blocked from datacenter IPs)
@@ -69,9 +70,13 @@ jobs:
       UR_PROXY_LIST: ${{ secrets.DATAIMPULSE_PROXY }}
       # BS: free REST API key (no geo-blocking, no proxy needed)
       BS_API_KEY: ${{ secrets.BS_API_KEY }}
+      # BL: Claude vision CAPTCHA fallback (ddddocr primary; Claude needed for handwritten style)
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       # SH: Litport DC Shared Rotating hub-us-8 (rotation=150s, 100 req/day/IP quota)
-      SH_PROXY_LIST: ${{ secrets.WEBSHARE_PROXY_LIST }}
+      #     datacenter OK — SH is rate-limited per IP, NOT geo-blocked
+      SH_PROXY_LIST: ${{ secrets.SH_PROXY_LIST }}
       # GR: Litport DC Shared Rotating hub-us-10 (rotation=5s, 10 req/day/IP quota)
+      #     datacenter OK — GR is rate-limited per IP, NOT geo-blocked
       GR_PROXY_LIST: ${{ secrets.GR_PROXY_LIST }}
 
     steps:
@@ -83,10 +88,10 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: "pip" }
 
-      - name: Install scanner deps (base; Playwright installed conditionally per-pick)
+      - name: Install scanner deps
         run: |
           pip install --upgrade pip
-          pip install requests beautifulsoup4 lxml ddddocr pillow numpy
+          pip install requests beautifulsoup4 lxml ddddocr pillow numpy anthropic
 
       - name: Sync to latest main before scanning
         # Reset to origin/main so we start from the freshest DB (includes any
