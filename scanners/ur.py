@@ -11,6 +11,7 @@ UR scanner — Uri
                       is stored for geo-blocked responses so they can be re-scanned.
 """
 
+import os
 import time
 import logging
 import requests
@@ -20,7 +21,7 @@ import sys
 import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel
-from scanners.utils import is_herrenlos_owner_text, is_unknown_owner, is_public_owner, is_sdr_parcel, annotate_herrenlos
+from scanners.utils import is_herrenlos_owner_text, is_unknown_owner, is_public_owner, is_sdr_parcel, annotate_herrenlos, load_proxies
 
 log = logging.getLogger("UR")
 
@@ -217,8 +218,14 @@ def scan(limit: int | None = None, skip_existing: bool = True, delay: float = 2.
     if limit:
         parcels = parcels[:limit]
 
+    proxies = load_proxies("UR_PROXY_LIST")
+    proxy_url = proxies[0] if proxies else None
+
     session = requests.Session()
     session.headers["User-Agent"] = UA
+    if proxy_url:
+        session.proxies.update({"http": proxy_url, "https": proxy_url})
+        log.info("UR using proxy: %s…", proxy_url[:40])
 
     scanned = errors = herrenlos = 0
     rate_wait_until = 0.0
