@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-08T17:32:59+00:00",
+  "generated_at": "2026-06-08T17:38:20+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -22,7 +22,7 @@
       "errors": 5430,
       "percent": 1.5,
       "estimated_total": 147148,
-      "last_scan_at": "2026-06-08 17:32:56",
+      "last_scan_at": "2026-06-08 17:38:17",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -68,12 +68,12 @@
     },
     {
       "canton": "NE",
-      "enumerated": 90361,
+      "enumerated": 0,
       "scanned": 0,
       "herrenlos": 0,
       "errors": 97,
       "percent": 0.0,
-      "estimated_total": 90361,
+      "estimated_total": 86000,
       "last_scan_at": "2026-06-08 17:30:41",
       "access": "public",
       "test_group": "captcha_pow",
@@ -120,7 +120,7 @@
     }
   ],
   "totals": {
-    "enumerated": 1382861,
+    "enumerated": 1292500,
     "scanned": 69244,
     "herrenlos": 26,
     "errors": 20695,
