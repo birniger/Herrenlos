@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-08T18:48:28+00:00",
+  "generated_at": "2026-06-08T18:53:51+00:00",
   "cantons": [
     {
       "canton": "AG",
@@ -43,12 +43,12 @@
     {
       "canton": "BS",
       "enumerated": 8594,
-      "scanned": 246,
+      "scanned": 278,
       "herrenlos": 0,
       "errors": 0,
-      "percent": 2.9,
+      "percent": 3.2,
       "estimated_total": 8594,
-      "last_scan_at": "2026-06-08 18:48:21",
+      "last_scan_at": "2026-06-08 18:53:43",
       "access": "free_key",
       "test_group": "captcha_pow",
       "rate_limit": "HTML viewer: 10 req/day/IP (reCAPTCHA Enterprise); metadata API: unlimited with free key"
@@ -61,7 +61,7 @@
       "errors": 5430,
       "percent": 1.5,
       "estimated_total": 147148,
-      "last_scan_at": "2026-06-08 18:48:25",
+      "last_scan_at": "2026-06-08 18:53:47",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -113,7 +113,7 @@
       "errors": 2117,
       "percent": 1.0,
       "estimated_total": 89701,
-      "last_scan_at": "2026-06-08 18:48:28",
+      "last_scan_at": "2026-06-08 18:53:51",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
@@ -147,12 +147,12 @@
     {
       "canton": "SO",
       "enumerated": 133897,
-      "scanned": 5,
+      "scanned": 6,
       "herrenlos": 0,
-      "errors": 116,
+      "errors": 132,
       "percent": 0.0,
       "estimated_total": 133897,
-      "last_scan_at": "2026-06-08 18:48:12",
+      "last_scan_at": "2026-06-08 18:53:37",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "reCAPTCHA v3 score-based; bot-detection blocks from datacenter IPs"
@@ -199,9 +199,9 @@
   ],
   "totals": {
     "enumerated": 1524692,
-    "scanned": 70425,
+    "scanned": 70458,
     "herrenlos": 26,
-    "errors": 22831,
+    "errors": 22847,
     "cantons": 15
   }
 }
