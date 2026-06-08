@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-08T22:16:28+00:00",
+  "generated_at": "2026-06-08T23:47:04+00:00",
   "cantons": [
     {
       "canton": "AG",
@@ -13,6 +13,32 @@
       "access": "unbuilt",
       "test_group": "unbuilt",
       "rate_limit": "~10 free queries per registered user (login required)"
+    },
+    {
+      "canton": "AI",
+      "enumerated": 0,
+      "scanned": 0,
+      "herrenlos": 0,
+      "errors": 0,
+      "percent": 0.0,
+      "estimated_total": 5000,
+      "last_scan_at": null,
+      "access": "unbuilt",
+      "test_group": "unbuilt",
+      "rate_limit": "unknown \u2014 no published limit for public map identify"
+    },
+    {
+      "canton": "AR",
+      "enumerated": 0,
+      "scanned": 0,
+      "herrenlos": 0,
+      "errors": 0,
+      "percent": 0.0,
+      "estimated_total": 15000,
+      "last_scan_at": null,
+      "access": "unbuilt",
+      "test_group": "unbuilt",
+      "rate_limit": "unknown \u2014 no published limit for public map identify"
     },
     {
       "canton": "BE",
@@ -43,12 +69,12 @@
     {
       "canton": "BS",
       "enumerated": 8594,
-      "scanned": 1145,
-      "herrenlos": 26,
-      "errors": 70,
+      "scanned": 1146,
+      "herrenlos": 27,
+      "errors": 648,
       "percent": 13.3,
       "estimated_total": 8594,
-      "last_scan_at": "2026-06-08 22:16:23",
+      "last_scan_at": "2026-06-08 23:46:56",
       "access": "free_key",
       "test_group": "captcha_pow",
       "rate_limit": "HTML viewer: 10 req/day/IP (reCAPTCHA Enterprise); metadata API: unlimited with free key"
@@ -78,6 +104,19 @@
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "Imperva TSPD ~30 req/IP + image CAPTCHA per parcel"
+    },
+    {
+      "canton": "GL",
+      "enumerated": 0,
+      "scanned": 0,
+      "herrenlos": 0,
+      "errors": 0,
+      "percent": 0.0,
+      "estimated_total": 15000,
+      "last_scan_at": null,
+      "access": "unbuilt",
+      "test_group": "unbuilt",
+      "rate_limit": "unknown; Cloudflare present on www.gl.ch"
     },
     {
       "canton": "GR",
@@ -113,7 +152,7 @@
       "errors": 2117,
       "percent": 1.0,
       "estimated_total": 89701,
-      "last_scan_at": "2026-06-08 22:16:27",
+      "last_scan_at": "2026-06-08 23:47:01",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
@@ -199,9 +238,9 @@
   ],
   "totals": {
     "enumerated": 1524692,
-    "scanned": 71528,
-    "herrenlos": 52,
-    "errors": 23377,
-    "cantons": 15
+    "scanned": 71529,
+    "herrenlos": 53,
+    "errors": 23955,
+    "cantons": 18
   }
 }
