@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-08T20:08:26+00:00",
-  "count": 48,
+  "generated_at": "2026-06-08T20:15:19+00:00",
+  "count": 51,
   "parcels": [
     {
       "egrid": "CH527874896754",
@@ -71,6 +71,20 @@
       "scanned_at": "2026-06-08 20:00:45",
       "lat": 47.57501220703125,
       "lng": 7.567187786102295
+    },
+    {
+      "egrid": "CH976778828964",
+      "canton": "BS",
+      "commune": "BSS200000000",
+      "bfs_nr": "2701",
+      "parcel_nr": "0205",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "not_in_grundbuch",
+      "claim_possible": 0,
+      "scanned_at": "2026-06-08 20:09:55",
+      "lat": 47.557823181152344,
+      "lng": 7.582400321960449
     },
     {
       "egrid": "CH567089675880",
@@ -197,6 +211,34 @@
       "scanned_at": "2026-06-08 19:58:44",
       "lat": 47.5705680847168,
       "lng": 7.617308616638184
+    },
+    {
+      "egrid": "CH146789704773",
+      "canton": "BS",
+      "commune": "BSS700000000",
+      "bfs_nr": "2701",
+      "parcel_nr": "9056",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "not_in_grundbuch",
+      "claim_possible": 0,
+      "scanned_at": "2026-06-08 20:10:29",
+      "lat": 47.56586456298828,
+      "lng": 7.600661754608154
+    },
+    {
+      "egrid": "CH357989776744",
+      "canton": "BS",
+      "commune": "BSS700000000",
+      "bfs_nr": "2701",
+      "parcel_nr": "9974",
+      "owner": null,
+      "owner_address": null,
+      "herrenlos_type": "not_in_grundbuch",
+      "claim_possible": 0,
+      "scanned_at": "2026-06-08 20:10:49",
+      "lat": 47.56581497192383,
+      "lng": 7.600732803344727
     },
     {
       "egrid": "CH238970670539",
