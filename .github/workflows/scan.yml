@@ -70,8 +70,9 @@ jobs:
       UR_PROXY_LIST: ${{ secrets.DATAIMPULSE_PROXY }}
       # BS: free REST API key (no geo-blocking, no proxy needed)
       BS_API_KEY: ${{ secrets.BS_API_KEY }}
-      # BL: Claude vision CAPTCHA fallback (ddddocr primary; Claude needed for handwritten style)
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      # BL: ddddocr primary OCR; ANTHROPIC_API_KEY would enable Claude vision fallback
+      #     but is not required. Without it, unsolvable CAPTCHAs are retried next run.
+      # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       # SH: Litport DC Shared Rotating hub-us-8 (rotation=150s, 100 req/day/IP quota)
       #     datacenter OK — SH is rate-limited per IP, NOT geo-blocked
       SH_PROXY_LIST: ${{ secrets.SH_PROXY_LIST }}
@@ -91,7 +92,7 @@ jobs:
       - name: Install scanner deps
         run: |
           pip install --upgrade pip
-          pip install requests beautifulsoup4 lxml ddddocr pillow numpy anthropic
+          pip install requests beautifulsoup4 lxml ddddocr pillow numpy
 
       - name: Sync to latest main before scanning
         # Reset to origin/main so we start from the freshest DB (includes any

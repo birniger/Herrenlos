@@ -12,6 +12,10 @@ FR scanner — Fribourg
                                 no owner name found
 - Rate limit        : session creation rate-limited ~1/12s per IP; rotate every QUERIES_PER_SESSION queries
 - Throughput        : ~1,200 queries/hr (QUERIES_PER_SESSION=3, delay=0.3s)
+- Bandwidth         : ~10 KB/parcel query + ~20 KB/session rotation (2 requests via
+                      _rotate_session). Full scan ~147k parcels ≈ ~2.4 GB via proxy.
+                      (Old approach reused new_session() for rotations = 8 requests/rotation
+                      × ~110 KB = ~5.4 GB overhead alone. _rotate_session saves ~4.4 GB.)
 
 FR commune codes (selcom) format:  "{bfs_nr} FR{sector_code}"
 Full commune list fetched live: portal uses 7 districts (BRF=10..16 via selectDistrict.jsp).
@@ -69,11 +73,41 @@ QUERIES_PER_SESSION = 3    # 3 queries per JSESSIONID — empirically ~2-3 succe
 
 # ── Session management ───────────────────────────────────────────────────────
 
+def _rotate_session(proxy_url: str | None = None) -> tuple[requests.Session, str]:
+    """
+    Create a bare JSESSIONID session for mid-scan rotation.
+
+    Only 2 requests: GET INDEX (establishes cookie) + GET COMMUNE (gets xv1).
+    Does NOT re-fetch the 7 district commune pages — those are static and already
+    collected once at scan startup via new_session().  Skipping those 6 POSTs
+    saves ~90 KB per rotation × ~49k rotations ≈ 4.4 GB per full FR scan.
+    """
+    s = requests.Session()
+    s.headers["User-Agent"] = UA
+    if proxy_url:
+        s.proxies.update({"http": proxy_url, "https": proxy_url})
+
+    s.get(INDEX, timeout=15)
+    r = s.get(COMMUNE, timeout=15)
+
+    xv1_tag = BeautifulSoup(r.text, "lxml").find("input", {"name": "xv1"})
+    if not xv1_tag:
+        m = re.search(r'name\s*=\s*"xv1"\s+value\s*=\s*"([^"]+)"', r.text)
+        xv1 = m.group(1) if m else ""
+    else:
+        xv1 = xv1_tag.get("value", "")
+
+    return s, xv1
+
+
 def new_session(proxy_url: str | None = None) -> tuple[requests.Session, str, list[tuple]]:
     """
     Create a fresh JSESSIONID session and return:
       (session, xv1_token, commune_options)
     commune_options: list of (selcom_value, label)
+
+    Called ONCE at scan startup to collect the full 183-selcom commune list.
+    Mid-scan rotations use _rotate_session() instead (2 requests vs 8 here).
 
     The FR portal uses frames: selectDistrict.jsp lists 7 districts (BRF=10..16),
     and POSTing BRF to selectCommune.jsp loads that district's communes.  The
@@ -468,11 +502,13 @@ def scan(communes: list[str] | None = None,
             if skip_existing and already_scanned(conn, "FR", bfs, pnr):
                 continue
 
-            # Rotate session every QUERIES_PER_SESSION queries
+            # Rotate session every QUERIES_PER_SESSION queries.
+            # Use _rotate_session() not new_session() — saves 6 district POSTs
+            # (~90 KB) per rotation; ~4.4 GB over a full 147k-parcel FR scan.
             if queries_this_session >= QUERIES_PER_SESSION:
                 log.debug("Rotating FR session after %d queries", queries_this_session)
                 time.sleep(1)
-                session, xv1, _ = new_session(proxy_url)
+                session, xv1 = _rotate_session(proxy_url)
                 queries_this_session = 0
 
             result = check_owner(session, xv1, selcom, pnr)
@@ -481,7 +517,7 @@ def scan(communes: list[str] | None = None,
 
             if result.get("error") == "session_exhausted":
                 log.warning("Session exhausted early — rotating")
-                session, xv1, _ = new_session(proxy_url)
+                session, xv1 = _rotate_session(proxy_url)
                 queries_this_session = 0
                 result = check_owner(session, xv1, selcom, pnr)
                 queries_this_session += 1
