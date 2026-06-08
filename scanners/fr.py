@@ -12,10 +12,15 @@ FR scanner — Fribourg
                                 no owner name found
 - Rate limit        : session creation rate-limited ~1/12s per IP; rotate every QUERIES_PER_SESSION queries
 - Throughput        : ~1,200 queries/hr (QUERIES_PER_SESSION=3, delay=0.3s)
-- Bandwidth         : ~10 KB/parcel query + ~20 KB/session rotation (2 requests via
-                      _rotate_session). Full scan ~147k parcels ≈ ~2.4 GB via proxy.
-                      (Old approach reused new_session() for rotations = 8 requests/rotation
-                      × ~110 KB = ~5.4 GB overhead alone. _rotate_session saves ~4.4 GB.)
+- Bandwidth         : Probed live 2026-06-09:
+                        Owner-found query response: ~8.5 KB  (e.g. 8,573 / 8,830 bytes)
+                        NOT_FOUND response:         ~5.0 KB
+                        COMMUNE (rotation):          6,853 bytes (1 request only; INDEX
+                                                     skipped — not needed, confirmed live)
+                      Full scan ~147k parcels ≈ ~1.6 GB via proxy (irreducible floor):
+                        queries  ~147k × 8.4 KB avg = ~1.23 GB  (no gzip, no batch, HTML)
+                        rotations ~54k × 6.9 KB     = ~0.37 GB
+                      (Original new_session()-per-rotation approach ≈ 6.9 GB total.)
 
 FR commune codes (selcom) format:  "{bfs_nr} FR{sector_code}"
 Full commune list fetched live: portal uses 7 districts (BRF=10..16 via selectDistrict.jsp).
@@ -83,17 +88,21 @@ def _rotate_session(proxy_url: str | None = None) -> tuple[requests.Session, str
     """
     Create a bare JSESSIONID session for mid-scan rotation.
 
-    Only 2 requests: GET INDEX (establishes cookie) + GET COMMUNE (gets xv1).
-    Does NOT re-fetch the 7 district commune pages — those are static and already
-    collected once at scan startup via new_session().  Skipping those 6 POSTs
-    saves ~90 KB per rotation × ~49k rotations ≈ 4.4 GB per full FR scan.
+    Single request: GET COMMUNE only (~6.9 KB total).
+    - INDEX (indexD.html) is NOT fetched: probed live 2026-06-09 and confirmed
+      that COMMUNE returns 200 + sets JSESSIONID cookie without a prior INDEX
+      visit.  INDEX is a 1 KB HTML frameset with no xv1 token — skipping it
+      saves ~1 KB × ~54k rotations ≈ 54 MB per full FR scan.
+    - The 7-district commune options are NOT re-fetched: those are static and
+      collected once at scan startup via new_session().  Skipping them was the
+      main saving (~4.4 GB) introduced earlier.
     """
     s = requests.Session()
     s.headers["User-Agent"] = UA
     if proxy_url:
         s.proxies.update({"http": proxy_url, "https": proxy_url})
 
-    s.get(INDEX, timeout=15)
+    # Single GET establishes JSESSIONID and returns xv1 — INDEX not needed.
     r = s.get(COMMUNE, timeout=15)
 
     xv1_tag = BeautifulSoup(r.text, "lxml").find("input", {"name": "xv1"})
