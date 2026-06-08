@@ -63,12 +63,18 @@ RATE_LIMIT_NEEDLES = (
 ERROR_PAGE_NEEDLES = (
     "error_msg",               # error page HTML marker (class/id in the portal)
 )
-QUERIES_PER_SESSION = 3    # 3 queries per JSESSIONID — empirically ~2-3 succeed before exhaustion
-# FR portal rate-limits session creation (~1 every 12s per IP).  new_session()
-# takes ~4 s.  ~27% of 2nd/3rd queries return session_exhausted; scanner retries
-# once with a fresh session.  Parcels that fail both attempts are stored with
+# Queries per JSESSIONID before proactive rotation.
+# Empirically: ~2-3 succeed before exhaustion; ~27% of 2nd/3rd queries fail.
+# Higher values mean fewer _rotate_session() calls (each costs ~20 KB) — but also
+# more session_exhausted retries when the session dies early.  Each retry adds
+# one failed query + one _rotate_session() so net savings still positive above 3.
+# Set via FR_QUERIES_PER_SESSION env var; default 5 (safe, reduces rotation 40%).
+# FR portal rate-limits session creation (~1 every 12s per IP). new_session()
+# takes ~4 s. Parcels that fail both attempts (original + retry) are stored with
 # is_herrenlos=NULL and error='session_exhausted'; next run picks them up.
 # 2-3 scan passes converge to ~100% coverage.
+import os as _os
+QUERIES_PER_SESSION = int(_os.environ.get("FR_QUERIES_PER_SESSION", "5"))
 
 
 # ── Session management ───────────────────────────────────────────────────────

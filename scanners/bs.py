@@ -110,9 +110,68 @@ def enumerate_egrids(emin=BS_EMIN, emax=BS_EMAX,
 
 # ── Owner check ─────────────────────────────────────────────────────────────
 
-def check_owner_bs(egrid: str, api_key: str = BS_API_KEY) -> dict:
+# Confirmed live 2026-06-09: the `ids` parameter accepts comma-separated EGRIDs.
+# api.geo.bs.ch returns all matching RealEstates in one response.
+BS_BATCH_SIZE = 20   # parcels per API request; API has no documented batch limit
+
+def check_owner_bs_batch(egrids: list[str], api_key: str = BS_API_KEY) -> dict[str, dict]:
     """
-    BS public-API parcel check.
+    Batch BS owner check — up to BS_BATCH_SIZE EGRIDs per HTTP request.
+
+    Returns {egrid: result_dict} for all requested EGRIDs.
+    EGRIDs absent from the API response are marked is_herrenlos=1 (not in Grundbuch).
+    """
+    try:
+        r = requests.get(BS_INFO_URL,
+                         params={"ids": ",".join(egrids), "apikey": api_key},
+                         timeout=15)
+        if r.status_code == 401:
+            return {e: {"error": "invalid_api_key", "is_herrenlos": None,
+                        "herrenlos_type": None, "claim_possible": None,
+                        "owner": None, "owner_address": None, "raw_response": None}
+                    for e in egrids}
+        if r.status_code != 200:
+            return {e: {"error": f"http_{r.status_code}", "is_herrenlos": None,
+                        "herrenlos_type": None, "claim_possible": None,
+                        "owner": None, "owner_address": None, "raw_response": None}
+                    for e in egrids}
+
+        data = r.json()
+        found = {re["Egrid"] for re in data.get("RealEstates", [])
+                 if isinstance(re, dict) and "Egrid" in re}
+
+        results = {}
+        for e in egrids:
+            if e not in found:
+                results[e] = {"owner": None, "owner_address": None,
+                               "is_herrenlos": 1,
+                               "herrenlos_type": "not_in_grundbuch",
+                               "claim_possible": claim_possible_for("BS", "not_in_grundbuch"),
+                               "raw_response": None, "error": None}
+            else:
+                results[e] = {"owner": None, "owner_address": None,
+                               "is_herrenlos": None,
+                               "herrenlos_type": None, "claim_possible": None,
+                               "raw_response": None,
+                               "error": "owner_lookup_needs_html_path"}
+        return results
+
+    except Exception as exc:
+        return {e: {"owner": None, "owner_address": None,
+                    "is_herrenlos": None,
+                    "herrenlos_type": None, "claim_possible": None,
+                    "raw_response": None, "error": str(exc)}
+                for e in egrids}
+
+
+def check_owner_bs(egrid: str, api_key: str = BS_API_KEY) -> dict:
+    """Single-EGRID wrapper around check_owner_bs_batch (kept for compatibility)."""
+    return check_owner_bs_batch([egrid], api_key).get(egrid, {})
+
+
+def _check_owner_bs_single_doc(egrid: str, api_key: str = BS_API_KEY) -> dict:
+    """
+    Original single-EGRID BS public-API parcel check (kept for reference).
 
     IMPORTANT (verified 2026-05-18 against the live OpenAPI spec at
     https://api.geo.bs.ch/grundstueckinfo/v1/openapi.yaml):
@@ -181,8 +240,14 @@ def check_owner_bs(egrid: str, api_key: str = BS_API_KEY) -> dict:
 def scan(api_key: str = BS_API_KEY,
          limit: int | None = None,
          skip_existing: bool = True,
-         delay: float = 0.5):
-    """Scan BS parcels for herrenlos detection."""
+         delay: float = 0.3):
+    """
+    Scan BS parcels for herrenlos detection.
+
+    Uses batch API requests (BS_BATCH_SIZE=20 EGRIDs per request) — confirmed
+    live 2026-06-09: api.geo.bs.ch accepts comma-separated ids.  Reduces 8,600
+    single-EGRID requests to ~430 batch requests (20× fewer HTTP round-trips).
+    """
     if api_key in ("", "YOUR_FREE_KEY_HERE"):
         print("\n[BS] No API key set. Register at https://api.geo.bs.ch/ (free).")
         print("     Then set env var  BS_API_KEY=<your_key>  or edit scanners/bs.py\n")
@@ -199,46 +264,57 @@ def scan(api_key: str = BS_API_KEY,
         log.info("Cached %d BS parcels (WFS)", len(parcels))
     if limit:
         parcels = parcels[:limit]
-    log.info("Will scan %d BS parcels", len(parcels))
+    log.info("Will scan %d BS parcels (batch size=%d)", len(parcels), BS_BATCH_SIZE)
 
     scanned = errors = herrenlos = 0
 
     with get_conn() as conn:
-        for p in parcels:
-            egrid = p["egrid"]
-            bfs   = p["bfs_nr"]
-            nr    = p["parcel_nr"]
+        # Build list of pending (not-yet-scanned) parcels, then process in batches.
+        pending = [p for p in parcels
+                   if not (skip_existing and
+                           already_scanned(conn, "BS", p["bfs_nr"], str(p["parcel_nr"])))]
 
-            if skip_existing and already_scanned(conn, "BS", bfs, str(nr)):
-                continue
+        log.info("Pending after skip_existing filter: %d parcels", len(pending))
 
-            result = check_owner_bs(egrid, api_key)
-            annotate_herrenlos(result, "BS")
+        for batch_start in range(0, len(pending), BS_BATCH_SIZE):
+            batch = pending[batch_start:batch_start + BS_BATCH_SIZE]
+            egrids = [p["egrid"] for p in batch]
 
-            upsert_parcel(conn, {
-                "egrid":       egrid,
-                "canton":      "BS",
-                "commune":     p.get("commune"),
-                "bfs_nr":      bfs,
-                "parcel_nr":   str(nr),
-                "parcel_type": "Liegenschaft",
-                **result,
-            })
+            results = check_owner_bs_batch(egrids, api_key)
 
-            scanned += 1
-            if result.get("is_herrenlos") == 1:
-                herrenlos += 1
-                log.info("HERRENLOS  %s Nr.%s  EGRID=%s",
-                         p.get("commune", "BS"), nr, egrid)
-            if result.get("error"):
-                errors += 1
-                if result["error"] == "invalid_api_key":
-                    log.error("Invalid BS API key — aborting")
-                    break
+            # Abort on invalid key
+            if any(r.get("error") == "invalid_api_key" for r in results.values()):
+                log.error("Invalid BS API key — aborting")
+                break
 
-            if scanned % 50 == 0:
+            for p in batch:
+                egrid  = p["egrid"]
+                result = results.get(egrid, {"error": "missing_from_batch_response",
+                                             "is_herrenlos": None,
+                                             "herrenlos_type": None, "claim_possible": None,
+                                             "owner": None, "owner_address": None,
+                                             "raw_response": None})
+                annotate_herrenlos(result, "BS")
+                upsert_parcel(conn, {
+                    "egrid":       egrid,
+                    "canton":      "BS",
+                    "commune":     p.get("commune"),
+                    "bfs_nr":      p["bfs_nr"],
+                    "parcel_nr":   str(p["parcel_nr"]),
+                    "parcel_type": "Liegenschaft",
+                    **result,
+                })
+                scanned += 1
+                if result.get("is_herrenlos") == 1:
+                    herrenlos += 1
+                    log.info("HERRENLOS  %s Nr.%s  EGRID=%s",
+                             p.get("commune", "BS"), p["parcel_nr"], egrid)
+                if result.get("error"):
+                    errors += 1
+
+            if scanned % 200 == 0:
                 log.info("Progress %d/%d  herrenlos=%d  errors=%d",
-                         scanned, len(parcels), herrenlos, errors)
+                         scanned, len(pending), herrenlos, errors)
 
             time.sleep(delay)
 

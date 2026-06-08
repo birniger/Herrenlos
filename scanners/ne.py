@@ -12,7 +12,8 @@ STATUS (2026-06): WORKING — pure requests-based, no Playwright needed.
   Parallel scan uses ThreadPoolExecutor: hashlib.pbkdf2_hmac releases the GIL
   so N workers genuinely parallelize across CPU cores.
 
-  Bandwidth: ~7.2 KB/parcel (vs ~155 KB for the old Playwright approach).
+  Bandwidth: ~4.9 KB/parcel typical (disclaimer step skipped on first attempt;
+             ~7.2 KB on retry). vs ~155 KB for the old Playwright approach.
   Solve time: ~3-15 s/parcel depending on PBKDF2 counter draw; parallelizes well.
 
 - EGRID enumeration : WFS GetFeature on sitn.ne.ch layer "ms:parcelles"
@@ -509,16 +510,19 @@ def query_parcel_http(egrid: str, uuid: str,
     """
     Pure requests-based NE parcel owner query — no Playwright needed.
 
-    Bandwidth: ~7.2 KB/parcel (disclaimer + confirmed + captcha + owner response).
+    Bandwidth: ~4.9 KB/parcel (confirmed + captcha + owner response; disclaimer
+               skipped on first attempt — server accepts has_confirmed=true directly).
+               Fallback: ~7.2 KB/parcel when first attempt fails and full flow runs.
     CPU: ~3-15 s for PBKDF2 solve; hashlib releases the GIL so ThreadPoolExecutor
     workers genuinely parallelize across cores.
 
-    Flow:
-      1. GET /owner?uuid=UUID             → disclaimer (2.3 KB)
-      2. GET /owner?uuid=UUID&has_confirmed=true (2.7 KB)
-      3. GET /captcha                     → challenge JSON (0.3 KB)
-      4. PBKDF2/SHA-256 solve             → base64 token
-      5. POST /owner  application/json    → owner HTML (1.9 KB)
+    Flow (optimised — step 1 skipped on first attempt):
+      1. [skipped on attempt 0] GET /owner?uuid=UUID → disclaimer (2.3 KB)
+      2. GET /owner?uuid=UUID&has_confirmed=true      (2.7 KB)
+      3. GET /captcha                                 → challenge JSON (0.3 KB)
+      4. PBKDF2/SHA-256 solve                         → base64 token
+      5. POST /owner  application/json                → owner HTML (1.9 KB)
+    On retry (attempt > 0): full 5-step flow including step 1.
     """
     if not uuid:
         return {"owner": None, "owner_address": None,
@@ -532,13 +536,15 @@ def query_parcel_http(egrid: str, uuid: str,
         if proxies_cfg:
             s.proxies.update(proxies_cfg)
         try:
-            # Step 1: disclaimer
-            r = s.get(f"{OWNER_URL}?uuid={uuid}", timeout=timeout)
-            if r.status_code == 400:
-                return {"owner": None, "owner_address": None,
-                        "is_herrenlos": None, "raw_response": None, "error": "stale_uuid"}
+            if attempt > 0:
+                # Full flow on retry: visit disclaimer page first in case the
+                # server requires it before accepting has_confirmed=true.
+                r = s.get(f"{OWNER_URL}?uuid={uuid}", timeout=timeout)
+                if r.status_code == 400:
+                    return {"owner": None, "owner_address": None,
+                            "is_herrenlos": None, "raw_response": None, "error": "stale_uuid"}
 
-            # Step 2: confirm disclaimer
+            # Step 2 (attempt 0: direct skip; attempt > 0: after step 1 above)
             r = s.get(f"{OWNER_URL}?uuid={uuid}&has_confirmed=true", timeout=timeout)
             if r.status_code == 400:
                 return {"owner": None, "owner_address": None,

@@ -62,8 +62,10 @@ jobs:
       # NE/FR/UR: geo-blocked from datacenter IPs — Swiss residential proxy via DataImpulse.
       # BS: public API with free key — no proxy needed, no geo-blocking.
       ELIGIBLE_CANTONS: "ju sz sh gr ne fr ur bs bl"
-      # NE: 2 workers max (single proxy IP rate-limits the Altcha /captcha endpoint at 8)
-      NE_WORKERS: "2"
+      # NE: 4 workers on CI — DataImpulse assigns a fresh CH residential IP per new
+      #     connection (per parcel), so the captcha server never sees >5 req from any
+      #     IP. NE_WORKERS=2 was for the local laptop (shared IP). 4 = safe on CI.
+      NE_WORKERS: "4"
       # NE / FR / UR — DataImpulse Swiss residential proxy (geo-blocked from datacenter IPs)
       NE_PROXY_LIST: ${{ secrets.DATAIMPULSE_PROXY }}
       FR_PROXY_LIST: ${{ secrets.DATAIMPULSE_PROXY }}
