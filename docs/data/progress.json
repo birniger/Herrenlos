@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-08T18:05:24+00:00",
+  "generated_at": "2026-06-08T18:10:55+00:00",
   "cantons": [
     {
       "canton": "AG",
@@ -43,12 +43,12 @@
     {
       "canton": "BS",
       "enumerated": 8594,
-      "scanned": 20,
+      "scanned": 49,
       "herrenlos": 0,
       "errors": 0,
-      "percent": 0.2,
+      "percent": 0.6,
       "estimated_total": 8594,
-      "last_scan_at": "2026-06-08 18:05:19",
+      "last_scan_at": "2026-06-08 18:10:50",
       "access": "free_key",
       "test_group": "captcha_pow",
       "rate_limit": "HTML viewer: 10 req/day/IP (reCAPTCHA Enterprise); metadata API: unlimited with free key"
@@ -61,7 +61,7 @@
       "errors": 5430,
       "percent": 1.5,
       "estimated_total": 147148,
-      "last_scan_at": "2026-06-08 18:05:17",
+      "last_scan_at": "2026-06-08 18:10:44",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -108,12 +108,12 @@
     {
       "canton": "NE",
       "enumerated": 89701,
-      "scanned": 757,
+      "scanned": 899,
       "herrenlos": 0,
-      "errors": 1533,
-      "percent": 0.8,
+      "errors": 1391,
+      "percent": 1.0,
       "estimated_total": 89701,
-      "last_scan_at": "2026-06-08 18:05:22",
+      "last_scan_at": "2026-06-08 18:10:52",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
@@ -147,12 +147,12 @@
     {
       "canton": "SO",
       "enumerated": 133897,
-      "scanned": 0,
+      "scanned": 1,
       "herrenlos": 0,
-      "errors": 18,
+      "errors": 17,
       "percent": 0.0,
       "estimated_total": 133897,
-      "last_scan_at": "2026-06-08 18:05:00",
+      "last_scan_at": "2026-06-08 18:10:45",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "reCAPTCHA v3 score-based; bot-detection blocks from datacenter IPs"
@@ -199,9 +199,9 @@
   ],
   "totals": {
     "enumerated": 1524692,
-    "scanned": 70036,
+    "scanned": 70208,
     "herrenlos": 26,
-    "errors": 22149,
+    "errors": 22006,
     "cantons": 15
   }
 }
