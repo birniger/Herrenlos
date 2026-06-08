@@ -32,7 +32,7 @@ from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, s
 from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
 from scanners.utils import (
     is_herrenlos_owner_text, claim_possible_for,
-    DEFAULT_UA,
+    DEFAULT_UA, load_proxies,
 )
 
 log = logging.getLogger("FR")
@@ -69,7 +69,7 @@ QUERIES_PER_SESSION = 3    # 3 queries per JSESSIONID — empirically ~2-3 succe
 
 # ── Session management ───────────────────────────────────────────────────────
 
-def new_session() -> tuple[requests.Session, str, list[tuple]]:
+def new_session(proxy_url: str | None = None) -> tuple[requests.Session, str, list[tuple]]:
     """
     Create a fresh JSESSIONID session and return:
       (session, xv1_token, commune_options)
@@ -80,6 +80,10 @@ def new_session() -> tuple[requests.Session, str, list[tuple]]:
     default GET of selectCommune.jsp only shows Saane/Sarine (BRF=10, ~40 options).
     We must iterate over all 7 districts to get the full 183-selcom list that
     covers all 147k enum parcels (vs 28k with Saane only).
+
+    proxy_url: optional HTTP proxy (e.g. DataImpulse residential) — keycloak.fr.ch
+               geo-blocks datacenter IPs, so a Swiss residential proxy is required
+               when running from GitHub Actions / non-Swiss IPs.
     """
     # BRF district codes: 10=Saane, 11=Greyerz, 12=Sense, 13=Broye,
     #                     14=See, 15=Vivisbach, 16=Glane
@@ -87,6 +91,9 @@ def new_session() -> tuple[requests.Session, str, list[tuple]]:
 
     s = requests.Session()
     s.headers["User-Agent"] = UA
+    if proxy_url:
+        s.proxies.update({"http": proxy_url, "https": proxy_url})
+        log.debug("FR session via proxy %s…", proxy_url.split("@")[-1])
 
     s.get(INDEX, timeout=15)
 
@@ -288,8 +295,17 @@ def scan(communes: list[str] | None = None,
     """
     init_db()
 
+    # keycloak.fr.ch geo-blocks datacenter IPs — Swiss residential proxy required
+    # when running from CI / non-Swiss machines.
+    proxy_list = load_proxies("FR_PROXY_LIST")
+    proxy_url  = proxy_list[0] if proxy_list else None
+    if proxy_url:
+        log.info("FR using proxy: %s…", proxy_url.split("@")[-1])
+    else:
+        log.info("FR running without proxy (needs Swiss IP for keycloak.fr.ch)")
+
     log.info("Fetching FR commune list …")
-    _, _, all_options = new_session()
+    _, _, all_options = new_session(proxy_url)
 
     # Build selcom → label mapping.  Each FR commune has a SELCOM value of the
     # form "{bfs_nr} {NBIdent}" (e.g. "2234 FR221512").  Merged communes have
@@ -429,7 +445,7 @@ def scan(communes: list[str] | None = None,
     if limit:
         parcels = parcels[:limit]
 
-    session, xv1, _ = new_session()
+    session, xv1, _ = new_session(proxy_url)
     queries_this_session = 0
     scanned = errors = herrenlos = total = 0
     # Circuit breaker: if this many consecutive parcels double-fail (original +
@@ -456,7 +472,7 @@ def scan(communes: list[str] | None = None,
             if queries_this_session >= QUERIES_PER_SESSION:
                 log.debug("Rotating FR session after %d queries", queries_this_session)
                 time.sleep(1)
-                session, xv1, _ = new_session()
+                session, xv1, _ = new_session(proxy_url)
                 queries_this_session = 0
 
             result = check_owner(session, xv1, selcom, pnr)
@@ -465,7 +481,7 @@ def scan(communes: list[str] | None = None,
 
             if result.get("error") == "session_exhausted":
                 log.warning("Session exhausted early — rotating")
-                session, xv1, _ = new_session()
+                session, xv1, _ = new_session(proxy_url)
                 queries_this_session = 0
                 result = check_owner(session, xv1, selcom, pnr)
                 queries_this_session += 1

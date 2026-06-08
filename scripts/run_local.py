@@ -1,38 +1,30 @@
 #!/usr/bin/env python3
 """
-Local bulk scanner — runs all eligible cantons in parallel, each in its own
+Local bulk scanner — runs login-dependent cantons in parallel, each in its own
 thread with its own subprocess, cooldown, and error handling.
 
-Eligible for bulk scanning from the laptop:
+Eligible for bulk scanning from the laptop (login-only cantons):
 
     BE  — one-time AGOV/BE-Login (Safari + AppleScript on macOS); ~400k parcels
           NOTE: GRUDIS enforces a per-account daily quota (account-level, not IP).
           When the quota is exhausted the loop cools BE down until midnight Bern time.
     VS  — one-time SwissID 2FA (Playwright window); ~210k parcels
-    FR  — no login, no CAPTCHA; needs residential IP (keycloak.fr.ch geo-blocks
-          GitHub Actions datacenter IPs). ~147k parcels; ~100-300/day.
-    NE  — no login; Playwright auto-solves Altcha PoW. sitn.ne.ch blocks datacenter
-          IPs, so residential only. ~91k parcels; ~50/day quota.
     BL  — needs ANTHROPIC_API_KEY (Claude vision for handwritten CAPTCHA); ~70k parcels
 
-NOT included by design:
-  - JU, SZ, SH, GR : handled by GitHub Actions.
-  - NE was previously also listed here but sitn.ne.ch blocks datacenter IPs,
-    so it was removed from CI and added here instead.
-  - UR              : daily quota (10/day), geo-blocked from CI; use `python main.py ur`.
-  - GE              : Imperva blocks ~30/IP even from residential; needs proxies
-                      AND ANTHROPIC_API_KEY. Use `python main.py ge` separately.
-  - SO              : the scanner is wired (scanners/so_public.py) but in practice
-                      Google reCAPTCHA v3 degrades the score after ~2 successful
-                      queries even from a Swiss residential IP — empirically
-                      observed 96%+ failure rate. SO actually needs proxies
-                      (was previously thought not to). Run via `python main.py so`
-                      only after proxies/CAPTCHA service are wired.
-  - BS-public, etc. : need proxies / institutional accounts.
+NOT included — handled by GitHub Actions CI instead:
+  - JU, SZ   : OCR CAPTCHA only, no login, no geo-block. Always on CI.
+  - SH        : Litport hub-us-8 rotating proxy (100 req/day/IP). On CI.
+  - GR        : Litport hub-us-10 rotating proxy (10 req/day/IP). On CI.
+  - NE        : DataImpulse Swiss residential proxy on CI (sitn.ne.ch blocks DCs).
+  - FR        : DataImpulse Swiss residential proxy on CI (keycloak.fr.ch blocks DCs).
+  - UR        : DataImpulse Swiss residential proxy on CI (geo.ur.ch blocks DCs).
+  - BS        : Free REST API key on CI — no proxy or geo-blocking needed.
+
+NOT included — needs special handling, run manually:
+  - SO, GE    : reCAPTCHA/Imperva; 94%+ failure rate. Run `python main.py so/ge`.
 
 Parallel mode: one thread per canton, each running `python main.py <canton>
---limit ROTATION_LIMIT` in a tight loop. Cantons no longer take turns; FR,
-VS, BE, and BL scan simultaneously and restart as soon as their slice finishes.
+--limit ROTATION_LIMIT` in a tight loop. BE, VS, BL scan simultaneously.
 
 Push to GitHub is debounced: at most one push every PUSH_DEBOUNCE_SECONDS
 regardless of how many cantons finish around the same time.
@@ -41,15 +33,14 @@ Pre-flight: at startup, checks each eligible canton's prerequisites:
   - BE  : ~/.herrenlos_scanner/be_token.json exists?
   - VS  : ~/.herrenlos_scanner/vs_token.json exists?
   - BL  : ANTHROPIC_API_KEY in env / .env?
-  - FR  : nothing -- just needs a Swiss residential IP
 
 Configuration:
   LOCAL_ELIGIBLE_CANTONS env var (space-separated) overrides the default list.
   LOCAL_ROTATION_LIMIT   env var overrides ROTATION_LIMIT (default 3000).
 
 Usage:
-  python scripts/run_local.py                 # full default set
-  LOCAL_ELIGIBLE_CANTONS="fr bl" python scripts/run_local.py
+  python scripts/run_local.py                 # BE + VS + BL
+  LOCAL_ELIGIBLE_CANTONS="be vs" python scripts/run_local.py
 
 For auto-restart across crashes / network outages, use the bash wrapper:
   ./scripts/scan-loop.sh
@@ -96,7 +87,10 @@ if _env_file.exists():
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
-LOCAL_ELIGIBLE_DEFAULT = ["be", "vs", "fr", "ne", "bl"]
+# Only login-dependent cantons run locally.
+# NE, FR, UR, BS — now on CI (DataImpulse residential proxy for geo-blocked ones).
+# SO, GE — reCAPTCHA/Imperva; 94%+ failure rate; run manually via `python main.py so/ge`.
+LOCAL_ELIGIBLE_DEFAULT = ["be", "vs", "bl"]
 
 # enum_count below this = "not yet enumerated" (test seeds / empty).
 REAL_ENUM_MIN = 100

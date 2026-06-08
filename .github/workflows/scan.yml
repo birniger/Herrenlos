@@ -9,18 +9,24 @@
 # CI-eligible cantons (parcel counts verified via geodienste WFS):
 #   JU  — OCR-solvable image CAPTCHA (ddddocr), no login    (~14k parcels)
 #   SZ  — OCR-solvable image CAPTCHA (ddddocr), no login    (~50k parcels)
-#   SH  — 100 req/day/IP; rotated via WEBSHARE_PROXY_LIST   (~43k parcels)
-#         10 proxies → 900 parcels/day → ~48 CI runs to complete.
-#   GR  — 10 req/day/IP; rotated via WEBSHARE_PROXY_LIST    (~226k parcels)
-#         10 proxies → 90 parcels/day → ~2,500 CI runs (slow but passive).
+#   SH  — 100 req/day/IP; rotated via Litport hub-us-8      (~43k parcels)
+#         2 tokens × 100 req/day → ~200/day → ~215 CI runs to complete.
+#   GR  — 10 req/day/IP; rotated via Litport hub-us-10      (~226k parcels)
+#         2 tokens × 10 req/day → ~20/day → ~11,300 CI runs (slow but passive).
+#   NE  — Altcha PoW CAPTCHA (PBKDF2, auto-solved); Swiss residential proxy
+#         via DATAIMPULSE_PROXY (sitn.ne.ch blocks datacenter IPs). 2 workers.
+#         ~91k parcels; ~820/hr.
+#   FR  — No CAPTCHA, no login; Swiss residential proxy via DATAIMPULSE_PROXY
+#         (keycloak.fr.ch geo-blocks datacenter IPs). ~147k parcels; ~1200/hr.
+#   UR  — No CAPTCHA, no login; Swiss residential proxy via DATAIMPULSE_PROXY
+#         (geo.ur.ch geo-blocks datacenter IPs). ~5k parcels.
+#   BS  — REST API (api.geo.bs.ch) with free API key; no geo-blocking, no proxy
+#         needed. ~8.6k parcels; API key in BS_API_KEY secret.
 #
 # Run locally instead (see main.py for details):
-#   FR  — keycloak.fr.ch geo-blocks datacenter IPs; Swiss residential IP only
-#   NE  — sitn.ne.ch blocks datacenter proxies; Swiss residential IP only
-#   UR  — geo.ur.ch geo-blocks datacenter IPs
 #   BE, VS  — one-time interactive login; token cached; macOS/laptop only
 #   BL      — needs ANTHROPIC_API_KEY for handwritten CAPTCHA
-#   SO, GE  — reCAPTCHA/Imperva; needs proxies (+ ANTHROPIC_API_KEY for GE)
+#   SO, GE  — reCAPTCHA/Imperva; 94%+ failure rate even from residential IPs
 
 name: scan
 
@@ -52,14 +58,20 @@ jobs:
       # deprecation warning and ensures compatibility before the forced cutover.
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       # Cantons eligible for CI scanning.
-      # ne — REMOVED: sitn.ne.ch blocks datacenter proxies; laptop only (residential IP)
-      # fr — REMOVED: keycloak.fr.ch geo-blocks datacenter IPs; laptop only
-      ELIGIBLE_CANTONS: "ju sz sh gr"
-      # Optional: BS needs a free API key (one-time registration at api.geo.bs.ch).
+      # NE/FR/UR: geo-blocked from datacenter IPs — Swiss residential proxy via DataImpulse.
+      # BS: public API with free key — no proxy needed, no geo-blocking.
+      ELIGIBLE_CANTONS: "ju sz sh gr ne fr ur bs"
+      # NE: 2 workers max (single proxy IP rate-limits the Altcha /captcha endpoint at 8)
+      NE_WORKERS: "2"
+      # NE / FR / UR — DataImpulse Swiss residential proxy (geo-blocked from datacenter IPs)
+      NE_PROXY_LIST: ${{ secrets.DATAIMPULSE_PROXY }}
+      FR_PROXY_LIST: ${{ secrets.DATAIMPULSE_PROXY }}
+      UR_PROXY_LIST: ${{ secrets.DATAIMPULSE_PROXY }}
+      # BS: free REST API key (no geo-blocking, no proxy needed)
       BS_API_KEY: ${{ secrets.BS_API_KEY }}
-      # SH: Webshare datacenter proxies (100 req/day/IP quota)
+      # SH: Litport DC Shared Rotating hub-us-8 (rotation=150s, 100 req/day/IP quota)
       SH_PROXY_LIST: ${{ secrets.WEBSHARE_PROXY_LIST }}
-      # GR: Litport DC Shared Rotating — 4 tokens, rotation set to 5s on Litport dashboard
+      # GR: Litport DC Shared Rotating hub-us-10 (rotation=5s, 10 req/day/IP quota)
       GR_PROXY_LIST: ${{ secrets.GR_PROXY_LIST }}
 
     steps:
