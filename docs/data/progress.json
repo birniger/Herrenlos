@@ -1,6 +1,19 @@
 {
-  "generated_at": "2026-06-08T17:43:43+00:00",
+  "generated_at": "2026-06-08T17:46:27+00:00",
   "cantons": [
+    {
+      "canton": "AG",
+      "enumerated": 0,
+      "scanned": 0,
+      "herrenlos": 0,
+      "errors": 0,
+      "percent": 0.0,
+      "estimated_total": 130000,
+      "last_scan_at": null,
+      "access": "unbuilt",
+      "test_group": "unbuilt",
+      "rate_limit": "~10 free queries per registered user (login required)"
+    },
     {
       "canton": "BE",
       "enumerated": 426009,
@@ -13,6 +26,32 @@
       "access": "own_account",
       "test_group": "own_login",
       "rate_limit": "per-account (personal AGOV identity) \u2014 CONFIRMED per-account (empirically verified: fresh browser session + new token still returned 429, proving the limit is on the account, not the IP). Limit appears to be on the person/owner-name resolution step (GET /api/gb/person/master), not on parcel lookups. Threshold count unknown. access_token 5min / refresh_token 30min rotating; session alive while running, re-auth after >~30min gap; IP rotation cannot help \u2014 account is the hard constraint"
+    },
+    {
+      "canton": "BL",
+      "enumerated": 0,
+      "scanned": 0,
+      "herrenlos": 0,
+      "errors": 0,
+      "percent": 0.0,
+      "estimated_total": 70000,
+      "last_scan_at": null,
+      "access": "public",
+      "test_group": "captcha_ocr",
+      "rate_limit": "CAPTCHA per query; portal cooldown after ~10 rapid (built-in 4s retry delay)"
+    },
+    {
+      "canton": "BS",
+      "enumerated": 0,
+      "scanned": 0,
+      "herrenlos": 0,
+      "errors": 0,
+      "percent": 0.0,
+      "estimated_total": 7000,
+      "last_scan_at": null,
+      "access": "free_key",
+      "test_group": "captcha_pow",
+      "rate_limit": "HTML viewer: 10 req/day/IP (reCAPTCHA Enterprise); metadata API: unlimited with free key"
     },
     {
       "canton": "FR",
@@ -69,15 +108,28 @@
     {
       "canton": "NE",
       "enumerated": 89701,
-      "scanned": 134,
+      "scanned": 212,
       "herrenlos": 0,
-      "errors": 222,
-      "percent": 0.1,
+      "errors": 433,
+      "percent": 0.2,
       "estimated_total": 89701,
-      "last_scan_at": "2026-06-08 17:43:42",
+      "last_scan_at": "2026-06-08 17:46:26",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
+    },
+    {
+      "canton": "SG",
+      "enumerated": 0,
+      "scanned": 0,
+      "herrenlos": 0,
+      "errors": 0,
+      "percent": 0.0,
+      "estimated_total": 115000,
+      "last_scan_at": null,
+      "access": "unbuilt",
+      "test_group": "unbuilt",
+      "rate_limit": "Public via reCAPTCHA Enterprise v2 checkbox per parcel"
     },
     {
       "canton": "SH",
@@ -97,10 +149,10 @@
       "enumerated": 133897,
       "scanned": 0,
       "herrenlos": 0,
-      "errors": 3,
+      "errors": 5,
       "percent": 0.0,
       "estimated_total": 133897,
-      "last_scan_at": "2026-06-08 17:43:14",
+      "last_scan_at": "2026-06-08 17:46:04",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "reCAPTCHA v3 score-based; bot-detection blocks from datacenter IPs"
@@ -147,9 +199,9 @@
   ],
   "totals": {
     "enumerated": 1516098,
-    "scanned": 69393,
+    "scanned": 69471,
     "herrenlos": 26,
-    "errors": 20823,
-    "cantons": 11
+    "errors": 21036,
+    "cantons": 15
   }
 }

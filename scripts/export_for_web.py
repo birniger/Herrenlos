@@ -144,6 +144,26 @@ def build_progress() -> dict:
                 "rate_limit":      status.get("rate_limit"),
             })
 
+    # Final fallback: ensure every scannable canton appears even if it has
+    # no rows in parcels AND no entry in enum.parcel_enum (e.g. UR, which
+    # enumerates inline from WFS rather than caching into parcel_enum).
+    seen = {c["canton"] for c in out_cantons}
+    for canton, status in CANTON_STATUS.items():
+        if canton in seen:
+            continue
+        if not _is_scannable(canton):
+            continue
+        out_cantons.append({
+            "canton":          canton,
+            "enumerated":      0,
+            "scanned": 0, "herrenlos": 0, "errors": 0, "percent": 0.0,
+            "estimated_total": CANTON_TOTAL_ESTIMATE.get(canton),
+            "last_scan_at":    None,
+            "access":          status.get("access"),
+            "test_group":      status.get("test_group"),
+            "rate_limit":      status.get("rate_limit"),
+        })
+
     return {
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "cantons":      sorted(out_cantons, key=lambda c: c["canton"]),
