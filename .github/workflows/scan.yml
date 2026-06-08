@@ -57,10 +57,10 @@ jobs:
       ELIGIBLE_CANTONS: "ju sz sh gr"
       # Optional: BS needs a free API key (one-time registration at api.geo.bs.ch).
       BS_API_KEY: ${{ secrets.BS_API_KEY }}
-      # Webshare datacenter proxy list for quota-rotating cantons (SH, GR).
-      # Add comma-separated host:port:user:pass lines as repo secret WEBSHARE_PROXY_LIST.
+      # SH: Webshare datacenter proxies (100 req/day/IP quota)
       SH_PROXY_LIST: ${{ secrets.WEBSHARE_PROXY_LIST }}
-      GR_PROXY_LIST: ${{ secrets.WEBSHARE_PROXY_LIST }}
+      # GR: Litport DC Shared Rotating — 4 tokens, rotation set to 5s on Litport dashboard
+      GR_PROXY_LIST: ${{ secrets.GR_PROXY_LIST }}
 
     steps:
       - uses: actions/checkout@v4
