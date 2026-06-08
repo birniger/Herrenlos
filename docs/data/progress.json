@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-08T17:38:20+00:00",
+  "generated_at": "2026-06-08T17:43:43+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -22,7 +22,7 @@
       "errors": 5430,
       "percent": 1.5,
       "estimated_total": 147148,
-      "last_scan_at": "2026-06-08 17:38:17",
+      "last_scan_at": "2026-06-08 17:43:37",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -68,13 +68,13 @@
     },
     {
       "canton": "NE",
-      "enumerated": 0,
-      "scanned": 0,
+      "enumerated": 89701,
+      "scanned": 134,
       "herrenlos": 0,
-      "errors": 97,
-      "percent": 0.0,
-      "estimated_total": 86000,
-      "last_scan_at": "2026-06-08 17:30:41",
+      "errors": 222,
+      "percent": 0.1,
+      "estimated_total": 89701,
+      "last_scan_at": "2026-06-08 17:43:42",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
@@ -93,6 +93,19 @@
       "rate_limit": "100 req/day/IP"
     },
     {
+      "canton": "SO",
+      "enumerated": 133897,
+      "scanned": 0,
+      "herrenlos": 0,
+      "errors": 3,
+      "percent": 0.0,
+      "estimated_total": 133897,
+      "last_scan_at": "2026-06-08 17:43:14",
+      "access": "public",
+      "test_group": "captcha_pow",
+      "rate_limit": "reCAPTCHA v3 score-based; bot-detection blocks from datacenter IPs"
+    },
+    {
       "canton": "SZ",
       "enumerated": 50217,
       "scanned": 49511,
@@ -104,6 +117,19 @@
       "access": "public",
       "test_group": "captcha_ocr",
       "rate_limit": "CAPTCHA per query only"
+    },
+    {
+      "canton": "UR",
+      "enumerated": 0,
+      "scanned": 15,
+      "herrenlos": 0,
+      "errors": 0,
+      "percent": 0.1,
+      "estimated_total": 20000,
+      "last_scan_at": "2026-06-08 17:39:20",
+      "access": "public",
+      "test_group": "rest",
+      "rate_limit": "~14 req/day/IP before math CAPTCHA; geo-blocked from non-Swiss IPs"
     },
     {
       "canton": "VS",
@@ -120,10 +146,10 @@
     }
   ],
   "totals": {
-    "enumerated": 1292500,
-    "scanned": 69244,
+    "enumerated": 1516098,
+    "scanned": 69393,
     "herrenlos": 26,
-    "errors": 20695,
-    "cantons": 9
+    "errors": 20823,
+    "cantons": 11
   }
 }
