@@ -1,7 +1,183 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-06-08T19:45:27+00:00",
+  "generated_at": "2026-06-08T19:53:29+00:00",
   "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.575860023498535,
+          47.56892395019531
+        ]
+      },
+      "properties": {
+        "egrid": "CH798978996726",
+        "canton": "BS",
+        "commune": "BSS100000000",
+        "bfs_nr": "2701",
+        "parcel_nr": "1732",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-06-08 19:51:51"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.575763702392578,
+          47.56886291503906
+        ]
+      },
+      "properties": {
+        "egrid": "CH707867998962",
+        "canton": "BS",
+        "commune": "BSS100000000",
+        "bfs_nr": "2701",
+        "parcel_nr": "1733",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-06-08 19:52:01"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.579071998596191,
+          47.550941467285156
+        ]
+      },
+      "properties": {
+        "egrid": "CH267889676160",
+        "canton": "BS",
+        "commune": "BSS300000000",
+        "bfs_nr": "2701",
+        "parcel_nr": "1734",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-06-08 19:49:50"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.589817523956299,
+          47.578086853027344
+        ]
+      },
+      "properties": {
+        "egrid": "CH327279896745",
+        "canton": "BS",
+        "commune": "BSS700000000",
+        "bfs_nr": "2701",
+        "parcel_nr": "2085",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-06-08 19:50:00"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.5896992683410645,
+          47.57810592651367
+        ]
+      },
+      "properties": {
+        "egrid": "CH298972706746",
+        "canton": "BS",
+        "commune": "BSS700000000",
+        "bfs_nr": "2701",
+        "parcel_nr": "2595",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-06-08 19:49:55"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.612003803253174,
+          47.5673828125
+        ]
+      },
+      "properties": {
+        "egrid": "CH138971676108",
+        "canton": "BS",
+        "commune": "BSS800000000",
+        "bfs_nr": "2701",
+        "parcel_nr": "1091",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-06-08 19:50:10"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.612649917602539,
+          47.56734085083008
+        ]
+      },
+      "properties": {
+        "egrid": "CH567089671625",
+        "canton": "BS",
+        "commune": "BSS800000000",
+        "bfs_nr": "2701",
+        "parcel_nr": "1123",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-06-08 19:51:31"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7.601789951324463,
+          47.560401916503906
+        ]
+      },
+      "properties": {
+        "egrid": "CH627182896740",
+        "canton": "BS",
+        "commune": "BSS800000000",
+        "bfs_nr": "2701",
+        "parcel_nr": "1303",
+        "owner": null,
+        "owner_address": null,
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-06-08 19:50:05"
+      }
+    },
     {
       "type": "Feature",
       "geometry": {
