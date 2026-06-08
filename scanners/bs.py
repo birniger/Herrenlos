@@ -28,8 +28,9 @@ import requests
 import sys
 import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
-from db import get_conn, init_db, already_scanned, upsert_parcel
+from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
 from scanners.utils import annotate_herrenlos, claim_possible_for
+from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
 
 log = logging.getLogger("BS")
 
@@ -188,8 +189,14 @@ def scan(api_key: str = BS_API_KEY,
         return
 
     init_db()
-    log.info("Enumerating BS parcels via swisstopo grid …")
-    parcels = enumerate_egrids()
+    with get_conn() as conn:
+        parcels = enum_cached(conn, "BS")
+    if not parcels:
+        log.info("Enumerating BS parcels via geodienste WFS (~30s) …")
+        parcels = wfs_enumerate_canton("BS")
+        with get_conn() as conn:
+            store_enum(conn, "BS", parcels)
+        log.info("Cached %d BS parcels (WFS)", len(parcels))
     if limit:
         parcels = parcels[:limit]
     log.info("Will scan %d BS parcels", len(parcels))
