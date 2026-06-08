@@ -81,6 +81,7 @@ import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel, enum_cached, store_enum
 from scanners.utils import is_herrenlos_owner_text, claim_possible_for
+from scanners.wfs_enum import enumerate_canton as wfs_enumerate_canton
 
 log = logging.getLogger("BS")
 
@@ -349,11 +350,11 @@ def scan(limit: int | None = None,
     with get_conn() as conn:
         cached = enum_cached(conn, "BS")
     if not cached:
-        from scanners.bs import enumerate_egrids
-        log.info("No BS parcel cache — running swisstopo grid scan …")
-        cached = enumerate_egrids()
+        log.info("No BS parcel cache — enumerating via geodienste WFS (~30s) …")
+        cached = wfs_enumerate_canton("BS")
         with get_conn() as conn:
             store_enum(conn, "BS", cached)
+        log.info("Cached %d BS parcels (WFS)", len(cached))
 
     if limit:
         cached = cached[:limit]
