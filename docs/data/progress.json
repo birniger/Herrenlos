@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-08T21:36:28+00:00",
+  "generated_at": "2026-06-08T21:40:45+00:00",
   "cantons": [
     {
       "canton": "AG",
@@ -43,12 +43,12 @@
     {
       "canton": "BS",
       "enumerated": 8594,
-      "scanned": 874,
-      "herrenlos": 25,
+      "scanned": 1006,
+      "herrenlos": 26,
       "errors": 8,
-      "percent": 10.2,
+      "percent": 11.7,
       "estimated_total": 8594,
-      "last_scan_at": "2026-06-08 21:10:15",
+      "last_scan_at": "2026-06-08 21:40:37",
       "access": "free_key",
       "test_group": "captcha_pow",
       "rate_limit": "HTML viewer: 10 req/day/IP (reCAPTCHA Enterprise); metadata API: unlimited with free key"
@@ -87,7 +87,7 @@
       "errors": 4546,
       "percent": 0.3,
       "estimated_total": 225843,
-      "last_scan_at": "2026-06-08 16:15:27",
+      "last_scan_at": "2026-06-04 01:32:16",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "10 req/day/IP"
@@ -113,7 +113,7 @@
       "errors": 2117,
       "percent": 1.0,
       "estimated_total": 89701,
-      "last_scan_at": "2026-06-08 21:10:24",
+      "last_scan_at": "2026-06-08 21:40:35",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
@@ -139,7 +139,7 @@
       "errors": 9910,
       "percent": 2.1,
       "estimated_total": 43256,
-      "last_scan_at": "2026-06-08 16:13:43",
+      "last_scan_at": "2026-05-31 19:51:10",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "100 req/day/IP"
@@ -149,10 +149,10 @@
       "enumerated": 133897,
       "scanned": 6,
       "herrenlos": 0,
-      "errors": 474,
+      "errors": 540,
       "percent": 0.0,
       "estimated_total": 133897,
-      "last_scan_at": "2026-06-08 21:10:28",
+      "last_scan_at": "2026-06-08 21:40:36",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "reCAPTCHA v3 score-based; bot-detection blocks from datacenter IPs"
@@ -165,7 +165,7 @@
       "errors": 704,
       "percent": 98.6,
       "estimated_total": 50217,
-      "last_scan_at": "2026-06-08 21:36:26",
+      "last_scan_at": "2026-06-01 00:27:55",
       "access": "public",
       "test_group": "captcha_ocr",
       "rate_limit": "CAPTCHA per query only"
@@ -199,9 +199,9 @@
   ],
   "totals": {
     "enumerated": 1524692,
-    "scanned": 71165,
-    "herrenlos": 51,
-    "errors": 23096,
+    "scanned": 71297,
+    "herrenlos": 52,
+    "errors": 23162,
     "cantons": 15
   }
 }
