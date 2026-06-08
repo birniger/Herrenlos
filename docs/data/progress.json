@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-08T16:50:22+00:00",
+  "generated_at": "2026-06-08T16:55:41+00:00",
   "cantons": [
     {
       "canton": "BE",
@@ -22,7 +22,7 @@
       "errors": 5430,
       "percent": 1.5,
       "estimated_total": 147148,
-      "last_scan_at": "2026-06-08 16:50:18",
+      "last_scan_at": "2026-06-08 16:55:37",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -74,7 +74,7 @@
       "errors": 97,
       "percent": 0.0,
       "estimated_total": 90361,
-      "last_scan_at": "2026-06-08 16:47:48",
+      "last_scan_at": "2026-06-08 16:53:55",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
