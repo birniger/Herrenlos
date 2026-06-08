@@ -1,30 +1,35 @@
 """
 NE scanner — Neuchâtel
 =======================
-STATUS (2026-05): WORKING — uses Playwright to handle Altcha v3 widget.
+STATUS (2026-06): WORKING — pure requests-based, no Playwright needed.
   WFS enumeration (sitn.ne.ch WFS) provides EGRIDs + UUIDs.
-  Owner lookup uses a persistent headless Chromium browser:
-    - navigate to /owner?uuid=<UUID>
-    - intercept the POST /owner response (Altcha auto-solves PoW)
-    - parse owner HTML from response body
-  The requests-based Altcha solver is kept as documentation but is NOT used
-  (Altcha v3 PBKDF2/SHA-256 payload format differs from what the server expects).
+  Owner lookup uses plain HTTP + local PBKDF2/SHA-256 Altcha solve:
+    1. GET /owner?uuid=UUID             → disclaimer page
+    2. GET /owner?uuid=UUID&has_confirmed=true
+    3. GET /captcha                     → PBKDF2/SHA-256 challenge
+    4. Solve PBKDF2 locally             → base64 token
+    5. POST /owner  (application/json)  → owner HTML response
+  Parallel scan uses ThreadPoolExecutor: hashlib.pbkdf2_hmac releases the GIL
+  so N workers genuinely parallelize across CPU cores.
+
+  Bandwidth: ~7.2 KB/parcel (vs ~155 KB for the old Playwright approach).
+  Solve time: ~3-15 s/parcel depending on PBKDF2 counter draw; parallelizes well.
 
 - EGRID enumeration : WFS GetFeature on sitn.ne.ch layer "ms:parcelles"
                       Returns egrid + url_terris_v2 (contains owner UUID).
                       Paginated, ~91k parcels (verified 2026-05). Cached in enum.parcel_enum.
-- Owner lookup      : Playwright navigates to /owner?uuid={UUID}
-                      Altcha widget auto-solves PoW (PBKDF2/SHA-256)
-                      POST /owner response intercepted → parsed for owner
-- Rate limit        : ~50 queries/day per IP (anonymous). Altcha CPU ~3-30s/query.
+- Owner lookup      : HTTP POST /owner with locally-solved Altcha v3 token
+- Rate limit        : ~50 queries/day per IP (anonymous).
 - Herrenlos signal  : Empty "Propriétaire" cell, "sans propriétaire", or 404
 - Parcels           : ~91,000 (verified by WFS 2026-05)
 - Note              : NE is NOT in the federal swisstopo cadastral layer —
                       EGRIDs must be enumerated from sitn.ne.ch WFS directly.
+- Note              : NE UUIDs are short-lived (~24 h). Re-enumerate with
+                      --refresh-enum if you see many stale_uuid errors.
 
 REQUIRES:
-    pip install playwright
-    playwright install chromium
+    pip install requests beautifulsoup4
+    (playwright / chromium no longer needed)
 """
 
 import re
@@ -33,6 +38,9 @@ import base64
 import hashlib
 import time
 import logging
+import os
+import concurrent.futures
+import threading
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlencode
@@ -494,6 +502,103 @@ def check_owner(browser: "NEBrowser", egrid: str, uuid: str) -> dict:
     return browser.query(uuid, egrid)
 
 
+def query_parcel_http(egrid: str, uuid: str,
+                      proxy_url: str | None = None,
+                      timeout: int = 45,
+                      max_retries: int = 2) -> dict:
+    """
+    Pure requests-based NE parcel owner query — no Playwright needed.
+
+    Bandwidth: ~7.2 KB/parcel (disclaimer + confirmed + captcha + owner response).
+    CPU: ~3-15 s for PBKDF2 solve; hashlib releases the GIL so ThreadPoolExecutor
+    workers genuinely parallelize across cores.
+
+    Flow:
+      1. GET /owner?uuid=UUID             → disclaimer (2.3 KB)
+      2. GET /owner?uuid=UUID&has_confirmed=true (2.7 KB)
+      3. GET /captcha                     → challenge JSON (0.3 KB)
+      4. PBKDF2/SHA-256 solve             → base64 token
+      5. POST /owner  application/json    → owner HTML (1.9 KB)
+    """
+    if not uuid:
+        return {"owner": None, "owner_address": None,
+                "is_herrenlos": None, "raw_response": None, "error": "no_uuid"}
+
+    proxies_cfg = {"http": proxy_url, "https": proxy_url} if proxy_url else {}
+
+    for attempt in range(max_retries):
+        s = requests.Session()
+        s.headers["User-Agent"] = UA
+        if proxies_cfg:
+            s.proxies.update(proxies_cfg)
+        try:
+            # Step 1: disclaimer
+            r = s.get(f"{OWNER_URL}?uuid={uuid}", timeout=timeout)
+            if r.status_code == 400:
+                return {"owner": None, "owner_address": None,
+                        "is_herrenlos": None, "raw_response": None, "error": "stale_uuid"}
+
+            # Step 2: confirm disclaimer
+            r = s.get(f"{OWNER_URL}?uuid={uuid}&has_confirmed=true", timeout=timeout)
+            if r.status_code == 400:
+                return {"owner": None, "owner_address": None,
+                        "is_herrenlos": None, "raw_response": None, "error": "stale_uuid"}
+
+            # Step 3: fresh captcha challenge
+            r = s.get(CAPTCHA_URL, timeout=timeout)
+            if r.status_code != 200:
+                log.warning("NE captcha %d (EGRID=%s attempt=%d)",
+                            r.status_code, egrid, attempt + 1)
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                continue
+            challenge = r.json()
+
+            # Step 4: PBKDF2/SHA-256 solve (CPU-bound; hashlib releases GIL)
+            token = _solve_altcha(challenge)
+            if token is None:
+                log.warning("NE altcha solve failed (EGRID=%s attempt=%d)", egrid, attempt + 1)
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                continue
+
+            # Step 5: POST /owner — JSON body, field name "token" (not "altcha")
+            r = s.post(
+                OWNER_URL,
+                json={"token": token, "uuid": uuid,
+                      "numcad": None, "nummai": None, "has_confirmed": "true"},
+                headers={"Referer": f"{OWNER_URL}?uuid={uuid}&has_confirmed=true"},
+                timeout=timeout,
+            )
+
+            if r.status_code == 429:
+                return {"owner": None, "owner_address": None,
+                        "is_herrenlos": None, "raw_response": None, "error": "rate_limited"}
+            if r.status_code == 400:
+                return {"owner": None, "owner_address": None,
+                        "is_herrenlos": None, "raw_response": None, "error": "stale_uuid"}
+            if r.status_code == 404:
+                return {"owner": None, "owner_address": None,
+                        "is_herrenlos": 1, "raw_response": None,
+                        "herrenlos_type": "not_in_grundbuch", "claim_possible": 0, "error": None}
+            if r.status_code != 200:
+                log.warning("NE POST /owner HTTP %d (EGRID=%s attempt=%d)",
+                            r.status_code, egrid, attempt + 1)
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                continue
+
+            return _parse_owner_html(r.text, egrid, uuid)
+
+        except requests.RequestException as exc:
+            log.warning("NE HTTP error (EGRID=%s attempt=%d): %s", egrid, attempt + 1, exc)
+            if attempt < max_retries - 1:
+                time.sleep(2)
+
+    return {"owner": None, "owner_address": None,
+            "is_herrenlos": None, "raw_response": None, "error": "http_error"}
+
+
 def _parse_owner_html(html: str, egrid: str, uuid: str) -> dict:
     """
     Parse owner name + address from NE sitn.ne.ch owner page HTML.
@@ -714,97 +819,86 @@ def scan(limit: int | None = None,
     if limit:
         parcels = parcels[:limit]
 
-    proxies = load_proxies("NE_PROXY_LIST")
-    proxy_idx = 0
-    queries_on_proxy = 0
-    ROTATE_EVERY = 45  # stay under ~50/day limit per IP
+    proxies  = load_proxies("NE_PROXY_LIST")
+    ROTATE_EVERY = 45                                  # stay under ~50/day per IP
+    N_WORKERS    = int(os.environ.get("NE_WORKERS",
+                       min(os.cpu_count() or 4, 8)))  # override via env if needed
 
-    if proxies:
-        log.info("NE proxy rotation: %d proxies, rotate every %d queries", len(proxies), ROTATE_EVERY)
+    log.info("NE HTTP scanner: %d workers, rotate every %d queries%s",
+             N_WORKERS, ROTATE_EVERY,
+             f", {len(proxies)} proxies" if proxies else " (no proxy)")
 
-    def _start_browser(idx: int) -> "NEBrowser":
-        proxy_url = proxies[idx % len(proxies)] if proxies else None
-        b = NEBrowser(proxy_url=proxy_url)
-        b.start()
-        return b
+    # ── Build pending list (filter already-scanned) and extract UUIDs ──────────
+    pending: list[tuple[dict, str]] = []   # (parcel_dict, uuid)
+    with get_conn() as conn:
+        for p in parcels:
+            bfs = p["bfs_nr"]
+            nr  = p["parcel_nr"]
+            if skip_existing and already_scanned(conn, "NE", bfs, nr):
+                continue
+            uuid = p.get("uuid", "")
+            if not uuid:
+                extra = p.get("extra")
+                if isinstance(extra, dict):
+                    uuid = extra.get("uuid", "")
+                elif isinstance(extra, str):
+                    try:
+                        uuid = json.loads(extra).get("uuid", "")
+                    except Exception:
+                        pass
+            pending.append((p, uuid))
 
-    try:
-        browser = _start_browser(0)
-    except RuntimeError as exc:
-        log.error("%s", exc)
-        return
+    log.info("NE: %d parcels to scan", len(pending))
+    if not pending:
+        return {"scanned": 0, "herrenlos": 0, "errors": 0}
 
+    # ── Assign proxy URL per parcel (round-robin with ROTATE_EVERY) ────────────
+    def _proxy(i: int) -> str | None:
+        if not proxies:
+            return None
+        return proxies[(i // ROTATE_EVERY) % len(proxies)]
+
+    # ── Parallel scan via ThreadPoolExecutor ───────────────────────────────────
+    # hashlib.pbkdf2_hmac is implemented in C and releases the GIL, so threads
+    # genuinely parallelize PBKDF2 computation across CPU cores.
     scanned = errors = herrenlos = 0
-    rate_wait_until = 0.0
+    rate_limited_streak = 0
+    _db_lock = threading.Lock()
 
-    try:
-        with get_conn() as conn:
-            for p in parcels:
-                egrid   = p.get("egrid", "")
-                bfs     = p["bfs_nr"]
-                nr      = p["parcel_nr"]
-                commune = p.get("commune", "")
+    with get_conn() as conn:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=N_WORKERS) as pool:
+            fut_map: dict[concurrent.futures.Future, tuple[dict, str]] = {
+                pool.submit(query_parcel_http, p.get("egrid", ""), uuid, _proxy(i)): (p, uuid)
+                for i, (p, uuid) in enumerate(pending)
+            }
 
-                # UUID stored directly or inside extra dict (packed by store_enum)
-                uuid = p.get("uuid", "")
-                if not uuid:
-                    extra = p.get("extra")
-                    if isinstance(extra, dict):
-                        uuid = extra.get("uuid", "")
-                    elif isinstance(extra, str):
-                        try:
-                            uuid = json.loads(extra).get("uuid", "")
-                        except Exception:
-                            pass
+            for fut in concurrent.futures.as_completed(fut_map):
+                p, uuid  = fut_map[fut]
+                egrid    = p.get("egrid", "")
+                bfs      = p["bfs_nr"]
+                nr       = p["parcel_nr"]
+                commune  = p.get("commune", "")
 
-                if skip_existing and already_scanned(conn, "NE", bfs, nr):
-                    continue
+                try:
+                    result = fut.result()
+                except Exception as exc:
+                    log.error("NE worker exception (EGRID=%s): %s", egrid, exc)
+                    result = {"owner": None, "owner_address": None,
+                              "is_herrenlos": None, "raw_response": None,
+                              "error": f"worker_exc: {exc}"}
 
-                # Proactive proxy rotation (before hitting the hard limit)
-                if proxies and queries_on_proxy >= ROTATE_EVERY:
-                    proxy_idx = (proxy_idx + 1) % len(proxies)
-                    browser.close()
-                    browser = _start_browser(proxy_idx)
-                    queries_on_proxy = 0
-                    log.info("NE proactive proxy rotate → proxy #%d", proxy_idx)
-
-                # Rate limit guard (no-proxy fallback — belt-and-suspenders)
-                if time.time() < rate_wait_until:
-                    log.warning("NE daily quota exhausted — stopping scan.")
-                    break
-
-                result = check_owner(browser, egrid, uuid)
-                queries_on_proxy += 1
-
-                # playwright_no_post = proxy is blocked / too slow; rotate immediately
-                if result.get("error") == "playwright_no_post" and proxies:
-                    log.warning("NE playwright timeout — rotating proxy (was #%d)", proxy_idx)
-                    proxy_idx = (proxy_idx + 1) % len(proxies)
-                    browser.close()
-                    browser = _start_browser(proxy_idx)
-                    queries_on_proxy = 0
-                    result = check_owner(browser, egrid, uuid)
-                    queries_on_proxy += 1
-
+                # Stop entirely if rate-limited with no proxies to rotate to
                 if result.get("error") == "rate_limited":
-                    if proxies:
-                        proxy_idx = (proxy_idx + 1) % len(proxies)
-                        browser.close()
-                        browser = _start_browser(proxy_idx)
-                        queries_on_proxy = 0
-                        log.warning("NE rate limit — rotated to proxy #%d", proxy_idx)
-                        time.sleep(2)
-                        result = check_owner(browser, egrid, uuid)
-                        queries_on_proxy += 1
-                    else:
-                        # No proxies — daily quota exhausted on this IP.
-                        # Don't sleep for 24h (would waste CI minutes or block the laptop).
-                        # Just stop scanning and let the next run continue from here.
+                    rate_limited_streak += 1
+                    if not proxies and rate_limited_streak >= N_WORKERS:
                         log.warning(
-                            "NE rate limit hit with no proxies — stopping scan for today. "
-                            "Set NE_PROXY_LIST to rotate IPs, or run again tomorrow."
+                            "NE daily quota exhausted (no proxies) — stopping scan. "
+                            "Set NE_PROXY_LIST or run again tomorrow."
                         )
+                        pool.shutdown(wait=False, cancel_futures=True)
                         break
+                else:
+                    rate_limited_streak = 0
 
                 upsert_parcel(conn, {
                     "egrid":       egrid,
@@ -815,24 +909,22 @@ def scan(limit: int | None = None,
                     "parcel_type": p.get("parcel_type") or "Immeuble",
                     **result,
                 })
-
                 scanned += 1
+
                 if result.get("is_herrenlos") == 1:
                     herrenlos += 1
                     log.info("HERRENLOS  %s Nr.%s  EGRID=%s", commune, nr, egrid)
                 if result.get("error") and result["error"] not in ("rate_limited",):
                     errors += 1
                     if result["error"] == "stale_uuid":
-                        log.warning("Stale UUID — consider re-running with --refresh-enum")
+                        log.warning("NE stale UUID — re-run with --refresh-enum (EGRID=%s)", egrid)
 
-                if scanned % 50 == 0:
-                    log.info("Progress %d  herrenlos=%d  errors=%d", scanned, herrenlos, errors)
+                if scanned % 100 == 0:
+                    conn.commit()
+                    log.info("NE progress %d/%d  herrenlos=%d  errors=%d",
+                             scanned, len(pending), herrenlos, errors)
 
-                time.sleep(delay)
-
-    finally:
-        browser.close()
-        log.info("NE browser closed")
+        conn.commit()
 
     log.info("NE scan done — scanned=%d  herrenlos=%d  errors=%d", scanned, herrenlos, errors)
     return {"scanned": scanned, "herrenlos": herrenlos, "errors": errors}
