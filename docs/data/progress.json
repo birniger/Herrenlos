@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-08T21:40:45+00:00",
+  "generated_at": "2026-06-08T22:02:10+00:00",
   "cantons": [
     {
       "canton": "AG",
@@ -43,12 +43,12 @@
     {
       "canton": "BS",
       "enumerated": 8594,
-      "scanned": 1006,
+      "scanned": 1119,
       "herrenlos": 26,
       "errors": 8,
-      "percent": 11.7,
+      "percent": 13.0,
       "estimated_total": 8594,
-      "last_scan_at": "2026-06-08 21:40:37",
+      "last_scan_at": "2026-06-08 22:02:00",
       "access": "free_key",
       "test_group": "captcha_pow",
       "rate_limit": "HTML viewer: 10 req/day/IP (reCAPTCHA Enterprise); metadata API: unlimited with free key"
@@ -113,7 +113,7 @@
       "errors": 2117,
       "percent": 1.0,
       "estimated_total": 89701,
-      "last_scan_at": "2026-06-08 21:40:35",
+      "last_scan_at": "2026-06-08 22:02:07",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
@@ -149,10 +149,10 @@
       "enumerated": 133897,
       "scanned": 6,
       "herrenlos": 0,
-      "errors": 540,
+      "errors": 601,
       "percent": 0.0,
       "estimated_total": 133897,
-      "last_scan_at": "2026-06-08 21:40:36",
+      "last_scan_at": "2026-06-08 22:01:43",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "reCAPTCHA v3 score-based; bot-detection blocks from datacenter IPs"
@@ -186,12 +186,12 @@
     {
       "canton": "VS",
       "enumerated": 316772,
-      "scanned": 99,
+      "scanned": 109,
       "herrenlos": 0,
-      "errors": 4,
+      "errors": 3,
       "percent": 0.0,
       "estimated_total": 316772,
-      "last_scan_at": "2026-06-08 20:14:12",
+      "last_scan_at": "2026-06-08 22:01:22",
       "access": "own_account",
       "test_group": "own_login",
       "rate_limit": "SwissID session, scan endpoints appear unlimited. VS uses SwissID (login.swissid.ch) \u2014 NOT AGOV; BE and VS use different identity providers. The ICP-extract endpoint is 10/day but the scanner deliberately avoids it. Main scan endpoints (grundstueck + eigentum JSON API) show no per-query quota. IP rotation is irrelevant: SwissID 2FA means any session is bound to a personal account, but there is no quota to route around. access_token ~5min / refresh_token rotating; re-auth needed after any gap >~30min."
@@ -199,9 +199,9 @@
   ],
   "totals": {
     "enumerated": 1524692,
-    "scanned": 71297,
+    "scanned": 71420,
     "herrenlos": 52,
-    "errors": 23162,
+    "errors": 23222,
     "cantons": 15
   }
 }
