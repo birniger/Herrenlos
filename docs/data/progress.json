@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-08T21:10:31+00:00",
+  "generated_at": "2026-06-08T21:36:28+00:00",
   "cantons": [
     {
       "canton": "AG",
@@ -87,7 +87,7 @@
       "errors": 4546,
       "percent": 0.3,
       "estimated_total": 225843,
-      "last_scan_at": "2026-06-04 01:32:16",
+      "last_scan_at": "2026-06-08 16:15:27",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "10 req/day/IP"
@@ -139,7 +139,7 @@
       "errors": 9910,
       "percent": 2.1,
       "estimated_total": 43256,
-      "last_scan_at": "2026-05-31 19:51:10",
+      "last_scan_at": "2026-06-08 16:13:43",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "100 req/day/IP"
@@ -165,7 +165,7 @@
       "errors": 704,
       "percent": 98.6,
       "estimated_total": 50217,
-      "last_scan_at": "2026-06-01 00:27:55",
+      "last_scan_at": "2026-06-08 21:36:26",
       "access": "public",
       "test_group": "captcha_ocr",
       "rate_limit": "CAPTCHA per query only"
