@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-08T18:10:55+00:00",
+  "generated_at": "2026-06-08T18:16:12+00:00",
   "cantons": [
     {
       "canton": "AG",
@@ -43,12 +43,12 @@
     {
       "canton": "BS",
       "enumerated": 8594,
-      "scanned": 49,
+      "scanned": 69,
       "herrenlos": 0,
       "errors": 0,
-      "percent": 0.6,
+      "percent": 0.8,
       "estimated_total": 8594,
-      "last_scan_at": "2026-06-08 18:10:50",
+      "last_scan_at": "2026-06-08 18:16:06",
       "access": "free_key",
       "test_group": "captcha_pow",
       "rate_limit": "HTML viewer: 10 req/day/IP (reCAPTCHA Enterprise); metadata API: unlimited with free key"
@@ -61,7 +61,7 @@
       "errors": 5430,
       "percent": 1.5,
       "estimated_total": 147148,
-      "last_scan_at": "2026-06-08 18:10:44",
+      "last_scan_at": "2026-06-08 18:16:07",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -108,12 +108,12 @@
     {
       "canton": "NE",
       "enumerated": 89701,
-      "scanned": 899,
+      "scanned": 915,
       "herrenlos": 0,
-      "errors": 1391,
+      "errors": 1375,
       "percent": 1.0,
       "estimated_total": 89701,
-      "last_scan_at": "2026-06-08 18:10:52",
+      "last_scan_at": "2026-06-08 18:16:11",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
@@ -149,10 +149,10 @@
       "enumerated": 133897,
       "scanned": 1,
       "herrenlos": 0,
-      "errors": 17,
+      "errors": 26,
       "percent": 0.0,
       "estimated_total": 133897,
-      "last_scan_at": "2026-06-08 18:10:45",
+      "last_scan_at": "2026-06-08 18:15:58",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "reCAPTCHA v3 score-based; bot-detection blocks from datacenter IPs"
@@ -199,9 +199,9 @@
   ],
   "totals": {
     "enumerated": 1524692,
-    "scanned": 70208,
+    "scanned": 70244,
     "herrenlos": 26,
-    "errors": 22006,
+    "errors": 21999,
     "cantons": 15
   }
 }
