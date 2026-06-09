@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-09T13:25:38+00:00",
+  "generated_at": "2026-06-09T15:03:34+00:00",
   "cantons": [
     {
       "canton": "AG",
@@ -42,13 +42,13 @@
     },
     {
       "canton": "BS",
-      "enumerated": 8594,
-      "scanned": 1208,
-      "herrenlos": 89,
-      "errors": 1329,
-      "percent": 14.1,
-      "estimated_total": 8594,
-      "last_scan_at": "2026-06-09 13:06:20",
+      "enumerated": 0,
+      "scanned": 1164,
+      "herrenlos": 45,
+      "errors": 1084,
+      "percent": 16.6,
+      "estimated_total": 7000,
+      "last_scan_at": "2026-06-09 09:08:13",
       "access": "free_key",
       "test_group": "captcha_pow",
       "rate_limit": "HTML viewer: 10 req/day/IP (reCAPTCHA Enterprise); metadata API: unlimited with free key"
@@ -82,12 +82,12 @@
     {
       "canton": "GR",
       "enumerated": 225843,
-      "scanned": 889,
-      "herrenlos": 6,
-      "errors": 4574,
-      "percent": 0.4,
+      "scanned": 3753,
+      "herrenlos": 102,
+      "errors": 1778,
+      "percent": 1.7,
       "estimated_total": 225843,
-      "last_scan_at": "2026-06-09 08:29:09",
+      "last_scan_at": "2026-06-09 15:03:30",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "10 req/day/IP"
@@ -107,13 +107,13 @@
     },
     {
       "canton": "NE",
-      "enumerated": 89701,
+      "enumerated": 90753,
       "scanned": 915,
       "herrenlos": 0,
       "errors": 2117,
       "percent": 1.0,
-      "estimated_total": 89701,
-      "last_scan_at": "2026-06-09 13:25:34",
+      "estimated_total": 90753,
+      "last_scan_at": "2026-06-09 09:07:54",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
@@ -146,12 +146,12 @@
     },
     {
       "canton": "SO",
-      "enumerated": 133897,
+      "enumerated": 0,
       "scanned": 6,
       "herrenlos": 0,
       "errors": 697,
       "percent": 0.0,
-      "estimated_total": 133897,
+      "estimated_total": 70000,
       "last_scan_at": "2026-06-08 22:15:10",
       "access": "public",
       "test_group": "captcha_pow",
@@ -198,10 +198,10 @@
     }
   ],
   "totals": {
-    "enumerated": 1524692,
-    "scanned": 71904,
-    "herrenlos": 121,
-    "errors": 24664,
-    "cantons": 15
+    "enumerated": 1383253,
+    "scanned": 74724,
+    "herrenlos": 173,
+    "errors": 21623,
+    "cantons": 18
   }
 }
