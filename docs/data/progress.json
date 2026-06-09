@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-09T08:29:12+00:00",
+  "generated_at": "2026-06-09T09:08:15+00:00",
   "cantons": [
     {
       "canton": "AG",
@@ -68,13 +68,13 @@
     },
     {
       "canton": "BS",
-      "enumerated": 0,
-      "scanned": 1146,
-      "herrenlos": 27,
-      "errors": 648,
-      "percent": 16.4,
-      "estimated_total": 7000,
-      "last_scan_at": "2026-06-08 23:46:56",
+      "enumerated": 8594,
+      "scanned": 1164,
+      "herrenlos": 45,
+      "errors": 1084,
+      "percent": 13.5,
+      "estimated_total": 8594,
+      "last_scan_at": "2026-06-09 09:08:13",
       "access": "free_key",
       "test_group": "captcha_pow",
       "rate_limit": "HTML viewer: 10 req/day/IP (reCAPTCHA Enterprise); metadata API: unlimited with free key"
@@ -82,12 +82,12 @@
     {
       "canton": "FR",
       "enumerated": 147148,
-      "scanned": 2064,
-      "herrenlos": 9,
-      "errors": 5586,
-      "percent": 1.4,
+      "scanned": 2325,
+      "herrenlos": 15,
+      "errors": 5325,
+      "percent": 1.6,
       "estimated_total": 147148,
-      "last_scan_at": "2026-06-08 22:15:37",
+      "last_scan_at": "2026-06-08 22:16:24",
       "access": "public",
       "test_group": "rest",
       "rate_limit": null
@@ -121,10 +121,10 @@
     {
       "canton": "GR",
       "enumerated": 225843,
-      "scanned": 5133,
-      "herrenlos": 128,
-      "errors": 434,
-      "percent": 2.3,
+      "scanned": 889,
+      "herrenlos": 6,
+      "errors": 4574,
+      "percent": 0.4,
       "estimated_total": 225843,
       "last_scan_at": "2026-06-09 08:29:09",
       "access": "public",
@@ -152,7 +152,7 @@
       "errors": 2117,
       "percent": 1.0,
       "estimated_total": 89701,
-      "last_scan_at": "2026-06-09 05:55:19",
+      "last_scan_at": "2026-06-09 09:07:54",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
@@ -190,7 +190,7 @@
       "herrenlos": 0,
       "errors": 697,
       "percent": 0.0,
-      "estimated_total": 70000,
+      "estimated_total": 133897,
       "last_scan_at": "2026-06-08 22:15:10",
       "access": "public",
       "test_group": "captcha_pow",
@@ -204,7 +204,7 @@
       "errors": 704,
       "percent": 98.6,
       "estimated_total": 50217,
-      "last_scan_at": "2026-06-08 21:36:26",
+      "last_scan_at": "2026-06-01 00:27:55",
       "access": "public",
       "test_group": "captcha_ocr",
       "rate_limit": "CAPTCHA per query only"
@@ -225,9 +225,9 @@
     {
       "canton": "VS",
       "enumerated": 316772,
-      "scanned": 105,
+      "scanned": 109,
       "herrenlos": 0,
-      "errors": 8,
+      "errors": 4,
       "percent": 0.0,
       "estimated_total": 316772,
       "last_scan_at": "2026-06-08 22:02:24",
@@ -237,10 +237,10 @@
     }
   ],
   "totals": {
-    "enumerated": 1383253,
-    "scanned": 76825,
-    "herrenlos": 308,
-    "errors": 19302,
+    "enumerated": 1524692,
+    "scanned": 71860,
+    "herrenlos": 77,
+    "errors": 24419,
     "cantons": 18
   }
 }
