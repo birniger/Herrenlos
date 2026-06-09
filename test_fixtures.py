@@ -245,60 +245,64 @@ CANTON_STATUS: dict[str, dict] = {
            "needs": "free SwissID account at swissid.ch; complete login in the Chromium window that opens; scan endpoints appear unlimited once authenticated"},
 
     # ── geoportal.ch-based cantons + other restricted ones ──────────────────
-    # VERIFICATION PASS — 2026-06-09 (independent agent, browser/HTTP probing only,
-    # no code consulted — see session for raw probe output):
-    # CORRECTIONS vs 2026-05-18 pass:
-    #   AR/AI : UPGRADED — previous "mail-only" was wrong. geoportal.ch/ktar and
-    #           geoportal.ch/ktai provide PUBLIC owner query by parcel click, no login.
-    #           reCAPTCHA in CSP is login-form only, not on the map identify flow.
-    #   GL    : UPGRADED — previous "AGOV LoA-3" was for my.gl.ch (formal extracts).
-    #           The public GeoViewer has Grundstücksinformation tool freely accessible.
-    #   VD    : CORRECTED — previously described as "form-mail 48h turnaround"
-    #           (prestations.vd.ch). That was wrong: intercapi-public.vd.ch is a
-    #           real-time Keycloak-backed portal with SMS authentication, 5/day.
-    #   NW/OW : MORE SPECIFIC — not just "form-mail"; gis-daten.ch WebGIS PRO
-    #           subscription is the only path (CHF 300/yr NW, CHF 600/yr OW).
-    #   TI    : MORE SPECIFIC — geoticino.ch commercial (CHF 15/extract, no free tier).
-    # CONFIRMED BLOCKED (unchanged):
+    # VERIFICATION PASS 1 — 2026-06-09 (independent agent, browser/HTTP probing only,
+    # no code consulted). Initial corrections:
+    #   AR/AI : Upgraded to "unbuilt" — appeared to show public owner on map click.
+    #   GL    : Upgraded to "unbuilt" — public GeoViewer "Grundstücksinformation" exists.
+    #   VD    : Corrected to real-time SMS portal (intercapi-public.vd.ch), not 48h form.
+    #   NW/OW/TI : Made more specific (subscription costs, no free tier).
+    # VERIFICATION PASS 2 — 2026-06-09 (live WMS/WFS HTTP probe, independent agent):
+    #   AR    : DOWNGRADED back to cant_get — WMS public but returns geometry/EGRID only,
+    #           NO owner name. geoportal.ch/search/ownerinfo/ = reCAPTCHA Enterprise v2.
+    #   AI    : Same as AR — DOWNGRADED back to cant_get.
+    #   GL    : DOWNGRADED to cant_get — wfs.geo.gl.ch WFS IS public and returns owner
+    #           data with full name/address, BUT only for ~15% of parcels (public entities:
+    #           canton, municipalities, Bund, utilities). Private parcels (~85%) not exposed.
+    #           Public-entity parcels have institutional owners → not herrenlos by definition.
+    #           Cannot reliably detect herrenlos from public WFS alone.
+    # CONFIRMED BLOCKED (all passes):
     #   ZH, ZG, TG, LU — SMS gate enforced in JS (Swiss mobile regex confirmed in source)
-    # PARTIALLY BUILDABLE (unbuilt):
-    #   AR, AI : geoportal.ch public identify endpoint — likely same as SG but without
-    #            reCAPTCHA requirement (needs live API probe to confirm endpoint)
-    #   GL     : GeoViewer public Grundstücksinformation — Cloudflare present, needs
-    #            live Playwright test to confirm API endpoint accessibility
+    # UNBUILT (scanner possible, just not built yet):
     #   SG     : reCAPTCHA Enterprise v2 checkbox → needs 2captcha (~$345)
     #   AG     : smartserviceportal account → email-only registration, 10 queries/user
 
-    # AR: RE-CLASSIFIED 2026-06-09 — previous "mail-only" was incorrect.
-    # geoportal.ch/ktar (IG GIS AG platform, shared with AI/SG) provides PUBLIC owner
-    # data on parcel click: "auf Grundstück klicken, unter Allgemein, Eigentümer"
-    # (confirmed by mapplus.ch legend and live probe). No login needed for the map
-    # identify query. reCAPTCHA in the page CSP is on account login forms only.
-    # The backing endpoint is likely geoportal.ch/search/ownerinfo/ (same as SG) but
-    # without the challenge:true gate — AR has public owner.search permissions enabled.
-    # Needs: live probe of the identify API to capture exact endpoint + parameters.
-    "AR": {"access": "unbuilt", "test_group": "unbuilt", "ip_rotation": "deferred",
-           "daily_limit": None, "rate_limit": "unknown — no published limit for public map identify",
-           "max_test_parcels": 0,
-           "blocker": "scanner not yet built; public geoportal.ch/ktar owner query confirmed live (2026-06-09) but API endpoint not yet reverse-engineered",
-           "needs": "probe geoportal.ch/ktar with browser DevTools to capture the map "
-                    "identify REST call for owner data; likely geoportal.ch/search/ownerinfo/ "
-                    "without challenge:true (AR has public permissions unlike SG); "
-                    "build scanner similar to SG but without CAPTCHA solver"},
-    # AI: RE-CLASSIFIED 2026-06-09 — same correction as AR.
-    # geoportal.ch/ktai (same IG GIS AG platform as AR/SG) shows owner on parcel click
-    # without login. Confirmed by mapplus.ch legend: "Eigentümer über Geoportal AI:
-    # auf Grundstück klicken, unter Allgemein, Eigentümer."
-    # Note: Terravis implementation in AI is partial (Gonten/Schlatt-Haslen/Oberegg
-    # since 2019; Appenzell/Schwende/Rüte still pending 2026) — geoportal.ch may have
-    # incomplete coverage for the Terravis-pending municipalities.
-    "AI": {"access": "unbuilt", "test_group": "unbuilt", "ip_rotation": "deferred",
-           "daily_limit": None, "rate_limit": "unknown — no published limit for public map identify",
-           "max_test_parcels": 0,
-           "blocker": "scanner not yet built; public geoportal.ch/ktai owner query confirmed live (2026-06-09); partial Terravis rollout in AI may mean incomplete coverage",
-           "needs": "same approach as AR — probe geoportal.ch/ktai identify API; "
-                    "note partial Terravis coverage (some AI municipalities may not "
-                    "appear in geoportal.ch owner data yet)"},
+    # AR: CONFIRMED BLOCKED 2026-06-09 (live WMS probe, independent agent, no code consulted).
+    # geoportal.ch/ktar WMS GetFeatureInfo IS publicly accessible without login
+    # (Referer: https://www.geoportal.ch/ktar/map/40 + ?primaryArea=ktar param).
+    # BUT the response contains only parcel geometry — Grundstücksnummer, E-GRID,
+    # Art, Fläche (m²) — NO owner name, NO address. Live response example:
+    #   {"Grundstücksnummer":"1758","E-GRID":"CH667752217223","Art":"Liegenschaft",
+    #    "Fläche (m²)":"4487"}
+    # The Grundbuch register (owner names) is NOT exposed by any public API endpoint.
+    # geoportal.ch/search/ownerinfo/ returns {"challenge":true} for AR
+    # — same reCAPTCHA Enterprise v2 gate as SG. No free automatable path.
+    # Previous "unbuilt/owner confirmed" classification was wrong (based on UI
+    # appearing to show data, which was state-owned parcel labels only).
+    "AR": {"access": "cant_get", "test_group": "blocked", "ip_rotation": None,
+           "daily_limit": None, "rate_limit": None, "max_test_parcels": 0,
+           "blocker": "geoportal.ch/ktar WMS confirmed public (live probe 2026-06-09) but "
+                      "returns geometry/EGRID only — no owner name in any public API. "
+                      "geoportal.ch/search/ownerinfo/ returns {\"challenge\":true} for AR "
+                      "(reCAPTCHA Enterprise v2 gate, same as SG). No free automatable path.",
+           "needs": "same reCAPTCHA Enterprise v2 gate as SG — ~$345 in CAPTCHA solver "
+                    "costs for full scan; not viable without paid solver"},
+    # AI: CONFIRMED BLOCKED 2026-06-09 — same platform and same result as AR.
+    # geoportal.ch/ktai WMS GetFeatureInfo works unauthenticated but returns only
+    # parcel geometry (no owner). Live response example:
+    #   {"Grundstücksnummer":"541","E-GRID":"CH589559417757",
+    #    "Art":"Liegenschaft","Fläche (m²)":"240829"}
+    # geoportal.ch/search/ownerinfo/ is also gated behind reCAPTCHA Enterprise v2.
+    # Additionally, Terravis implementation in AI is partial (Gonten/Schlatt-Haslen/
+    # Oberegg since 2019; Appenzell/Schwende/Rüte still pending 2026) — even if the
+    # CAPTCHA gate were solved, coverage would be incomplete.
+    "AI": {"access": "cant_get", "test_group": "blocked", "ip_rotation": None,
+           "daily_limit": None, "rate_limit": None, "max_test_parcels": 0,
+           "blocker": "geoportal.ch/ktai WMS confirmed public (live probe 2026-06-09) but "
+                      "returns geometry/EGRID only — no owner name. Same reCAPTCHA Enterprise "
+                      "v2 gate as AR/SG at geoportal.ch/search/ownerinfo/. Partial Terravis "
+                      "rollout adds incomplete coverage even if CAPTCHA solved.",
+           "needs": "same reCAPTCHA Enterprise v2 gate as SG/AR — ~$345 solver costs; "
+                    "partial Terravis coverage further reduces utility"},
     # AG: VERIFIED 2026-05-18 via Chrome MCP — public AGIS Viewer is open without
     # login for MAP browsing, but the "Grundeigentümer abfragen" button on parcel
     # detail panel is GREYED OUT with message "Für Grundeigentümerabfrage anmelden"
@@ -349,27 +353,34 @@ CANTON_STATUS: dict[str, dict] = {
                     "solver (2captcha 'enterprises' endpoint ~$0.003/solve × 115k "
                     "parcels ≈ $345; NOT Playwright auto-click — v2 checkbox cannot "
                     "be auto-solved); paid residential proxies for full scan"},
-    # GL: RE-CLASSIFIED 2026-06-09 — previous "AGOV LoA-3" assessment was for
-    # my.gl.ch (formal Grundbuchauszug ordering service — that IS still locked).
-    # However the PUBLIC GeoViewer has a free "Grundstücksinformation" tool:
-    #   "Das Informationswerkzeug 'Grundstücksinformation' steht im GeoViewer des
-    #   kantonalen Geoportals kostenlos zur Verfügung." (official GL canton release)
-    # mapplus.ch confirms: "Eigentümer über WebGIS GL, auf Grundstücksinformation
-    # klicken, dann auf Grundstück" — no login required.
-    # GeoViewer URL: geo.gl.ch or via www.gl.ch/geoportal
-    # Cloudflare is active on www.gl.ch (cf-cache-status header) but the GeoViewer
-    # SPA endpoint may be accessible without bot detection — needs live Playwright test.
-    # NOTE: my.gl.ch AGOV LoA-3 assessment still correct for formal extracts;
-    # geoportal informal query is a separate, lower-friction path.
-    "GL": {"access": "unbuilt", "test_group": "unbuilt", "ip_rotation": "deferred",
-           "daily_limit": None, "rate_limit": "unknown; Cloudflare present on www.gl.ch",
-           "max_test_parcels": 0,
-           "blocker": "scanner not yet built; public GeoViewer Grundstücksinformation confirmed (2026-06-09) but Cloudflare on www.gl.ch may block programmatic access",
-           "needs": "load geo.gl.ch/geoportal with Playwright; navigate to "
-                    "Grundstücksinformation tool; click a known parcel; intercept "
-                    "the identify API call in browser DevTools; confirm Cloudflare "
-                    "doesn't block headless browser. If it does, test with "
-                    "DataImpulse residential proxy"},
+    # GL: CONFIRMED PARTIAL — live WFS probe 2026-06-09 (independent agent, no code consulted).
+    # wfs.geo.gl.ch WFS is fully public, no auth, no Cloudflare:
+    #   eigentum-kanton       — 270 parcels, owner = "Kanton Glarus" (+ address, EGRID)
+    #   eigentum-gemeinden    — ~2,983 parcels, owner = municipality names
+    #   eigentum-bund         — 176 parcels, owner = federal bodies
+    #   eigentum-technischebetriebe — 233 parcels, utilities
+    #   av_liegenschaften     — all ~24,739 parcels (geometry/EGRID, no owner)
+    # Live response example (eigentum-kanton):
+    #   {"aname":"Kanton Glarus","adresse":"Gemeindehausplatz 5",
+    #    "plz_ortschaft":"8750 Glarus","egrid":"CH232278693789","nummer":"2264"}
+    #
+    # LIMITATION: Only ~3,662 public-entity parcels (~15%) have owner data.
+    # Private parcels (~21,000, 85%) have NO owner data in any public endpoint.
+    # Public-entity parcels (canton/municipality/Bund) are definitionally NOT
+    # herrenlos — they have an institutional owner by definition.
+    # A "not in any eigentum layer" check cannot reliably detect herrenlos because
+    # the absent parcels are overwhelmingly private (owned), not ownerless.
+    # Conclusion: the WFS is buildable but CANNOT meaningfully detect herrenlos.
+    # my.gl.ch AGOV LoA-3 still correct for formal Grundbuchauszug ordering.
+    "GL": {"access": "cant_get", "test_group": "blocked", "ip_rotation": None,
+           "daily_limit": None, "rate_limit": None, "max_test_parcels": 0,
+           "blocker": "wfs.geo.gl.ch WFS confirmed public (live probe 2026-06-09). "
+                      "Owner data only for ~3,662 public-entity parcels (15%): canton, "
+                      "municipalities, Bund, utilities — all have institutional owners "
+                      "(definitionally not herrenlos). Private parcels (~85%) not in "
+                      "any public endpoint. Cannot reliably detect herrenlos.",
+           "needs": "no viable herrenlos detection path without Grundbuch access; "
+                    "my.gl.ch AGOV LoA-3 required for full Grundbuchauszug"},
     # NW: RE-CONFIRMED 2026-06-09 (independent probe) — more specific finding:
     # The gis-daten.ch WebGIS has a NW/OW public GeoShop (credentials nwow-public/public)
     # but owner query requires WebGIS PRO subscription (CHF 300/yr NW). The public
@@ -869,16 +880,17 @@ def _print_canton_coverage() -> None:
     print(f"  Free key (testable)    : {len(by_access['free_key']):>2}  {' '.join(sorted(by_access['free_key']))}")
     print(f"  Own account (testable) : {len(by_access['own_account']):>2}  {' '.join(sorted(by_access['own_account']))}  (credentials/login in .env or via interactive prompt)")
     print(f"  Cant get (no path)     : {len(by_access['cant_get']):>2}  {' '.join(sorted(by_access['cant_get']))}")
-    print(f"                                ↳ AR, AI = Terravis professional + mail-only for private persons")
-    print(f"                                ↳ GL = my.gl.ch needs AGOV LoA-3 (only via manual proofing; federal e-ID postponed to Dec 2026)")
-    print(f"                                ↳ NW = online form is request-by-purpose, not direct lookup")
-    print(f"                                ↳ OW = Terravis professional-only; public access planned 2021 but not delivered")
-    print(f"                                ↳ TI = SIFTI requires registry-issued auth (explicitly not for private persons)")
-    print(f"                                ↳ VD = vd.ch is form-based with 48h email turnaround (not real-time scanner-viable)")
+    print(f"                                ↳ AR, AI = geoportal.ch WMS public but returns geometry only (no owner); geoportal.ch/search/ownerinfo/ gated behind reCAPTCHA Enterprise v2")
+    print(f"                                ↳ GL = wfs.geo.gl.ch public but only ~15% public-entity parcels have owner (canton/municipality/Bund); private owners not accessible; cannot detect herrenlos")
+    print(f"                                ↳ NW = gis-daten.ch WebGIS PRO CHF 300/yr; public GeoShop shows geometry only")
+    print(f"                                ↳ OW = gis-daten.ch WebGIS PRO CHF 600/yr; Terravis professional-only")
+    print(f"                                ↳ TI = geoticino.ch CHF 15/extract (no free tier); SIFTI professional-only")
+    print(f"                                ↳ VD = intercapi-public.vd.ch real-time SMS portal, 5/day (same dead-end as ZH/ZG)")
     print(f"  Blocked (SMS dead-end) : {len(by_access['blocked']):>2}  {' '.join(sorted(by_access['blocked']))}")
     print(f"                                ↳ All require SMS verification per query — operational dead-end (cannot be solved by IP rotation)")
     print(f"  Unbuilt (buildable!)   : {len(by_access['unbuilt']):>2}  {' '.join(sorted(by_access['unbuilt']))}")
-    print(f"                                ↳ Real-time public paths verified to exist — just need scanner code + (likely) paid residential proxies for full scan")
+    print(f"                                ↳ SG = reCAPTCHA Enterprise v2 checkbox per parcel (~$345 solver costs for full 115k-parcel scan)")
+    print(f"                                ↳ AG = free smartserviceportal account (email-only registration) + 10 queries/user; needs BE-style OIDC scanner")
     print()
 
     # ── Rate-limit / IP rotation table ───────────────────────────────────────
