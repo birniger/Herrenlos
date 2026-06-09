@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-09T12:48:56+00:00",
+  "generated_at": "2026-06-09T13:09:05+00:00",
   "cantons": [
     {
       "canton": "AG",
@@ -71,10 +71,10 @@
       "enumerated": 8594,
       "scanned": 1208,
       "herrenlos": 89,
-      "errors": 1220,
+      "errors": 1329,
       "percent": 14.1,
       "estimated_total": 8594,
-      "last_scan_at": "2026-06-09 12:48:54",
+      "last_scan_at": "2026-06-09 13:06:20",
       "access": "free_key",
       "test_group": "captcha_pow",
       "rate_limit": "HTML viewer: 10 req/day/IP (reCAPTCHA Enterprise); metadata API: unlimited with free key"
@@ -152,7 +152,7 @@
       "errors": 2117,
       "percent": 1.0,
       "estimated_total": 89701,
-      "last_scan_at": "2026-06-09 12:48:53",
+      "last_scan_at": "2026-06-09 13:05:45",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
@@ -240,7 +240,7 @@
     "enumerated": 1524692,
     "scanned": 71904,
     "herrenlos": 121,
-    "errors": 24555,
+    "errors": 24664,
     "cantons": 18
   }
 }
