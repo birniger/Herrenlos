@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-09T21:56:13+00:00",
+  "generated_at": "2026-06-09T22:03:16+00:00",
   "cantons": [
     {
       "canton": "AG",
@@ -43,10 +43,10 @@
     {
       "canton": "BS",
       "enumerated": 8594,
-      "scanned": 1208,
-      "herrenlos": 89,
+      "scanned": 1119,
+      "herrenlos": 0,
       "errors": 1329,
-      "percent": 14.1,
+      "percent": 13.0,
       "estimated_total": 8594,
       "last_scan_at": "2026-06-09 13:06:20",
       "access": "free_key",
@@ -199,8 +199,8 @@
   ],
   "totals": {
     "enumerated": 1524692,
-    "scanned": 76324,
-    "herrenlos": 116,
+    "scanned": 76235,
+    "herrenlos": 27,
     "errors": 20523,
     "cantons": 15
   }

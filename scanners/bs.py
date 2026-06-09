@@ -120,11 +120,22 @@ def check_owner_bs_batch(egrids: list[str], api_key: str = BS_API_KEY) -> dict[s
 
     Returns {egrid: result_dict} for all requested EGRIDs.
     EGRIDs absent from the API response are marked is_herrenlos=1 (not in Grundbuch).
+
+    False-positive guard (confirmed 2026-06-09): if the API returns 200 with an
+    empty RealEstates list for a batch of multiple EGRIDs, that is a silent API
+    failure — not a genuine signal that every parcel in the batch is herrenlos.
+    BS is a fully digitised urban canton; an entire batch being absent is
+    implausible.  On empty-batch responses we retry once; if still empty we mark
+    all as is_herrenlos=None (retriable error) rather than flagging them herrenlos.
+    Confirmed root cause of 89 false positives recorded on 2026-06-08/09.
     """
+    def _do_request() -> requests.Response:
+        return requests.get(BS_INFO_URL,
+                            params={"ids": ",".join(egrids), "apikey": api_key},
+                            timeout=15)
+
     try:
-        r = requests.get(BS_INFO_URL,
-                         params={"ids": ",".join(egrids), "apikey": api_key},
-                         timeout=15)
+        r = _do_request()
         if r.status_code == 401:
             return {e: {"error": "invalid_api_key", "is_herrenlos": None,
                         "herrenlos_type": None, "claim_possible": None,
@@ -133,16 +144,44 @@ def check_owner_bs_batch(egrids: list[str], api_key: str = BS_API_KEY) -> dict[s
         if r.status_code != 200:
             return {e: {"error": f"http_{r.status_code}", "is_herrenlos": None,
                         "herrenlos_type": None, "claim_possible": None,
-                        "owner": None, "owner_address": None, "raw_response": None}
+                        "owner": None, "owner_address": None,
+                        "raw_response": r.text[:200]}
                     for e in egrids}
 
         data = r.json()
         found = {re["Egrid"] for re in data.get("RealEstates", [])
                  if isinstance(re, dict) and "Egrid" in re}
 
+        # ── Silent-failure guard ──────────────────────────────────────────────
+        # If the API returns 0 results for a multi-EGRID batch, the response is
+        # likely empty due to a temporary API issue, not genuine absence of every
+        # EGRID.  Retry once before classifying.
+        if len(egrids) > 1 and len(found) == 0:
+            import time as _time
+            log.warning("BS batch returned 0 results for %d EGRIDs — "
+                        "possible API hiccup, retrying in 3s …", len(egrids))
+            _time.sleep(3)
+            r2 = _do_request()
+            if r2.status_code == 200:
+                data = r2.json()
+                found = {re["Egrid"] for re in data.get("RealEstates", [])
+                         if isinstance(re, dict) and "Egrid" in re}
+            if len(found) == 0:
+                # Still empty after retry — treat as API error, not herrenlos.
+                log.error("BS batch still 0 results after retry — "
+                          "marking %d EGRIDs as api_empty_response (retriable).",
+                          len(egrids))
+                return {e: {"error": "api_empty_response", "is_herrenlos": None,
+                            "herrenlos_type": None, "claim_possible": None,
+                            "owner": None, "owner_address": None,
+                            "raw_response": r2.text[:200]}
+                        for e in egrids}
+
         results = {}
         for e in egrids:
             if e not in found:
+                # Genuine absence: EGRID is in swisstopo AV but not in BS Grundbuch.
+                # Art. 664 ZGB — parcel exists in cadastre without Grundbuch entry.
                 results[e] = {"owner": None, "owner_address": None,
                                "is_herrenlos": 1,
                                "herrenlos_type": "not_in_grundbuch",
