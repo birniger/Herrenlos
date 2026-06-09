@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-09T13:09:05+00:00",
+  "generated_at": "2026-06-09T13:25:38+00:00",
   "cantons": [
     {
       "canton": "AG",
@@ -13,32 +13,6 @@
       "access": "unbuilt",
       "test_group": "unbuilt",
       "rate_limit": "~10 free queries per registered user (login required)"
-    },
-    {
-      "canton": "AI",
-      "enumerated": 0,
-      "scanned": 0,
-      "herrenlos": 0,
-      "errors": 0,
-      "percent": 0.0,
-      "estimated_total": 5000,
-      "last_scan_at": null,
-      "access": "unbuilt",
-      "test_group": "unbuilt",
-      "rate_limit": "unknown \u2014 no published limit for public map identify"
-    },
-    {
-      "canton": "AR",
-      "enumerated": 0,
-      "scanned": 0,
-      "herrenlos": 0,
-      "errors": 0,
-      "percent": 0.0,
-      "estimated_total": 15000,
-      "last_scan_at": null,
-      "access": "unbuilt",
-      "test_group": "unbuilt",
-      "rate_limit": "unknown \u2014 no published limit for public map identify"
     },
     {
       "canton": "BE",
@@ -106,19 +80,6 @@
       "rate_limit": "Imperva TSPD ~30 req/IP + image CAPTCHA per parcel"
     },
     {
-      "canton": "GL",
-      "enumerated": 0,
-      "scanned": 0,
-      "herrenlos": 0,
-      "errors": 0,
-      "percent": 0.0,
-      "estimated_total": 15000,
-      "last_scan_at": null,
-      "access": "unbuilt",
-      "test_group": "unbuilt",
-      "rate_limit": "unknown; Cloudflare present on www.gl.ch"
-    },
-    {
       "canton": "GR",
       "enumerated": 225843,
       "scanned": 889,
@@ -152,7 +113,7 @@
       "errors": 2117,
       "percent": 1.0,
       "estimated_total": 89701,
-      "last_scan_at": "2026-06-09 13:05:45",
+      "last_scan_at": "2026-06-09 13:25:34",
       "access": "public",
       "test_group": "captcha_pow",
       "rate_limit": "~50 req/day/IP (Altcha PoW CAPTCHA); WFS UUIDs expire \u2014 periodic --refresh-enum needed"
@@ -241,6 +202,6 @@
     "scanned": 71904,
     "herrenlos": 121,
     "errors": 24664,
-    "cantons": 18
+    "cantons": 15
   }
 }
