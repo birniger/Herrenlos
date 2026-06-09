@@ -3,12 +3,24 @@
 Local bulk scanner — runs login-dependent cantons in parallel, each in its own
 thread with its own subprocess, cooldown, and error handling.
 
-Eligible for bulk scanning from the laptop (login-only cantons):
+BE AND VS ARE PAUSED (LOCAL_ELIGIBLE_DEFAULT = []).
+Both cantons made very little progress (<200 parcels each out of 400k/300k)
+before being stopped. The per-account daily quota on BE (GRUDIS) and the
+30-min rolling refresh token on VS made unattended overnight scanning
+impractical. They are left in the code for future manual runs if needed.
 
+To re-enable a canton, either:
+  a) Pass it explicitly:  LOCAL_ELIGIBLE_CANTONS="be" python scripts/run_local.py
+  b) Restore it below:    LOCAL_ELIGIBLE_DEFAULT = ["be", "vs"]
+
+All other cantons are handled by GitHub Actions CI (ju sz sh gr ne fr ur bs bl).
+
+Previously eligible for bulk scanning from the laptop:
     BE  — one-time AGOV/BE-Login (Safari + AppleScript on macOS); ~400k parcels
           NOTE: GRUDIS enforces a per-account daily quota (account-level, not IP).
           When the quota is exhausted the loop cools BE down until midnight Bern time.
-    VS  — one-time SwissID 2FA (Playwright window); ~210k parcels
+    VS  — one-time SwissID 2FA (Playwright window); ~210k parcels; SwissID
+          refresh token rolls every 30 min — any gap >30 min forces full re-login.
 
 NOT included — handled by GitHub Actions CI instead (ju sz sh gr ne fr ur bs bl):
   - JU, SZ   : OCR CAPTCHA only, no login, no geo-block. Always on CI.
@@ -24,7 +36,7 @@ NOT included — needs special handling, run manually:
   - SO, GE    : reCAPTCHA/Imperva; 94%+ failure rate. Run `python main.py so/ge`.
 
 Parallel mode: one thread per canton, each running `python main.py <canton>
---limit ROTATION_LIMIT` in a tight loop. BE and VS scan simultaneously.
+--limit ROTATION_LIMIT` in a tight loop. Cantons scan simultaneously.
 
 Push to GitHub is debounced: at most one push every PUSH_DEBOUNCE_SECONDS
 regardless of how many cantons finish around the same time.
@@ -38,8 +50,9 @@ Configuration:
   LOCAL_ROTATION_LIMIT   env var overrides ROTATION_LIMIT (default 3000).
 
 Usage:
-  python scripts/run_local.py                 # BE + VS
-  LOCAL_ELIGIBLE_CANTONS="be vs" python scripts/run_local.py
+  python scripts/run_local.py                                  # nothing (paused)
+  LOCAL_ELIGIBLE_CANTONS="be" python scripts/run_local.py      # re-enable BE only
+  LOCAL_ELIGIBLE_CANTONS="be vs" python scripts/run_local.py   # re-enable both
 
 For auto-restart across crashes / network outages, use the bash wrapper:
   ./scripts/scan-loop.sh
@@ -86,11 +99,10 @@ if _env_file.exists():
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
-# Only login-dependent cantons run locally.
-# NE, FR, UR, BS, BL — now on CI (DataImpulse residential proxy for geo-blocked ones;
-#   ANTHROPIC_API_KEY secret for BL CAPTCHA).
-# SO, GE — reCAPTCHA/Imperva; 94%+ failure rate; run manually via `python main.py so/ge`.
-LOCAL_ELIGIBLE_DEFAULT = ["be", "vs"]
+# BE and VS are paused — see module docstring for context.
+# To re-enable: LOCAL_ELIGIBLE_CANTONS="be vs" python scripts/run_local.py
+# or restore ["be", "vs"] below.
+LOCAL_ELIGIBLE_DEFAULT: list[str] = []
 
 # enum_count below this = "not yet enumerated" (test seeds / empty).
 REAL_ENUM_MIN = 100
@@ -1182,6 +1194,10 @@ def main() -> int:
 
     ready = preflight(eligible)
     if not ready:
+        if not eligible:
+            print("No cantons configured (LOCAL_ELIGIBLE_DEFAULT is empty).")
+            print("Pass LOCAL_ELIGIBLE_CANTONS='be vs' to re-enable, or edit run_local.py.")
+            return 0   # clean exit — scan-loop.sh won't restart on exit 0
         print("Nothing ready to scan. Set up the prerequisites above and rerun.")
         return 1
 
