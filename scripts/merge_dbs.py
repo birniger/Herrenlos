@@ -33,6 +33,10 @@ import sys
 MAIN_TABLES = ["parcels"]
 
 
+# Unique key on parcels — the conflict target for the prefer-newer UPSERT.
+CONFLICT_KEY = ("canton", "bfs_nr", "parcel_nr")
+
+
 def merge_one_table(conn: sqlite3.Connection, tbl: str, src_path: str) -> None:
     cols = [
         row[1]
@@ -43,17 +47,42 @@ def merge_one_table(conn: sqlite3.Connection, tbl: str, src_path: str) -> None:
         print(f"[merge_dbs] {tbl}: table not found in dst — skipping")
         return
     col_str = ", ".join(cols)
+
+    # Prefer-newer UPSERT (replaces the old INSERT OR IGNORE).
+    #
+    # WHY: INSERT OR IGNORE keeps the destination row on every key conflict.
+    # In CI the destination is the running job's working copy and the source is
+    # origin/main, so a long-running scan would silently DISCARD any correction
+    # that landed on origin while it ran — including manual false-positive purges
+    # and re-classifications.  Worse, a herrenlos row (is_herrenlos=1) is skipped
+    # by already_scanned(), so once a bad classification is committed it can never
+    # be re-evaluated: it is carried forward forever.
+    #
+    # FIX: on conflict, keep whichever row was scanned most recently.  scanned_at
+    # is ISO 'YYYY-MM-DD HH:MM:SS' (lexicographic == chronological), so a freshly
+    # re-scanned / corrected row (newer timestamp) wins and propagates across runs,
+    # while genuinely newer scans are never clobbered by stale data.  COALESCE
+    # guards against NULL timestamps (treated as oldest).
+    update_cols = [c for c in cols if c not in CONFLICT_KEY]
+    set_clause = ", ".join(f"{c}=excluded.{c}" for c in update_cols)
+    conflict_target = ", ".join(CONFLICT_KEY)
     try:
+        # Count rows that will actually change (insert or newer-overwrite) for an
+        # accurate log line — rowcount on UPSERT counts both inserts and updates.
         cur = conn.execute(
-            f"INSERT OR IGNORE INTO main.{tbl} ({col_str}) "
-            f"SELECT {col_str} FROM src.{tbl}"
+            f"INSERT INTO main.{tbl} ({col_str}) "
+            f"SELECT {col_str} FROM src.{tbl} "
+            f"WHERE true "
+            f"ON CONFLICT({conflict_target}) DO UPDATE SET {set_clause} "
+            f"WHERE COALESCE(excluded.scanned_at,'') > COALESCE({tbl}.scanned_at,'')"
         )
-        added = cur.rowcount
+        changed = cur.rowcount
     except Exception as exc:
         print(f"[merge_dbs] {tbl}: ERROR — {exc}")
         return
     total_src = conn.execute(f"SELECT COUNT(*) FROM src.{tbl}").fetchone()[0]
-    print(f"[merge_dbs] {tbl}: {added} / {total_src} rows added from {os.path.basename(src_path)}")
+    print(f"[merge_dbs] {tbl}: {changed} / {total_src} rows inserted-or-refreshed "
+          f"from {os.path.basename(src_path)} (prefer-newer)")
 
 
 def merge(src_path: str, dst_path: str) -> None:
