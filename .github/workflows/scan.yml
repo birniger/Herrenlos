@@ -116,6 +116,17 @@ jobs:
       - name: Initialise database (if not committed yet)
         run: python -c "from db import init_db; init_db()"
 
+      - name: Heal known false positives
+        # Reset rows that were flagged herrenlos by now-fixed scanner bugs
+        # (GR Terravis soft-block faults, BS empty-batch artifacts) back to
+        # is_herrenlos=NULL with a fresh timestamp, so the fixed scanners
+        # re-evaluate them THIS run instead of skipping them forever via
+        # already_scanned().  Idempotent and self-limiting: once a row is
+        # corrected it no longer matches, so this is a fast no-op once the
+        # backlog clears.  Pairs with the prefer-newer merge in merge_dbs.py,
+        # which propagates the corrected rows across concurrent runs.
+        run: python scripts/heal_false_positives.py
+
       - name: Run scan loop
         # Keep picking and scanning cantons until the time budget runs out.
         # Previously each job scanned ONE canton then sat idle for the rest of
