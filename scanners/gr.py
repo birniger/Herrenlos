@@ -193,6 +193,10 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                     "claim_possible": claim_possible_for("GR", "dereliktion"),
                     "raw_response": str(data), "error": None}
 
+        # Count ownership-section entries to distinguish a genuine ownerless
+        # parcel from a partial response where person[]/recht[] failed to load.
+        total_person_entries = 0
+        total_recht_entries  = 0
         for parcel in (parcels_list if isinstance(parcels_list, list) else []):
             # ── Check recht[] for ownership before person[] ──────────────────
             # Stockwerkseigentum (condominium) and similar structures store
@@ -200,6 +204,8 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
             # person[].  If any recht entry carries an eigentum_anteil the
             # parcel IS owned — skip to next parcel without flagging herrenlos.
             recht_list = parcel.get("recht") or []
+            if isinstance(recht_list, list):
+                total_recht_entries += len(recht_list)
             for recht in (recht_list if isinstance(recht_list, list) else []):
                 if recht.get("inhalt_eigentum_anteil"):
                     # Ownership registered via StWE/MitEigentum recht entry.
@@ -209,6 +215,8 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                     break
 
             person_list = parcel.get("person") or []
+            if isinstance(person_list, list):
+                total_person_entries += len(person_list)
             for person in (person_list if isinstance(person_list, list) else []):
                 name = ""
                 addr = ""
@@ -282,10 +290,27 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
 
         owner = "; ".join(unique_owners) if unique_owners else None
         if owner is None:
+            # Partial-response guard (confirmed 2026-06-10 on CH187008007792,
+            # parcel 300 Vaz/Obervaz): the scan got a 200 with parcels[] present
+            # but person[]=0 AND recht[]=0, and flagged it dereliktion — yet an
+            # immediate re-fetch returned 3 recht[] StWE shares (owned condo).
+            # The ownership section had simply failed to populate.  A genuine
+            # ownerless parcel still renders that section, so empty-both means a
+            # partial response, not Art. 964 dereliktion.  Return retriable so the
+            # parcel is re-queried instead of being recorded as a false herrenlos.
+            if total_person_entries == 0 and total_recht_entries == 0:
+                log.warning("GR %s: 200 with parcels[] but empty person[]+recht[] "
+                            "— partial response, will retry (NOT dereliktion)", egrid)
+                return {"owner": None, "owner_address": None,
+                        "is_herrenlos": None, "herrenlos_type": None,
+                        "claim_possible": None,
+                        "raw_response": str(data)[:300],
+                        "error": "partial_response"}
             log.info("Potential herrenlos — no owner in Terravis response (EGRID=%s)", egrid)
 
-        # Parcel IS in Grundbuch (200 response, parcels[] non-empty) but person[]
-        # parsed out no owner names → most likely genuine dereliktion (Art. 964 ZGB)
+        # Parcel IS in Grundbuch (200 response, parcels[] non-empty) with a
+        # populated ownership section that parsed out no owner names → most
+        # likely genuine dereliktion (Art. 964 ZGB)
         h_type = None if owner else "dereliktion"
         return {
             "owner":          owner,

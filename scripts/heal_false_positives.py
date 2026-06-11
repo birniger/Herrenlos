@@ -68,6 +68,18 @@ HEAL_RULES = [
     # lets the scanner record a proper error instead of a phantom herrenlos.
     ("SZ no-EGRID artifact",
      "canton='SZ' AND is_herrenlos=1 AND (egrid IS NULL OR egrid='')"),
+
+    # GR partial-response false positives: a 200 with parcels[] present but the
+    # ownership section empty (person[]=[] AND recht[]=[]) was flagged dereliktion
+    # even though the data had simply failed to load (e.g. CH187008007792 / parcel
+    # 300 Vaz/Obervaz — a StWE condominium with 3 recht shares on re-fetch).  The
+    # scanner now returns a retriable partial_response for this shape; reset the
+    # already-committed ones so they re-scan.  Signature-based on the empty-both
+    # ownership sections, so genuine dereliktion (populated section, no owner)
+    # is never matched.
+    ("GR partial-response false positives",
+     "canton='GR' AND is_herrenlos=1 AND herrenlos_type='dereliktion' "
+     "AND raw_response LIKE '%''person'': []%' AND raw_response LIKE '%''recht'': []%'"),
 ]
 
 

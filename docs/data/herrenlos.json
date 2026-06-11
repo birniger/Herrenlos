@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-11T09:05:05+00:00",
-  "count": 27,
+  "generated_at": "2026-06-11T21:36:41+00:00",
+  "count": 26,
   "parcels": [
     {
       "egrid": "CH649410725268",
@@ -213,20 +213,6 @@
       "lng": 6.977141380310059
     },
     {
-      "egrid": "CH187008007792",
-      "canton": "GR",
-      "commune": "GR0000003506",
-      "bfs_nr": "3506",
-      "parcel_nr": "300",
-      "owner": null,
-      "owner_address": null,
-      "herrenlos_type": "dereliktion",
-      "claim_possible": null,
-      "scanned_at": "2026-06-10 21:03:40",
-      "lat": 46.694217681884766,
-      "lng": 9.535881042480469
-    },
-    {
       "egrid": "CH575277895050",
       "canton": "GR",
       "commune": "GR0000003506",
@@ -234,9 +220,9 @@
       "parcel_nr": "5696",
       "owner": null,
       "owner_address": null,
-      "herrenlos_type": "dereliktion",
-      "claim_possible": null,
-      "scanned_at": "2026-06-09 17:00:33",
+      "herrenlos_type": "not_in_grundbuch",
+      "claim_possible": 0,
+      "scanned_at": "2026-06-11 12:29:38",
       "lat": 46.72084045410156,
       "lng": 9.538748741149902
     },

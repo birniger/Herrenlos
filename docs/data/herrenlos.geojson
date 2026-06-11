@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "generated_at": "2026-06-11T09:05:05+00:00",
+  "generated_at": "2026-06-11T21:36:41+00:00",
   "features": [
     {
       "type": "Feature",
@@ -337,28 +337,6 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          9.535881042480469,
-          46.694217681884766
-        ]
-      },
-      "properties": {
-        "egrid": "CH187008007792",
-        "canton": "GR",
-        "commune": "GR0000003506",
-        "bfs_nr": "3506",
-        "parcel_nr": "300",
-        "owner": null,
-        "owner_address": null,
-        "herrenlos_type": "dereliktion",
-        "claim_possible": null,
-        "scanned_at": "2026-06-10 21:03:40"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
           9.538748741149902,
           46.72084045410156
         ]
@@ -371,9 +349,9 @@
         "parcel_nr": "5696",
         "owner": null,
         "owner_address": null,
-        "herrenlos_type": "dereliktion",
-        "claim_possible": null,
-        "scanned_at": "2026-06-09 17:00:33"
+        "herrenlos_type": "not_in_grundbuch",
+        "claim_possible": 0,
+        "scanned_at": "2026-06-11 12:29:38"
       }
     },
     {
