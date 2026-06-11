@@ -50,7 +50,6 @@ BASE     = "https://keycloak.fr.ch/rfpublic"
 INDEX    = f"{BASE}/indexD.html"
 COMMUNE  = f"{BASE}/selectCommune.jsp"
 QUERY    = f"{BASE}/v2TAffImmx01.jsp"
-UA       = DEFAULT_UA  # alias kept for call sites within this file; imported from utils
 
 NOT_FOUND_NEEDLE   = "INFORMATION INTROUVABLE"
 NOT_FOUND_MAX_B    = 800    # bytes; valid response is ~8–10 KB
@@ -98,7 +97,7 @@ def _rotate_session(proxy_url: str | None = None) -> tuple[requests.Session, str
       main saving (~4.4 GB) introduced earlier.
     """
     s = requests.Session()
-    s.headers["User-Agent"] = UA
+    s.headers["User-Agent"] = DEFAULT_UA
     if proxy_url:
         s.proxies.update({"http": proxy_url, "https": proxy_url})
 
@@ -139,7 +138,7 @@ def new_session(proxy_url: str | None = None) -> tuple[requests.Session, str, li
     DISTRICT_BRF = [10, 11, 12, 13, 14, 15, 16]
 
     s = requests.Session()
-    s.headers["User-Agent"] = UA
+    s.headers["User-Agent"] = DEFAULT_UA
     if proxy_url:
         s.proxies.update({"http": proxy_url, "https": proxy_url})
         log.debug("FR session via proxy %s…", proxy_url.split("@")[-1])

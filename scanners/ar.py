@@ -52,7 +52,6 @@ import sys
 import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel
-from scanners.utils import claim_possible_for
 
 log = logging.getLogger("AR")
 

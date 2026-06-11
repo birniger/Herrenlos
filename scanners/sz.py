@@ -36,7 +36,6 @@ log = logging.getLogger("SZ")
 BASE_URL        = "https://service2.geo.sz.ch"
 OWNER_URL       = f"{BASE_URL}/ownership/captcha/access/{{egrid}}.html"
 CAPTCHA_IMG_URL = f"{BASE_URL}/dokumente/c/service/image/{{hash}}/"
-UA              = DEFAULT_UA  # alias kept for call sites within this file
 
 
 # ── CAPTCHA solvers ───────────────────────────────────────────────────────────
@@ -393,7 +392,7 @@ def scan(limit: int | None = None,
 
     session = requests.Session()
     session.headers.update({
-        "User-Agent": UA,
+        "User-Agent": DEFAULT_UA,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "de-CH,de;q=0.9",
     })

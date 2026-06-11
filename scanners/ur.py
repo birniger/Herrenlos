@@ -11,7 +11,6 @@ UR scanner — Uri
                       is stored for geo-blocked responses so they can be re-scanned.
 """
 
-import os
 import time
 import logging
 import requests
@@ -21,7 +20,7 @@ import sys
 import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 from db import get_conn, init_db, already_scanned, upsert_parcel
-from scanners.utils import is_herrenlos_owner_text, is_unknown_owner, is_public_owner, is_sdr_parcel, annotate_herrenlos, load_proxies
+from scanners.utils import is_herrenlos_owner_text, is_unknown_owner, is_sdr_parcel, annotate_herrenlos, load_proxies
 
 log = logging.getLogger("UR")
 
@@ -157,12 +156,10 @@ def check_owner(session: requests.Session, bfs_nr: str, parcel_nr: str) -> dict:
         #  - unknown owner   → BGE 114 II 318: NOT herrenlos; owner exists but unknown
         #  - public body     → Kanton/Gemeinde/Bund; already owned, not herrenlos
         real_owners: list[str] = []
-        has_unknown = False
         for t in owner_candidates:
             if is_herrenlos_owner_text(t):
                 pass  # signals herrenlos — will be caught by explicit_herrenlos below
             elif is_unknown_owner(t):
-                has_unknown = True
                 real_owners.append(t)   # treat as having an owner (BGE 114 II 318)
             else:
                 real_owners.append(t)

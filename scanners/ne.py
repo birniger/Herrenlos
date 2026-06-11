@@ -41,10 +41,8 @@ import time
 import logging
 import os
 import concurrent.futures
-import threading
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urlencode
 
 import sys
 import pathlib
@@ -106,7 +104,6 @@ def _solve_altcha(challenge: dict) -> str | None:
     Token = base64(json.dumps(payload, separators=(',',':')))
     """
     params    = challenge.get("parameters") or challenge
-    algorithm = params.get("algorithm", "PBKDF2/SHA-256")
     cost      = int(params.get("cost", 250_000))
     key_len   = int(params.get("keyLength", 32))
     prefix    = params.get("keyPrefix", "00")
@@ -869,7 +866,6 @@ def scan(limit: int | None = None,
     # genuinely parallelize PBKDF2 computation across CPU cores.
     scanned = errors = herrenlos = 0
     rate_limited_streak = 0
-    _db_lock = threading.Lock()
 
     with get_conn() as conn:
         with concurrent.futures.ThreadPoolExecutor(max_workers=N_WORKERS) as pool:

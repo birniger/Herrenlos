@@ -43,7 +43,6 @@ REQUIRES
 """
 
 import os
-import re
 import json
 import time
 import logging
@@ -348,7 +347,7 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                 "owner": None, "owner_address": None, "raw_response": None}
     if r2.status_code == 403:
         log.warning("EIGENTUM 403 for EGRID=%s gs_id=%s body=%s", egrid, gs_id, r2.text[:200])
-        return {"error": f"eigentum_403", "is_herrenlos": None,
+        return {"error": "eigentum_403", "is_herrenlos": None,
                 "owner": None, "owner_address": None, "raw_response": r2.text[:300]}
 
     if r2.status_code == 404:

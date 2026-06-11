@@ -28,8 +28,8 @@ import requests
 import sys
 import pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
-from db import get_conn, init_db, already_scanned, upsert_parcel
-from scanners.utils import is_herrenlos_owner_text, is_sdr_parcel, annotate_herrenlos, claim_possible_for
+from db import get_conn, init_db, upsert_parcel
+from scanners.utils import is_herrenlos_owner_text, is_sdr_parcel, claim_possible_for
 
 GEOPORTAL_BASE     = "https://www.geoportal.ch"
 LOGIN_URL          = f"{GEOPORTAL_BASE}/api/login"

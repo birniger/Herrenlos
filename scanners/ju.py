@@ -455,7 +455,6 @@ def _parse_owner_html(html: str, egrid: str, nocompar: str) -> dict:
     # ── Parse owner table ────────────────────────────────────────────────────
     table = soup.find("table")
     owners:  list[str] = []
-    addrs:   list[str] = []
 
     if table:
         rows = table.find_all("tr")

@@ -296,13 +296,11 @@ def _parse_owner(data: dict) -> dict:
 
     owner_strs:    list[str] = []
     address_strs:  list[str] = []
-    sentinel_seen = False
     for o in owners_raw:
         name = (o.get("eigentuemer") or "").strip()
         if not name:
             continue
         if is_herrenlos_owner_text(name):
-            sentinel_seen = True
             continue
         # Build "Name, Street, PLZ Ort" if address parts present
         addr_bits = []

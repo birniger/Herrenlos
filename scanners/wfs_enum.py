@@ -27,7 +27,6 @@ finishes in 1-10 minutes depending on size (BE ~120s, GR ~60s, SH ~10s).
 import logging
 import re
 import time
-import urllib.parse
 from typing import Iterator
 
 import requests

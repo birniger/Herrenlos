@@ -38,7 +38,6 @@ SH scanner — Schaffhausen
 - Parcels           : ~9,000 (small canton, 298 km²)
 """
 
-import json
 import time
 import uuid
 import logging
@@ -79,7 +78,6 @@ PERSON_UUID_LOOKUP_URL = (
     "/json/"
 )
 
-UA = DEFAULT_UA  # alias kept for call sites within this file; imported from utils
 
 
 # ── Token management ─────────────────────────────────────────────────────────
@@ -280,7 +278,7 @@ def _err(msg: str) -> dict:
 
 def _sh_session(proxy_url: str | None = None) -> requests.Session:
     s = requests.Session()
-    s.headers["User-Agent"] = UA
+    s.headers["User-Agent"] = DEFAULT_UA
     if proxy_url:
         s.proxies.update({"http": proxy_url, "https": proxy_url})
     return s

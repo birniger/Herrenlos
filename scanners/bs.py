@@ -20,7 +20,6 @@ API KEY SETUP:
 """
 
 import os
-import re
 import time
 import logging
 import requests
@@ -208,70 +207,14 @@ def check_owner_bs(egrid: str, api_key: str = BS_API_KEY) -> dict:
     return check_owner_bs_batch([egrid], api_key).get(egrid, {})
 
 
-def _check_owner_bs_single_doc(egrid: str, api_key: str = BS_API_KEY) -> dict:
-    """
-    Original single-EGRID BS public-API parcel check (kept for reference).
-
-    IMPORTANT (verified 2026-05-18 against the live OpenAPI spec at
-    https://api.geo.bs.ch/grundstueckinfo/v1/openapi.yaml):
-
-      The BS REST API exposes ONLY parcel metadata (area, buildings, land covers,
-      type). It does NOT expose owner names. The `OwnershipInformation` field in
-      the response is a URL to the HTML viewer at /eigentum/{section}/{parcel},
-      which is Keycloak + reCAPTCHA protected — same architecture as SO.
-
-      Consequence: this scanner can only detect Type A herrenlos
-      (parcel NOT present in BS Grundbuch → Art. 664 ZGB). It CANNOT detect
-      Type B herrenlos (dereliktion) because owner data isn't in the API.
-
-      For full BS owner coverage, a reCAPTCHA-solving scanner (mirror of
-      scanners/so_public.py) would need to be built against the HTML viewer.
-      Until then, BS scans return is_herrenlos=None for parcels that DO exist
-      in BS, with error='owner_lookup_needs_html_path'.
-    """
-    try:
-        r = requests.get(BS_INFO_URL, params={"ids": egrid, "apikey": api_key}, timeout=15)
-        if r.status_code == 401:
-            return {"error": "invalid_api_key", "is_herrenlos": None,
-                    "herrenlos_type": None, "claim_possible": None,
-                    "owner": None, "owner_address": None, "raw_response": None}
-        if r.status_code != 200:
-            return {"error": f"http_{r.status_code}", "is_herrenlos": None,
-                    "herrenlos_type": None, "claim_possible": None,
-                    "owner": None, "owner_address": None, "raw_response": None}
-
-        data = r.json()
-        # Schema (case-sensitive, verified against OpenAPI):
-        #   {"Date": ..., "Service": {...}, "RealEstates": [{"Egrid": ...}, ...]}
-        real_estates = data.get("RealEstates", []) if isinstance(data, dict) else []
-        # Filter to the EGRID we asked for — API may include linked parcels
-        match = next((re for re in real_estates if re.get("Egrid") == egrid), None)
-
-        if match is None:
-            # EGRID not in BS Grundbuch at all → Type A herrenlos (Art. 664 ZGB).
-            # The federal swisstopo identify says this parcel is in BS canton,
-            # but BS's own Grundbuch doesn't know about it. Real herrenlos signal.
-            return {"owner": None, "owner_address": None,
-                    "is_herrenlos": 1,
-                    "herrenlos_type": "not_in_grundbuch",
-                    "claim_possible": claim_possible_for("BS", "not_in_grundbuch"),
-                    "raw_response": None, "error": None}
-
-        # Parcel exists in BS Grundbuch. Owner data is not accessible via this
-        # API; we'd need a reCAPTCHA-solving scanner against the HTML viewer.
-        # Honestly report this as unknown rather than guess herrenlos.
-        return {"owner": None, "owner_address": None,
-                "is_herrenlos": None,
-                "herrenlos_type": None,
-                "claim_possible": None,
-                "raw_response": None,
-                "error": "owner_lookup_needs_html_path"}
-
-    except Exception as exc:
-        return {"owner": None, "owner_address": None,
-                "is_herrenlos": None,
-                "herrenlos_type": None, "claim_possible": None,
-                "raw_response": None, "error": str(exc)}
+# NOTE on BS coverage (verified 2026-05-18 against api.geo.bs.ch OpenAPI):
+# the REST API exposes ONLY parcel metadata, never owner names — the
+# OwnershipInformation field is a Keycloak + reCAPTCHA HTML viewer (same
+# architecture as SO).  So this scanner detects only Type A herrenlos (parcel
+# absent from the BS Grundbuch → Art. 664 ZGB); parcels that DO exist return
+# is_herrenlos=None with error='owner_lookup_needs_html_path'.  Type B
+# (dereliktion) would need a reCAPTCHA-solving scanner against the HTML viewer
+# (a mirror of so_public.py) — not yet built.
 
 
 # ── Main scanner ─────────────────────────────────────────────────────────────

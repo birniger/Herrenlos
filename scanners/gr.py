@@ -14,7 +14,6 @@ GR scanner — Graubünden
 - Parcels           : ~85,000 (largest Swiss canton, ~7,100 km²)
 """
 
-import re
 import time
 import logging
 import requests
@@ -32,7 +31,6 @@ from scanners.utils import (
 log = logging.getLogger("GR")
 
 TERRAVIS_URL = "https://lkgr.geogr.ch/terravis/egrid/{egrid}"
-UA           = DEFAULT_UA  # alias kept for call sites within this file
 
 
 # ── Owner check ─────────────────────────────────────────────────────────────
@@ -334,7 +332,7 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
 
 def _gr_session(proxy_url: str | None = None) -> requests.Session:
     s = requests.Session()
-    s.headers["User-Agent"] = UA
+    s.headers["User-Agent"] = DEFAULT_UA
     if proxy_url:
         s.proxies.update({"http": proxy_url, "https": proxy_url})
     return s
