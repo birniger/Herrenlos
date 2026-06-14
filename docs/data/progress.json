@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-14T01:11:07+00:00",
+  "generated_at": "2026-06-14T09:08:19+00:00",
   "cantons": [
     {
       "canton": "AG",
@@ -82,12 +82,12 @@
     {
       "canton": "GR",
       "enumerated": 225843,
-      "scanned": 8576,
-      "herrenlos": 1,
-      "errors": 1228,
+      "scanned": 8594,
+      "herrenlos": 16,
+      "errors": 1210,
       "percent": 3.8,
       "estimated_total": 225843,
-      "last_scan_at": "2026-06-14 01:10:58",
+      "last_scan_at": "2026-06-14 09:08:07",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "10 req/day/IP"
@@ -199,9 +199,9 @@
   ],
   "totals": {
     "enumerated": 1512439,
-    "scanned": 79501,
-    "herrenlos": 26,
-    "errors": 21408,
+    "scanned": 79519,
+    "herrenlos": 41,
+    "errors": 21390,
     "cantons": 15
   }
 }
