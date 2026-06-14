@@ -53,9 +53,16 @@ DB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 # Keep these SIGNATURE-BASED, never blanket "all herrenlos in canton X", so a
 # genuine future finding is never wiped.
 HEAL_RULES = [
-    ("GR Terravis soft-block faults",
-     "canton='GR' AND is_herrenlos=1 AND "
-     "(raw_response LIKE '%GetParcelByIdFault%' OR raw_response LIKE '%fault occured%')"),
+    # GR Terravis error-envelope false positives.  A 404/400 from Terravis is
+    # always a transient error, never a herrenlos signal — the genuine "not in
+    # Grundbuch" case is a 200 with missing[] (Python-repr'd as {'parcels': [],
+    # 'missing': [...]} — single-quoted, no "detail" key).  Every JSON error
+    # envelope {"detail": ...} (GetParcelByIdFault, "Unknown fault occured",
+    # "Upstream server is not available", …) was a transient failure on a real
+    # parcel.  Matching the double-quoted "detail": key catches them all while
+    # never touching the genuine single-quoted missing[] response.
+    ("GR Terravis error-envelope false positives",
+     "canton='GR' AND is_herrenlos=1 AND raw_response LIKE '%\"detail\":%'"),
 
     # All 89 BS is_herrenlos=1 rows were live-probed 2026-06-10 and confirmed
     # present in api.geo.bs.ch (empty-batch artifacts).  BS cannot yet detect a

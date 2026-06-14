@@ -75,54 +75,35 @@ def check_owner(session: requests.Session, egrid: str) -> dict:
                     "owner": None, "owner_address": None, "raw_response": None}
 
         if r.status_code in (404, 400):
-            # Distinguish genuine Terravis "EGRID not in Grundbuch" from a
-            # proxy connection error that also returns 404/400.
-            #
-            # Genuine Terravis 404: Content-Type is application/json (or the
-            # body is empty / very short).  Proxy error pages are HTML.
-            #
-            # False-positive risk 1: proxy returns HTTP 404 for a connection
-            # error → scanner records not_in_grundbuch → herrenlos hit for a
-            # parcel that actually has owners (confirmed GR 3863/803, 2026-05-28).
-            #
-            # False-positive risk 2: Terravis returns HTTP 400 with JSON body
-            # {"detail":"GetParcelByIdFault"} or {"detail":"Unknown fault occured"}
-            # when a proxy IP is soft-blocked (rate-limited but not returning 429).
-            # Confirmed live probe 2026-06-09: CH330877008420 returned this via
-            # Litport proxy but returned 200 with full owner data when queried
-            # directly — definitively NOT a herrenlos signal. All 186 such records
-            # found on 2026-06-09 were false positives from Vaz/Obervaz (BFS 3506).
+            # A 404/400 from Terravis is ALWAYS a transient/error condition, never
+            # a herrenlos signal.  The genuine "not in Grundbuch" case arrives as a
+            # 200 with a populated missing[] list (handled below) — confirmed live
+            # on CH575277895050.  Every 400/404 we have ever observed was an error
+            # payload, and treating any of them as not_in_grundbuch produced false
+            # positives on real, owned parcels:
+            #   - proxy error page (HTML body) — connection failure
+            #   - {"detail":"GetParcelByIdFault"} / "Unknown fault occured" — proxy
+            #     IP soft-blocked (rate-limited but not returning 429); CH330877008420
+            #     returned this via proxy but 200+owners directly (2026-06-09)
+            #   - {"detail":"Upstream server is not available"} — Terravis backend
+            #     down; 15 Arosa (BFS 3921) parcels flagged on 2026-06-14 all
+            #     returned 200+data on re-probe
+            # So: classify as a retriable error and re-scan; never flag herrenlos here.
             ct = r.headers.get("Content-Type", "")
+            body_preview = r.text[:300]
             if "text/html" in ct:
-                # Proxy error page — not a real Terravis response.
                 log.warning("GR %s: 404/400 with HTML body (proxy error?) — "
                             "skipping, will retry.", egrid)
-                return {"error": "proxy_error_404", "is_herrenlos": None,
-                        "herrenlos_type": None, "claim_possible": None,
-                        "owner": None, "owner_address": None,
-                        "raw_response": r.text[:200]}
-            # Detect Terravis soft-block fault responses — NOT herrenlos signals.
-            # These occur when a proxy IP is rate-limited but Terravis returns 400
-            # instead of 429.  Treat as a retriable error so the parcel is re-scanned
-            # with a fresh proxy IP rather than being permanently misclassified.
-            body_preview = r.text[:300]
-            if "GetParcelByIdFault" in body_preview or "fault occured" in body_preview.lower():
-                log.warning("GR %s: Terravis soft-block fault (%s) — "
-                            "proxy IP likely rate-limited (non-429 path). "
-                            "Skipping; will retry with fresh IP.", egrid, r.status_code)
-                return {"error": "terravis_soft_block", "is_herrenlos": None,
-                        "herrenlos_type": None, "claim_possible": None,
-                        "owner": None, "owner_address": None,
-                        "raw_response": body_preview}
-            # EGRID not found in Terravis / Grundbuch at all.
-            # This is Type 2 herrenlos (Art. 664 ZGB) — parcel exists in the
-            # cadastre but has no Grundbuch entry. Falls to canton by law.
-            # NOT claimable by private persons.
-            return {"owner": None, "owner_address": None,
-                    "is_herrenlos": 1,
-                    "herrenlos_type": "not_in_grundbuch",
-                    "claim_possible": 0,
-                    "raw_response": body_preview or None, "error": None}
+                err = "proxy_error_404"
+            else:
+                log.warning("GR %s: Terravis %s error response — retriable, "
+                            "NOT herrenlos. Body: %s", egrid, r.status_code,
+                            body_preview[:120])
+                err = "terravis_error"
+            return {"error": err, "is_herrenlos": None,
+                    "herrenlos_type": None, "claim_possible": None,
+                    "owner": None, "owner_address": None,
+                    "raw_response": body_preview}
 
         if r.status_code != 200:
             return {"error": f"http_{r.status_code}", "is_herrenlos": None,
