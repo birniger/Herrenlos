@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-18T21:08:05+00:00",
+  "generated_at": "2026-06-19T02:33:53+00:00",
   "cantons": [
     {
       "canton": "AG",
@@ -87,7 +87,7 @@
       "errors": 18405,
       "percent": 4.0,
       "estimated_total": 225843,
-      "last_scan_at": "2026-06-18 21:08:04",
+      "last_scan_at": "2026-06-19 02:33:52",
       "access": "public",
       "test_group": "rest",
       "rate_limit": "10 req/day/IP"
